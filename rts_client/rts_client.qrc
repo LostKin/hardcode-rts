@@ -1,0 +1,16 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>gpu_programs/colored/main.vert</file>
+        <file>gpu_programs/colored/main.frag</file>
+
+        <file>gpu_programs/colored_textured/main.vert</file>
+        <file>gpu_programs/colored_textured/main.frag</file>
+
+        <file>gpu_programs/textured/main.vert</file>
+        <file>gpu_programs/textured/main.frag</file>
+
+        <file>images/grass.png</file>
+        <file>images/cat.png</file>
+    </qresource>
+</RCC>
