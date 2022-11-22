@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package RTS;
+
+message Something {
+    string name = 1;
+    bytes value = 2;
+}
+
+message SomethingElse {
+    int32 field = 1;
+    bool another_field = 2;
+}

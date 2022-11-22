@@ -1,5 +1,6 @@
 #include "application.h"
 #include "network_thread.h"
+#include ".proto_stubs/entities.pb.h"
 
 
 Application::Application (int& argc, char** argv)
