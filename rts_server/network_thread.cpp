@@ -15,7 +15,7 @@ const QString& NetworkThread::errorMessage ()
 {
     return error_message;
 }
-void NetworkThread::sendDatagram (QNetworkDatagram datagram)
+void NetworkThread::sendDatagram (const QNetworkDatagram& datagram)
 {
     emit sendDatagramSignal (datagram);
 }

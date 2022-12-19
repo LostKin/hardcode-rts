@@ -21,5 +21,5 @@ void Application::init ()
 }
 void Application::datagramHandler (QSharedPointer<QNetworkDatagram> datagram)
 {
-    network_thread->sendDatagram (datagram->makeReply (QByteArray ("RE: ") + datagram->data ()));
+    network_thread->sendDatagram (QNetworkDatagram (QByteArray ("RE: ") + datagram->data (), datagram->senderAddress (), datagram->senderPort ()));
 }

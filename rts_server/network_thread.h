@@ -11,10 +11,10 @@ class NetworkThread: public QThread
 public:
     NetworkThread (const QString& host, quint16 port, QObject *parent = nullptr);
     const QString& errorMessage ();
-    void sendDatagram (QNetworkDatagram datagram);
+    void sendDatagram (const QNetworkDatagram& datagram);
 
 signals:
-    void sendDatagramSignal (QNetworkDatagram datagram);
+    void sendDatagramSignal (const QNetworkDatagram& datagram);
     void datagramReceived (QSharedPointer<QNetworkDatagram> datagram);
 
 protected:

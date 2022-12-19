@@ -24,19 +24,19 @@ bool NetworkManager::start (QString& error_message)
 }
 QSharedPointer<QNetworkDatagram> NetworkManager::takeDatagram ()
 {
-    QMutexLocker locker(&input_queue_mutex);
+    QMutexLocker locker (&input_queue_mutex);
     return input_queue.isEmpty () ? nullptr : input_queue.dequeue ();
 }
 void NetworkManager::recieveDatagrams ()
 {
     while (socket.hasPendingDatagrams ()) {
         QSharedPointer<QNetworkDatagram> datagram (new QNetworkDatagram (socket.receiveDatagram ()));
-        QMutexLocker locker(&input_queue_mutex);
+        QMutexLocker locker (&input_queue_mutex);
         input_queue.enqueue (datagram);
     }
     emit datagramsReady ();
 }
-void NetworkManager::sendDatagramHandler (QNetworkDatagram datagram)
+void NetworkManager::sendDatagramHandler (const QNetworkDatagram& datagram)
 {
     socket.writeDatagram (datagram);
 }

@@ -1,6 +1,6 @@
 QT += core network
 
-CONFIG += c++11
+CONFIG += c++11 debug
 
 SOURCES += \
     main.cpp \

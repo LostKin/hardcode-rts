@@ -16,7 +16,7 @@ public:
     QSharedPointer<QNetworkDatagram> takeDatagram ();
 
 signals:
-    void sendDatagram (QNetworkDatagram datagram);
+    void sendDatagram (const QNetworkDatagram& datagram);
     void datagramsReady ();
 
 private:
@@ -30,5 +30,5 @@ private:
 
 private slots:
     void recieveDatagrams ();
-    void sendDatagramHandler (QNetworkDatagram datagram);
+    void sendDatagramHandler (const QNetworkDatagram& datagram);
 };
