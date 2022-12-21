@@ -38,5 +38,6 @@ void NetworkManager::recieveDatagrams ()
 }
 void NetworkManager::sendDatagramHandler (const QNetworkDatagram& datagram)
 {
+    //qDebug() << datagram.data() << datagram.destinationAddress();
     socket.writeDatagram (datagram);
 }

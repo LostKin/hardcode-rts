@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package RTS;
+
+message Token {
+    uint64 token = 1;
+}
+
+message Error {
+    bytes message = 2;
+    int32 code = 1;
+}
+
+message AuthorizationRequest {
+    bytes login = 1;
+    bytes password = 2;
+}
+
+message AuthorizationResponse {
+    oneof response {
+        Error error = 1;
+        Token token = 2;
+    }
+}
+
+message EnterRoomRequest {
+    Token token = 1;
+    int32 room = 2;
+}
+
+message EnterRoomResponse {
+    oneof response {
+        Error error = 1;
+        Token token = 2;
+    }
+}
+
+message Request {
+    oneof message {
+        AuthorizationRequest auth = 1;
+        EnterRoomRequest room = 2; 
+    }
+}
+
+message Response {
+    oneof message {
+        AuthorizationResponse auth = 1;
+        EnterRoomResponse room = 2;
+    }
+}
+
+
