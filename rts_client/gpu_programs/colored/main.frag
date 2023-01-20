@@ -1,4 +1,6 @@
-varying lowp vec4 color;
+#version 400
+
+in lowp vec4 color;
 
 void main ()
 {

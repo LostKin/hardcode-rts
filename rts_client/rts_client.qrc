@@ -10,7 +10,45 @@
         <file>gpu_programs/textured/main.vert</file>
         <file>gpu_programs/textured/main.frag</file>
 
+        <file>images/hud.png</file>
         <file>images/grass.png</file>
-        <file>images/cat.png</file>
+        <file>images/ground.png</file>
+
+        <file>images/icons/user.png</file>
+        <file>images/icons/delete.png</file>
+
+        <file>images/cursors/crosshair.png</file>
+
+        <file>images/labels/join-team-requested.png</file>
+        <file>images/labels/ready.png</file>
+        <file>images/labels/starting-in-0.png</file>
+        <file>images/labels/starting-in-1.png</file>
+        <file>images/labels/starting-in-2.png</file>
+        <file>images/labels/starting-in-3.png</file>
+        <file>images/labels/starting-in-4.png</file>
+        <file>images/labels/starting-in-5.png</file>
+
+        <file>images/buttons/join-blue-team.png</file>
+        <file>images/buttons/join-red-team.png</file>
+        <file>images/buttons/spectate.png</file>
+        <file>images/buttons/ready.png</file>
+        <file>images/buttons/cancel.png</file>
+        <file>images/buttons/quit.png</file>
+        <file>images/buttons/join-blue-team-pressed.png</file>
+        <file>images/buttons/join-red-team-pressed.png</file>
+        <file>images/buttons/spectate-pressed.png</file>
+        <file>images/buttons/ready-pressed.png</file>
+        <file>images/buttons/cancel-pressed.png</file>
+        <file>images/buttons/quit-pressed.png</file>
+
+	<file>images/units/seal/red-plain.png</file>
+	<file>images/units/seal/red-selected.png</file>
+	<file>images/units/seal/blue-plain.png</file>
+	<file>images/units/seal/blue-selected.png</file>
+
+	<file>images/units/crusader/red-plain.png</file>
+	<file>images/units/crusader/red-selected.png</file>
+	<file>images/units/crusader/blue-plain.png</file>
+	<file>images/units/crusader/blue-selected.png</file>
     </qresource>
 </RCC>
