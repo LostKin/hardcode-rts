@@ -4,6 +4,8 @@ CONFIG += c++17
 CONFIG += qt
 CONFIG += debug_and_release
 
+include (../match_state/match_state.pri)
+
 SOURCES += \
     main.cpp \
     network_thread.cpp \
@@ -17,7 +19,6 @@ SOURCES += \
     roomsettingswidget.cpp \
     profilewidget.cpp \
     roomwidget.cpp \
-    matchstate.cpp \
     roomentry.cpp
 
 HEADERS += \
@@ -32,7 +33,6 @@ HEADERS += \
     roomsettingswidget.h \
     profilewidget.h \
     roomwidget.h \
-    matchstate.h \
     roomentry.h
 
 INCLUDEPATH += .proto_stubs

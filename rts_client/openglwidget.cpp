@@ -338,8 +338,6 @@ void OpenGLWidget::drawRectangle (int x, int y, QOpenGLTexture* texture)
 }
 void OpenGLWidget::drawRectangle (int x, int y, int w, int h, QOpenGLTexture* texture)
 {
-    int tex_w = texture->width ();
-    int tex_h = texture->height ();
     const GLfloat vertices[] = {
         GLfloat (x), GLfloat (y),
         GLfloat (x + w), GLfloat (y),

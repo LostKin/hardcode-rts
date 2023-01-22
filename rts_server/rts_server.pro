@@ -1,7 +1,10 @@
 QT += core network
 
-CONFIG += c++17 debug
+CONFIG += c++17
+CONFIG += qt
+CONFIG += debug_and_release
 
+include (../match_state/match_state.pri)
 
 SOURCES += \
     main.cpp \
