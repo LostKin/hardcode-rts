@@ -11,8 +11,10 @@ class RoomListTable: public QTableWidget
 public:
     RoomListTable (QWidget* parent = nullptr);
     ~RoomListTable ();
-    void setRoomList (const QList<RoomEntry>& room_list);
     QVariant getCurrentRoom ();
+
+public slots:
+    void setRoomList (const QVector<RoomEntry>& room_list);
 
 signals:
     void joinRoomRequested (uint32_t room_id);

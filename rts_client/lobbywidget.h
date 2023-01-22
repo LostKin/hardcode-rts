@@ -13,18 +13,22 @@ class LobbyWidget: public QWidget
 public:
     LobbyWidget (const QString& login, QWidget* parent = nullptr);
     ~LobbyWidget ();
-    void setRoomList (const QList<RoomEntry>& room_list);
+
+public slots:
+    void setRoomList (const QVector<RoomEntry>& room_list);
 
 signals:
-    void createRoomRequested ();
-    void joinRoomRequested (uint32_t room_id);
+    void createRoomRequested (const QString& room_name);
+    void joinRoomRequested (quint32 room_id);
     void logoutRequested ();
 
 private slots:
     void joinRoomClicked ();
+    void createRoomButtonClicked ();
     void profileButtonClicked ();
 
 private:
     QString login;
+    bool room_list_loaded = false;
     RoomListTable* room_list_table;
 };

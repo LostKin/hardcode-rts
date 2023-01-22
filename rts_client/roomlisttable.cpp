@@ -21,7 +21,7 @@ RoomListTable::~RoomListTable ()
 {
 }
 
-void RoomListTable::setRoomList (const QList<RoomEntry>& room_list)
+void RoomListTable::setRoomList (const QVector<RoomEntry>& room_list)
 {
     setRowCount (room_list.size ());
     for (size_t row = 0; row < size_t (room_list.size ()); ++row) {

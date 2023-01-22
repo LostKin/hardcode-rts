@@ -1,11 +1,11 @@
 #include "application.h"
 #include "network_thread.h"
-#include ".proto_stubs/session_level.pb.h"
+#include <random>
 #include <QFile>
 
 
 /*SessionInfo::SessionInfo(int32_t id, std::string _login) {
-    current_room = id; 
+    current_room = id;
     login = _login;
 }*/
 
@@ -14,20 +14,21 @@ Room::Room() {}
 Application::Application (int& argc, char** argv)
     : QCoreApplication (argc, argv)
 {
-    token = 0;
-    MOD = 1e18;
-    network_thread = new NetworkThread ("127.0.0.1", 1331, this);
+    next_session_token = std::mt19937_64 (time (nullptr)) () & 0x7fffffffffffffffULL;
+    network_thread.reset (new NetworkThread ("127.0.0.1", 1331, this));
+    connect (&*network_thread, &NetworkThread::datagramReceived, this, &Application::sessionDatagramHandler);
     room.network_thread = new NetworkThread ("127.0.0.1", 1332, this);
     room.id = 0;
 }
 
-uint64_t Application::next_token() {
-    ++token;
-    return token;
+quint64 Application::nextSessionToken() {
+    return next_session_token++;
 }
 
 Application::~Application ()
 {
+    // TODO: Implement handling SIGINT
+    network_thread->exit ();
     network_thread->wait ();
 }
 
@@ -54,7 +55,7 @@ bool Application::init ()
             qDebug () << "Invalid line" << line << "at" << fname << ":" << "2 fields expected";
             return false;
         }
-        users[fields.at (0)] = fields.at (1);
+        user_passwords[fields.at (0)] = fields.at (1);
         qDebug () << fields.at (0) << "->" << fields.at (1);
     }
     //users["login"] = "a";
@@ -62,129 +63,262 @@ bool Application::init ()
     //qDebug() << users[test].data();
     network_thread->start ();
 
-    connect (network_thread, &NetworkThread::datagramReceived, this, &Application::sessionDatagramHandler);
     return true;
 }
-
-void Application::sendReply(QSharedPointer<QNetworkDatagram> datagram, const std::string& msg) {
-    network_thread->sendDatagram (QNetworkDatagram (msg.data(), datagram->senderAddress (), datagram->senderPort ()));
+bool Application::clientMatch (const QNetworkDatagram& client_datagram, const Session& session)
+{
+    return client_datagram.senderAddress () == session.client_address && client_datagram.senderPort () == session.client_port;
 }
+void Application::sendReply (const QNetworkDatagram& client_datagram, const std::string& message)
+{
+    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), client_datagram.senderAddress (), client_datagram.senderPort ()));
+}
+void Application::sendReply (const Session& session, const std::string& message)
+{
+    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), session.client_address, session.client_port));
+}
+void Application::sendReplyError (const QNetworkDatagram& client_datagram, const std::string& error_message, RTS::ErrorCode error_code)
+{
+    RTS::Response response_oneof;
+    RTS::ErrorResponse* response = response_oneof.mutable_error ();
+    setError (response->mutable_error (), error_message, error_code);
 
+    std::string message;
+    response_oneof.SerializeToString (&message);
+    sendReply (client_datagram, message);
+}
+void Application::sendReplySessionExpired (const QNetworkDatagram& client_datagram, quint64 session_token)
+{
+    RTS::Response response_oneof;
+    RTS::SessionClosedResponse* response = response_oneof.mutable_session_closed ();
+    response->mutable_session_token ()->set_value (session_token);
+    setError (response->mutable_error (), "Session expired", RTS::SESSION_EXPIRED);
+
+    std::string message;
+    response_oneof.SerializeToString (&message);
+    sendReply (client_datagram, message);
+}
+void Application::sendReplyRoomList (const Session& session, quint64 session_token)
+{
+    RTS::Response response_oneof;
+    RTS::RoomListResponse* response = response_oneof.mutable_room_list ();
+    response->mutable_session_token ()->set_value (session_token);
+    google::protobuf::RepeatedPtrField<RTS::RoomInfo>* room_info_list = response->mutable_room_info_list ();
+    for (QMap<quint32, QString>::const_iterator room_it = rooms.constBegin (); room_it != rooms.constEnd (); ++room_it) {
+        RTS::RoomInfo* room_info = room_info_list->Add ();
+        room_info->set_id (room_it.key ());
+        room_info->set_name (room_it.value ().toStdString ());
+    }
+
+    std::string message;
+    response_oneof.SerializeToString (&message);
+    sendReply (session, message);
+}
 void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datagram)
-{       
-    //if datagram->data() is AuthorizationRequest
-    if (true) {
-        //datagram->data() -> AutorizationRequest
-        RTS::Request interaction;
-        
-        QByteArray data = datagram->data();
+{
+    QByteArray data = datagram->data();
 
-        interaction.ParseFromArray(data.data(), data.size());
-        
-        //qDebug() << interaction.message_case();
+    RTS::Request request_oneof;
+    if (!request_oneof.ParseFromArray (data.data(), data.size())) {
+        qDebug () << "Failed to parse message from client";
+        return;
+    }
 
-        switch(interaction.message_case()) {
-            case RTS::Request::MessageCase::kAuth:
-                {
-                qDebug() << "Authorization request";
-                const RTS::AuthorizationRequest &auth = interaction.auth();
-                //req = interaction.req();
-                //qDebug() << "datagram : " << datagram->data();
-                //qDebug() << "found login :" << req.login().data() << ", found password :" << req.password().data();
-                //qDebug() << "password required :" << users[req.login()].data();
-                QByteArray login, password;
-                login = QByteArray::fromStdString(auth.login());
-                password = QByteArray::fromStdString(auth.password());
-                qDebug() << auth.login().data() << auth.password().data();
-                if (users.find(login) != users.end() && users[login] == password) {
-                    qDebug() << "EQUAL";
-                 //  if (login_tokens.find(req.login()) == login_tokens.end()) {
-                        RTS::Response resp;
-                        resp.mutable_auth()->mutable_token()->set_token(next_token());
+    switch (request_oneof.message_case ()) {
+    case RTS::Request::MessageCase::kAuthorization: {
+        const RTS::AuthorizationRequest& request = request_oneof.authorization ();
+        QByteArray login = QByteArray::fromStdString (request.login ());
+        QByteArray password = QByteArray::fromStdString (request.password ());
+        QMap<QByteArray, QByteArray>::iterator password_it = user_passwords.find (login);
+        if (password_it == user_passwords.end () || password != *password_it) {
+            RTS::Response response_oneof;
+            RTS::AuthorizationResponse* response = response_oneof.mutable_authorization ();
+            response->mutable_error ()->set_message ("invalid login or password", RTS::LOGIN_FAILED);
 
-                        //info[token->token()] = {-1, req.login()};
-                        info[resp.mutable_auth()->mutable_token()->token()] = {-1};
-                        login_tokens[login] = resp.mutable_auth()->mutable_token()->token();
-
-                        std::string msg;
-                        resp.SerializeToString(&msg);
-                        //network_thread->sendDatagram (datagram->makeReply (msg.data()));
-                        sendReply(datagram, msg);
-                        qDebug() << "Response sent";
-                        //Log user in : AuthorizatonResponse
-                 /*   } else {
-                        qDebug() << "Already logged in";
-                        RTS::AuthorizationResponse resp = RTS::AuthorizationResponse();
-                        RTS::Error* error = new RTS::Error();
-                        std::string message = "user already logged in";
-                        error->set_message(message);
-                        error->set_code(1);
-                        resp.set_allocated_error(error);
-                        std::string msg;
-                        resp.SerializeToString(&msg);
-                        //qDebug() << req.password().size() << users["login"].size(); 
-                        //Do not log user in : AuthorizationResponse
-                        network_thread->sendDatagram (datagram->makeReply (msg.data()));
-                        qDebug() << "Response sent";
-                    }
-                 */
-                } else {
-                    qDebug() << "NOT EQUAL";
-                    qDebug() << login << password;
-                    RTS::Response resp;
-                    
-                    resp.mutable_auth()->mutable_error()->set_message("wrong login or password");
-                    resp.mutable_auth()->mutable_error()->set_code(1);
-                    
-                    std::string msg;
-                    resp.SerializeToString(&msg);
-                    //qDebug() << req.password().size() << users["login"].size(); 
-                    //Do not log user in : AuthorizationResponse
-                    sendReply(datagram, msg);
-                    qDebug() << "Response sent";
-                };
-                }
-                break;
-            case RTS::Request::MessageCase::kRoom:
-                {
-                qDebug() << "Room join request";
-                const RTS::EnterRoomRequest &room = interaction.room(); 
-                if (info[room.token().token()].current_room != -1) {
-                    qDebug() << "Already joined a room";
-                    RTS::Response resp;
-                    resp.mutable_room()->mutable_error()->set_message("Already joined a room");
-                    resp.mutable_room()->mutable_error()->set_code(1);
-                    std::string msg;
-                    resp.SerializeToString(&msg);
-                    //qDebug() << req.password().size() << users["login"].size(); 
-                    //Do not log user in : AuthorizationResponse
-                    sendReply(datagram, msg);
-                    qDebug() << "Response sent";
-                } else {
-                    qDebug() << "Join successfull";
-                    RTS::Response resp;
-                    resp.mutable_room()->mutable_token()->set_token(next_token());
-                
-                    qDebug() << resp.mutable_room()->mutable_token()->token();
-
-                    
-                    //info[token->token()] = {req.room()};
-                    std::string msg2;
-                    resp.SerializeToString(&msg2);
-                    
-                    qDebug() << resp.room().token().token();
-                    
-                    qDebug() << msg2.data();
-
-                    sendReply(datagram, msg2);
-                    qDebug() << "Response sent";
-                }
-                }
-                break;
+            std::string message;
+            response_oneof.SerializeToString (&message);
+            sendReply (*datagram, message);
+            break;
         }
 
+        QMap<QByteArray, quint64>::iterator old_session_token_it = login_session_tokens.find (login);
+        if (old_session_token_it != login_session_tokens.end ()) {
+            quint64 old_session_token = *old_session_token_it;
+            // TODO: Actual cleanup
+            sessions.remove (old_session_token);
+        }
+        quint64 session_token = nextSessionToken ();
+        sessions[session_token] = {
+            .client_address = datagram->senderAddress (),
+            .client_port = quint16 (datagram->senderPort ()),
+            .login = login,
+        };
+        login_session_tokens[login] = session_token;
 
-        
+        RTS::Response response_oneof;
+        RTS::AuthorizationResponse* response = response_oneof.mutable_authorization ();
+        response->mutable_session_token ()->set_value (session_token);
+
+        std::string message;
+        response_oneof.SerializeToString (&message);
+        sendReply (*datagram, message);
+    } break;
+    case RTS::Request::MessageCase::kQueryRoomList: {
+        const RTS::QueryRoomListRequest& request = request_oneof.query_room_list ();
+        quint64 session_token;
+        Session* session = validateSessionRequest (*datagram, request, &session_token);
+        if (!session)
+            break;
+        session->query_room_list_requested = true;
+
+        sendReplyRoomList (*session, session_token);
+    } break;
+    case RTS::Request::MessageCase::kStopQueryRoomList: {
+        const RTS::StopQueryRoomListRequest& request = request_oneof.stop_query_room_list ();
+        quint64 session_token;
+        Session* session = validateSessionRequest (*datagram, request, &session_token);
+        if (!session)
+            break;
+        session->query_room_list_requested = false;
+    } break;
+    case RTS::Request::MessageCase::kJoinRoom: {
+        const RTS::JoinRoomRequest& request = request_oneof.join_room ();
+        quint64 session_token;
+        Session* session = validateSessionRequest (*datagram, request, &session_token);
+        if (!session)
+            break;
+        quint64 request_token;
+        if (!validateRequestToken (*datagram, request, &request_token))
+            break;
+        if (session->current_room.has_value ()) {
+            RTS::Response response_oneof;
+            RTS::JoinRoomResponse* response = response_oneof.mutable_join_room ();
+            setError (response->mutable_error (), "Already joined room", RTS::ALREADY_JOINED_ROOM);
+
+            std::string message;
+            response_oneof.SerializeToString (&message);
+            sendReply (*session, message);
+            break;
+        }
+
+        // TODO: Actually verify join room
+        session->current_room = request.room_id ();
+
+        RTS::Response response_oneof;
+        RTS::JoinRoomResponse* response = response_oneof.mutable_join_room ();
+        response->mutable_request_token ()->set_value (request_token);
+        response->mutable_success ();
+
+        std::string message;
+        response_oneof.SerializeToString (&message);
+
+        sendReply (*session, message);
+    } break;
+    case RTS::Request::MessageCase::kCreateRoom: {
+        const RTS::CreateRoomRequest& request = request_oneof.create_room ();
+        quint64 session_token;
+        Session* session = validateSessionRequest (*datagram, request, &session_token);
+        if (!session)
+            break;
+        quint64 request_token;
+        if (!validateRequestToken (*datagram, request, &request_token))
+            break;
+        quint32 new_room_id = 0;
+        if (!rooms.empty ()) {
+            QVector<quint32> sorted_room_ids;
+            for (QMap<quint32, QString>::const_iterator room_it = rooms.constBegin (); room_it != rooms.constEnd (); ++room_it)
+                sorted_room_ids.append (room_it.key ());
+            std::sort (sorted_room_ids.begin (), sorted_room_ids.end ());
+            for (quint32 room_id: sorted_room_ids) {
+                if (new_room_id < room_id)
+                    break;
+                new_room_id = room_id + 1;
+            }
+        }
+        rooms[new_room_id] = QString::fromStdString (request.name ());
+
+        RTS::Response response_oneof;
+        RTS::CreateRoomResponse* response = response_oneof.mutable_create_room ();
+        response->mutable_request_token ()->set_value (request_token);
+        response->set_room_id (new_room_id);
+
+        std::string message;
+        response_oneof.SerializeToString (&message);
+
+        sendReply (*session, message);
+
+        for (QMap<quint64, Session>::iterator it = sessions.begin (); it != sessions.end (); ++it)
+            sendReplyRoomList (it.value (), it.key ());
+    } break;
+    case RTS::Request::MessageCase::kDeleteRoom: {
+        const RTS::DeleteRoomRequest& request = request_oneof.delete_room ();
+        quint64 session_token;
+        Session* session = validateSessionRequest (*datagram, request, &session_token);
+        if (!session)
+            break;
+        quint64 request_token;
+        if (!validateRequestToken (*datagram, request, &request_token))
+            break;
+        QMap<quint32, QString>::iterator room_it = rooms.find (request.room_id ());
+        if (room_it == rooms.end ()) {
+            RTS::Response response_oneof;
+            RTS::DeleteRoomResponse* response = response_oneof.mutable_delete_room ();
+            setError (response->mutable_error (), "Room not found", RTS::ROOM_NOT_FOUND);
+
+            std::string message;
+            response_oneof.SerializeToString (&message);
+
+            sendReply (*session, message);
+            break;
+        }
+
+        rooms.erase (room_it);
+
+        RTS::Response response_oneof;
+        RTS::DeleteRoomResponse* response = response_oneof.mutable_delete_room ();
+        response->mutable_request_token ()->set_value (request_token);
+        response->mutable_success ();
+
+        std::string message;
+        response_oneof.SerializeToString (&message);
+
+        sendReply (*session, message);
+    } break;
     }
-    //network_thread->sendDatagram (datagram->makeReply (QByteArray ("RE: ") + datagram->data ()));
+}
+void Application::setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code)
+{
+    error->set_message (error_message);
+    error->set_code (error_code);
+}
+template <class Request>
+Session* Application::validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr)
+{
+    if (!request.has_session_token ()) {
+        sendReplyError (client_datagram, "Missing 'session_token'", RTS::MALFORMED_MESSAGE);
+        return nullptr;
+    }
+    quint64 session_token = request.session_token ().value ();
+    QMap<quint64, Session>::iterator session_it = sessions.find (session_token);
+    if (session_it == sessions.end ()) {
+        sendReplySessionExpired (client_datagram, session_token);
+        return nullptr;
+    }
+    Session* session = &*session_it;
+    if (!clientMatch (client_datagram, *session)) {
+        sendReplyError (client_datagram, "Client address changed since authorization", RTS::MISMATCHED_SENDER);
+        return nullptr;
+    }
+    *session_token_ptr = session_token;
+    return session;
+}
+template <class Request>
+bool Application::validateRequestToken (const QNetworkDatagram& client_datagram, const Request& request, quint64* request_token_ptr)
+{
+    if (!request.has_request_token ()) {
+        sendReplyError (client_datagram, "Missing 'request_token'", RTS::MALFORMED_MESSAGE);
+        return false;
+    }
+    *request_token_ptr = request.request_token ().value ();
+    return true;
 }

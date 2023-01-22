@@ -1,6 +1,6 @@
 QT += core network
 
-CONFIG += c++11 debug
+CONFIG += c++17 debug
 
 
 SOURCES += \
@@ -14,6 +14,7 @@ HEADERS += \
     network_thread.h \
     network_manager.h
 
+INCLUDEPATH += .proto_stubs
 LIBS += -lprotobuf
 
 MOC_DIR = .moc

@@ -1,52 +1,136 @@
 syntax = "proto3";
 
+import "google/protobuf/empty.proto";
+
 package RTS;
 
-message Token {
-    uint64 token = 1;
+message RequestToken {
+    uint64 value = 1;
+}
+
+message SessionToken {
+    uint64 value = 1;
+}
+
+enum ErrorCode {
+    UNSPECIFIED_ERROR = 0;
+    MALFORMED_MESSAGE = 1;
+    MISMATCHED_SENDER = 2;
+    LOGIN_FAILED = 3;
+    MISSING_SESSION_TOKEN = 4;
+    SESSION_EXPIRED = 5;
+    ALREADY_JOINED_ROOM = 6;
+    ROOM_NOT_FOUND = 7;
 }
 
 message Error {
-    bytes message = 2;
     int32 code = 1;
+    bytes message = 2;
+}
+
+message RoomInfo {
+    uint32 id = 1;
+    bytes name = 2;
 }
 
 message AuthorizationRequest {
-    bytes login = 1;
-    bytes password = 2;
+    RequestToken request_token = 1;
+    bytes login = 2;
+    bytes password = 3;
 }
 
 message AuthorizationResponse {
     oneof response {
         Error error = 1;
-        Token token = 2;
+        SessionToken session_token = 2;
     }
 }
 
-message EnterRoomRequest {
-    Token token = 1;
-    int32 room = 2;
+message QueryRoomListRequest {
+    SessionToken session_token = 1;
 }
 
-message EnterRoomResponse {
+message StopQueryRoomListRequest {
+    SessionToken session_token = 1;
+}
+
+message JoinRoomRequest {
+    SessionToken session_token = 1;
+    RequestToken request_token = 2;
+    uint32 room_id = 3;
+}
+
+message CreateRoomRequest {
+    SessionToken session_token = 1;
+    RequestToken request_token = 2;
+    bytes name = 3;
+}
+
+message DeleteRoomRequest {
+    SessionToken session_token = 1;
+    RequestToken request_token = 2;
+    uint32 room_id = 3;
+}
+
+message RoomListResponse {
+    SessionToken session_token = 1;
+    repeated RoomInfo room_info_list = 2;
+}
+
+message JoinRoomResponse {
+    RequestToken request_token = 1;
     oneof response {
-        Error error = 1;
-        Token token = 2;
+        Error error = 2;
+        google.protobuf.Empty success = 3;
+    }
+}
+
+message ErrorResponse {
+    SessionToken session_token = 1;
+    RequestToken request_token = 2;
+    Error error = 3;
+}
+
+message SessionClosedResponse {
+    SessionToken session_token = 1;
+    Error error = 2;
+}
+
+message CreateRoomResponse {
+    RequestToken request_token = 1;
+    oneof status {
+        uint32 room_id = 2;
+        Error error = 3;
+    }
+}
+
+message DeleteRoomResponse {
+    RequestToken request_token = 1;
+    oneof status {
+        google.protobuf.Empty success = 2;
+        Error error = 3;
     }
 }
 
 message Request {
     oneof message {
-        AuthorizationRequest auth = 1;
-        EnterRoomRequest room = 2; 
+        AuthorizationRequest authorization = 2;
+        QueryRoomListRequest query_room_list = 4;
+        StopQueryRoomListRequest stop_query_room_list = 5;
+        JoinRoomRequest join_room = 7;
+        CreateRoomRequest create_room = 8;
+        DeleteRoomRequest delete_room = 9;
     }
 }
 
 message Response {
     oneof message {
-        AuthorizationResponse auth = 1;
-        EnterRoomResponse room = 2;
+        ErrorResponse error = 1;
+        AuthorizationResponse authorization = 2;
+        SessionClosedResponse session_closed = 3;
+        RoomListResponse room_list = 6;
+        JoinRoomResponse join_room = 7;
+        CreateRoomResponse create_room = 8;
+        DeleteRoomResponse delete_room = 9;
     }
 }
-
-

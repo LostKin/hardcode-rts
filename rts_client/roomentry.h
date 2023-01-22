@@ -6,6 +6,7 @@
 
 struct RoomEntry
 {
+    RoomEntry ();
     RoomEntry (uint32_t id, const QString& name);
 
     uint32_t id;

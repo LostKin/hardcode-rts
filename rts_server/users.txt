@@ -1,1 +1,1 @@
-login:a
+john:secret

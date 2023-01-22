@@ -12,9 +12,14 @@ class AuthorizationWidget: public QWidget
 public:
     AuthorizationWidget (QWidget* parent = nullptr);
     ~AuthorizationWidget ();
+    void start ();
 
 signals:
+    void windowsCloseRequested ();
     void loginRequested (const QString& host, quint16 port, const QString& login, const QString& password);
+
+protected:
+    void closeEvent (QCloseEvent*) override;
 
 private slots:
     void loginClicked ();

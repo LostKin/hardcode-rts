@@ -1,5 +1,7 @@
 #pragma once
 
+#include ".proto_stubs/session_level.pb.h"
+
 #include <QCoreApplication>
 #include <QSharedPointer>
 #include <QNetworkDatagram>
@@ -7,9 +9,12 @@
 #include <QVector>
 #include <QMap>
 
-struct SessionInfo {
-    int32_t current_room;
-    //std::string login;
+struct Session {
+    QHostAddress client_address;
+    quint16 client_port;
+    std::optional<quint32> current_room = {};
+    QByteArray login;
+    bool query_room_list_requested = false;
 };
 
 
@@ -19,8 +24,8 @@ class NetworkThread;
 
 class Room {
 public:
-    uint32_t id;
-    NetworkThread* network_thread;  
+    quint32 id;
+    NetworkThread* network_thread;
 
     Room();
 };
@@ -35,18 +40,31 @@ public:
 
     bool init ();
 
+private:
+    void setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code);
+
 private slots:
     void sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datagram);
 
 private:
-    NetworkThread* network_thread;
-    QMap<QByteArray, QByteArray> users;
-    uint64_t token;
-    uint64_t MOD;
-    QMap<uint64_t, SessionInfo> info;
-    QMap<QByteArray, uint64_t> login_tokens;
+    QSharedPointer<NetworkThread> network_thread;
+    QMap<QByteArray, QByteArray> user_passwords;
+    quint64 next_session_token;
+    QMap<quint64, Session> sessions;
+    QMap<QByteArray, quint64> login_session_tokens;
     Room room;
+    QMap<quint32, QString> rooms;
 
-    uint64_t next_token();
-    void sendReply(QSharedPointer<QNetworkDatagram> datagram, const std::string& msg);
+    quint64 nextSessionToken ();
+    bool clientMatch (const QNetworkDatagram& datagram, const Session& session);
+    void sendReply (const QNetworkDatagram& client_datagram, const std::string& msg);
+    void sendReply (const Session& session, const std::string& msg);
+    void sendReplyError (const QNetworkDatagram& client_datagram, const std::string& error_message, RTS::ErrorCode error_code);
+    void sendReplySessionExpired (const QNetworkDatagram& client_datagram, quint64 session_token);
+    void sendReplyRoomList (const Session& session, quint64 session_token);
+    template <class Request>
+    Session* validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr);
+    template <class Request>
+    bool validateRequestToken (const QNetworkDatagram& client_datagram, const Request& request, quint64* request_token_ptr);
 };
+

@@ -1,13 +1,14 @@
 #include "roomwidget.h"
 #include "authorizationwidget.h"
 #include "lobbywidget.h"
-
-#include <QApplication>
+#include "application.h"
 
 
 int main (int argc, char* argv[])
 {
-    QApplication a (argc, argv);
+    Application a (argc, argv);
+
+    a.start ();
 
 #if 0
     AuthorizationWidget w1;
@@ -63,7 +64,7 @@ int main (int argc, char* argv[])
     room.showFullScreen ();
 #endif
 
-#if 1
+#if 0
     RoomWidget room;
     room.grabMouse ();
     room.grabKeyboard ();

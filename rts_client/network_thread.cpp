@@ -4,7 +4,6 @@
 
 #include <QThread>
 #include <QUdpSocket>
-#include <QDebug>
 
 
 NetworkThread::NetworkThread(const QString& host, quint16 port, QObject* parent)
