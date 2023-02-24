@@ -2,6 +2,7 @@
 
 #include "network_thread.h"
 #include "roomentry.h"
+#include "session_level.pb.h"
 
 #include <QApplication>
 #include <QSharedPointer>
@@ -19,6 +20,9 @@ public:
 
 signals:
     void roomListUpdated (const QVector<RoomEntry>& room_list);
+    void queryReadiness ();
+    void startCountdown();
+    void startMatch ();
 
 private:
     void showLobby ();
@@ -30,8 +34,14 @@ private slots:
     void createRoomCallback (const QString& name);
     void joinRoomCallback (quint32 name);
     void sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datagram);
+    void joinRedTeamCallback ();
+    void joinBlueTeamCallback ();
+    void joinSpectatorCallback ();
+    void readinessCallback ();
+    void matchStartCallback ();
 
 private:
+    void joinTeam(RTS::Team id);
     QSharedPointer<QWidget> current_window;
     QSharedPointer<NetworkThread> network_thread;
     QHostAddress host_address;

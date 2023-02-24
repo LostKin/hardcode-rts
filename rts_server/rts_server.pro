@@ -10,12 +10,16 @@ SOURCES += \
     main.cpp \
     application.cpp \
     network_thread.cpp \
-    network_manager.cpp
+    network_manager.cpp \
+    room_thread.cpp \
+    room.cpp \
 
 HEADERS += \
     application.h \
     network_thread.h \
-    network_manager.h
+    network_manager.h \
+    room_thread.h \
+    room.h \
 
 INCLUDEPATH += .proto_stubs
 LIBS += -lprotobuf

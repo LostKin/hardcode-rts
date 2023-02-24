@@ -8,11 +8,13 @@
 #include <QByteArray>
 #include <QVector>
 #include <QMap>
+#include <QSharedPointer>
 
 struct Session {
     QHostAddress client_address;
     quint16 client_port;
     std::optional<quint32> current_room = {};
+    std::optional<RTS::Team> current_team = {};
     QByteArray login;
     bool query_room_list_requested = false;
 };
@@ -21,14 +23,15 @@ struct Session {
 
 
 class NetworkThread;
+class RoomThread;
 
-class Room {
+/*class Room {
 public:
     quint32 id;
     NetworkThread* network_thread;
 
     Room();
-};
+};*/
 
 class Application: public QCoreApplication
 {
@@ -45,14 +48,16 @@ private:
 
 private slots:
     void sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datagram);
+    void receiveResponseHandler (RTS::Response response_oneof, QSharedPointer<Session> session);
 
 private:
     QSharedPointer<NetworkThread> network_thread;
+    QMap<quint32, QSharedPointer<RoomThread> > room_list;
     QMap<QByteArray, QByteArray> user_passwords;
     quint64 next_session_token;
-    QMap<quint64, Session> sessions;
+    QMap<quint64, QSharedPointer<Session> > sessions;
     QMap<QByteArray, quint64> login_session_tokens;
-    Room room;
+    //Room room;
     QMap<quint32, QString> rooms;
 
     quint64 nextSessionToken ();
@@ -63,7 +68,7 @@ private:
     void sendReplySessionExpired (const QNetworkDatagram& client_datagram, quint64 session_token);
     void sendReplyRoomList (const Session& session, quint64 session_token);
     template <class Request>
-    Session* validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr);
+    QSharedPointer<Session> validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr);
     template <class Request>
     bool validateRequestToken (const QNetworkDatagram& client_datagram, const Request& request, quint64* request_token_ptr);
 };

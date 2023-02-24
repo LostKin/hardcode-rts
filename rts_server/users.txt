@@ -1,1 +1,2 @@
 john:secret
+bob:secret2

@@ -3,7 +3,7 @@
 #include "authorizationprogresswidget.h"
 #include "lobbywidget.h"
 #include "roomwidget.h"
-#include "session_level.pb.h"
+
 
 #include <QDebug>
 
@@ -26,6 +26,44 @@ void Application::start ()
     network_thread->start ();
     authorizationPromptCallback ();
 }
+
+void Application::joinTeam (RTS::Team team) {
+    RTS::Request request_oneof;
+    RTS::JoinTeamRequest* request = request_oneof.mutable_join_team ();
+    request->mutable_session_token ()->set_value (session_token.value ());
+    request->mutable_request_token ()->set_value (request_token++);
+    request->set_team(team);
+    std::string message;
+    request_oneof.SerializeToString (&message);
+    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+}
+
+void Application::readinessCallback () {
+    RTS::Request request_oneof;
+    RTS::ReadyRequest* request = request_oneof.mutable_ready ();
+    request->mutable_session_token ()->set_value (session_token.value ());
+    request->mutable_request_token ()->set_value (request_token++);
+    std::string message;
+    request_oneof.SerializeToString (&message);
+    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+}
+
+void Application::matchStartCallback () {
+    //
+}
+
+void Application::joinRedTeamCallback () {
+    //qDebug() << "callback!";
+    joinTeam (RTS::RED);
+}
+
+void Application::joinBlueTeamCallback () {
+    joinTeam (RTS::BLUE);
+}
+void Application::joinSpectatorCallback () {
+    joinTeam (RTS::SPECTATOR);
+}
+
 void Application::quitCallback ()
 {
     exit (0);
@@ -133,7 +171,14 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         }
     } break;
     case RTS::Response::MessageCase::kJoinRoom: {
-        RoomWidget* room_widget = new RoomWidget;
+        RoomWidget* room_widget = new RoomWidget; // connect roomwidget signals ...
+        connect(room_widget, &RoomWidget::joinRedTeamRequested, this, &Application::joinRedTeamCallback);
+        connect(room_widget, &RoomWidget::joinBlueTeamRequested, this, &Application::joinBlueTeamCallback);
+        connect(room_widget, &RoomWidget::spectateRequested, this, &Application::joinSpectatorCallback);
+        connect(this, &Application::queryReadiness, room_widget, &RoomWidget::readinessHandler);
+        connect(room_widget, &RoomWidget::readinessRequested, this, &Application::readinessCallback);
+        connect(this, &Application::startMatch, room_widget, &RoomWidget::startMatchHandler);
+        connect(this, &Application::startCountdown, room_widget, &RoomWidget::startCountDownHandler);
         room_widget->grabMouse ();
         room_widget->grabKeyboard ();
         room_widget->showFullScreen ();
@@ -152,6 +197,17 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
             room_list.append (RoomEntry (room_info.id (), QString::fromStdString (room_info.name ())));
         }
         emit roomListUpdated (room_list);
+    } break;
+    case RTS::Response::MessageCase::kJoinTeam: {
+        // lets manage some shit
+        emit queryReadiness();
+    } break;
+    case RTS::Response::MessageCase::kReady: {
+        emit startCountdown ();
+    } break;
+    case RTS::Response::MessageCase::kMatchStart: {
+        qDebug() << "Ready respose caught";
+        emit startMatch ();
     } break;
     default: {
         qDebug () << "Response -> UNKNOWN:" << response_oneof.message_case ();

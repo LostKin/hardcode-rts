@@ -1,5 +1,6 @@
 #include "application.h"
 #include "network_thread.h"
+#include "room_thread.h"
 #include <random>
 #include <QFile>
 
@@ -9,16 +10,23 @@
     login = _login;
 }*/
 
-Room::Room() {}
+//Room::Room() {}
 
 Application::Application (int& argc, char** argv)
     : QCoreApplication (argc, argv)
 {
     next_session_token = std::mt19937_64 (time (nullptr)) () & 0x7fffffffffffffffULL;
     network_thread.reset (new NetworkThread ("127.0.0.1", 1331, this));
+    //room_thread.reset(new RoomThread(this));
     connect (&*network_thread, &NetworkThread::datagramReceived, this, &Application::sessionDatagramHandler);
-    room.network_thread = new NetworkThread ("127.0.0.1", 1332, this);
-    room.id = 0;
+     //room.network_thread = new NetworkThread ("127.0.0.1", 1332, this);
+    //room.id = 0;
+}
+
+void Application::receiveResponseHandler(RTS::Response response_oneof, QSharedPointer<Session> session) {
+    std::string message;
+    response_oneof.SerializeToString (&message);
+    sendReply (*session, message);
 }
 
 quint64 Application::nextSessionToken() {
@@ -148,11 +156,14 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
             sessions.remove (old_session_token);
         }
         quint64 session_token = nextSessionToken ();
-        sessions[session_token] = {
+        Session session = {
             .client_address = datagram->senderAddress (),
             .client_port = quint16 (datagram->senderPort ()),
             .login = login,
         };
+        QSharedPointer<Session> session_ptr = QSharedPointer<Session>(new Session());
+        *session_ptr = session;
+        sessions[session_token] = session_ptr;
         login_session_tokens[login] = session_token;
 
         RTS::Response response_oneof;
@@ -166,7 +177,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     case RTS::Request::MessageCase::kQueryRoomList: {
         const RTS::QueryRoomListRequest& request = request_oneof.query_room_list ();
         quint64 session_token;
-        Session* session = validateSessionRequest (*datagram, request, &session_token);
+       QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
         if (!session)
             break;
         session->query_room_list_requested = true;
@@ -176,7 +187,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     case RTS::Request::MessageCase::kStopQueryRoomList: {
         const RTS::StopQueryRoomListRequest& request = request_oneof.stop_query_room_list ();
         quint64 session_token;
-        Session* session = validateSessionRequest (*datagram, request, &session_token);
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
         if (!session)
             break;
         session->query_room_list_requested = false;
@@ -184,7 +195,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     case RTS::Request::MessageCase::kJoinRoom: {
         const RTS::JoinRoomRequest& request = request_oneof.join_room ();
         quint64 session_token;
-        Session* session = validateSessionRequest (*datagram, request, &session_token);
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
         if (!session)
             break;
         quint64 request_token;
@@ -217,7 +228,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     case RTS::Request::MessageCase::kCreateRoom: {
         const RTS::CreateRoomRequest& request = request_oneof.create_room ();
         quint64 session_token;
-        Session* session = validateSessionRequest (*datagram, request, &session_token);
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
         if (!session)
             break;
         quint64 request_token;
@@ -235,6 +246,9 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
                 new_room_id = room_id + 1;
             }
         }
+        room_list[new_room_id].reset(new RoomThread(this));
+        connect (&*room_list[new_room_id], &RoomThread::receiveRequest, &*room_list[new_room_id], &RoomThread::receiveRequestHandler);
+        connect (&*room_list[new_room_id], &RoomThread::sendResponse, this, &Application::receiveResponseHandler);
         rooms[new_room_id] = QString::fromStdString (request.name ());
 
         RTS::Response response_oneof;
@@ -247,14 +261,14 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
 
         sendReply (*session, message);
 
-        for (QMap<quint64, Session>::iterator it = sessions.begin (); it != sessions.end (); ++it)
-            sendReplyRoomList (it.value (), it.key ());
+        for (QMap<quint64, QSharedPointer<Session> >::iterator it = sessions.begin (); it != sessions.end (); ++it)
+            sendReplyRoomList (*(it.value ()), it.key ());
     } break;
     case RTS::Request::MessageCase::kDeleteRoom: {
         const RTS::DeleteRoomRequest& request = request_oneof.delete_room ();
         quint64 session_token;
-        Session* session = validateSessionRequest (*datagram, request, &session_token);
-        if (!session)
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        if (session.isNull())
             break;
         quint64 request_token;
         if (!validateRequestToken (*datagram, request, &request_token))
@@ -284,6 +298,33 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
 
         sendReply (*session, message);
     } break;
+    case RTS::Request::MessageCase::kJoinTeam: {
+        //qDebug() << "JOIN TEAM";
+        const RTS::JoinTeamRequest& request = request_oneof.join_team ();
+        quint64 session_token;
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        /*
+        if (!session)
+            break;
+        quint64 request_token;
+        if (!validateRequestToken (*datagram, request, &request_token))
+            break;
+        */
+        emit room_list[session->current_room.value()]->receiveRequest(request_oneof, session);
+    } break;
+    case RTS::Request::MessageCase::kReady: {
+        const RTS::ReadyRequest& request = request_oneof.ready ();
+        quint64 session_token;
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        /*
+        if (!session)
+            break;
+        quint64 request_token;
+        if (!validateRequestToken (*datagram, request, &request_token))
+            break;
+        */
+        emit room_list[session->current_room.value()]->receiveRequest(request_oneof, session);
+    } break;
     }
 }
 void Application::setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code)
@@ -292,19 +333,19 @@ void Application::setError (RTS::Error* error, const std::string& error_message,
     error->set_code (error_code);
 }
 template <class Request>
-Session* Application::validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr)
+QSharedPointer<Session> Application::validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr)
 {
     if (!request.has_session_token ()) {
         sendReplyError (client_datagram, "Missing 'session_token'", RTS::MALFORMED_MESSAGE);
         return nullptr;
     }
     quint64 session_token = request.session_token ().value ();
-    QMap<quint64, Session>::iterator session_it = sessions.find (session_token);
+    QMap<quint64, QSharedPointer<Session> >::iterator session_it = sessions.find (session_token);
     if (session_it == sessions.end ()) {
         sendReplySessionExpired (client_datagram, session_token);
         return nullptr;
     }
-    Session* session = &*session_it;
+    QSharedPointer<Session> session = *session_it;
     if (!clientMatch (client_datagram, *session)) {
         sendReplyError (client_datagram, "Client address changed since authorization", RTS::MISMATCHED_SENDER);
         return nullptr;

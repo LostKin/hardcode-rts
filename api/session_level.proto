@@ -21,6 +21,14 @@ enum ErrorCode {
     SESSION_EXPIRED = 5;
     ALREADY_JOINED_ROOM = 6;
     ROOM_NOT_FOUND = 7;
+    TEAM_ALREADY_TAKEN = 8;
+    ALREADY_JOINED_TEAM = 9;
+}
+
+enum Team {
+    SPECTATOR = 0;
+    RED = 1;
+    BLUE = 2;
 }
 
 message Error {
@@ -72,6 +80,17 @@ message DeleteRoomRequest {
     uint32 room_id = 3;
 }
 
+message JoinTeamRequest {
+    RequestToken request_token = 1;
+    SessionToken session_token = 2;
+    Team team = 3;
+}
+
+message ReadyRequest {
+    RequestToken request_token = 1;
+    SessionToken session_token = 2;
+}
+
 message RoomListResponse {
     SessionToken session_token = 1;
     repeated RoomInfo room_info_list = 2;
@@ -112,6 +131,31 @@ message DeleteRoomResponse {
     }
 }
 
+message JoinTeamResponse {
+    RequestToken request_token = 1;
+    oneof status {
+        google.protobuf.Empty success = 2;
+        Error error = 3;
+    }
+}
+
+message MatchStartResponse {
+    RequestToken request_token = 1;
+    oneof status {
+        google.protobuf.Empty success = 2;
+        Error error = 3;
+    }
+}
+
+message ReadyResponse {
+    RequestToken request_token = 1;
+    oneof status {
+        google.protobuf.Empty success = 2;
+        Error error = 3;
+    }
+}
+
+
 message Request {
     oneof message {
         AuthorizationRequest authorization = 2;
@@ -120,6 +164,8 @@ message Request {
         JoinRoomRequest join_room = 7;
         CreateRoomRequest create_room = 8;
         DeleteRoomRequest delete_room = 9;
+        JoinTeamRequest join_team = 10;
+        ReadyRequest ready = 11;
     }
 }
 
@@ -132,5 +178,8 @@ message Response {
         JoinRoomResponse join_room = 7;
         CreateRoomResponse create_room = 8;
         DeleteRoomResponse delete_room = 9;
+        JoinTeamResponse join_team = 10;
+        ReadyResponse ready = 11;
+        MatchStartResponse match_start = 12;
     }
 }

@@ -22,6 +22,7 @@ void NetworkThread::sendDatagram (const QNetworkDatagram& datagram)
 }
 void NetworkThread::run ()
 {
+    //qDebug() << "NetwrokThread running";
     NetworkManager network_manager (host, port);
     if (!network_manager.start (error_message)) {
         return_code = 1;

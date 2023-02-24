@@ -24,11 +24,47 @@ RoomWidget::RoomWidget (QWidget* parent)
     setMouseTracking (true);
     setCursor (QCursor (Qt::BlankCursor));
     connect (&match_timer, SIGNAL (timeout ()), this, SLOT (tick ()));
+    connect(this, &RoomWidget::joinRedTeamRequested, this, &RoomWidget::joinRedTeamRequestedHandler);
+    connect(this, &RoomWidget::joinBlueTeamRequested, this, &RoomWidget::joinBlueTeamRequestedHandler);
+    connect(this, &RoomWidget::spectateRequested, this, &RoomWidget::spectateRequestedHandler);
+    connect(this, &RoomWidget::cancelJoinTeamRequested, this, &RoomWidget::cancelJoinTeamRequestedHandler);
+    connect(this, &RoomWidget::quitRequested, this, &RoomWidget::quitRequestedHandler);
+    connect(this, &RoomWidget::readinessRequested, this, &RoomWidget::readinessRequestedHandler);
 }
 RoomWidget::~RoomWidget ()
 {
 }
 
+void RoomWidget::joinRedTeamRequestedHandler () {
+    awaitTeamSelection (RoomWidget::Team::Red);
+}
+void RoomWidget::joinBlueTeamRequestedHandler () {
+    awaitTeamSelection (RoomWidget::Team::Blue);
+}
+void RoomWidget::spectateRequestedHandler () {
+    awaitTeamSelection (RoomWidget::Team::Spectator);
+}
+void RoomWidget::cancelJoinTeamRequestedHandler () {
+    state = State::TeamSelection;
+}
+void RoomWidget::readinessRequestedHandler () {
+    ready (this->team);
+}
+void RoomWidget::readinessHandler () {
+    queryReadiness (this->team);
+}
+void RoomWidget::quitRequestedHandler () {
+    return;
+}
+
+void RoomWidget::startCountDownHandler () {
+    awaitMatch (this->team);
+}
+
+void RoomWidget::startMatchHandler() {
+    qDebug () << "Start match handler started";
+    startMatch (this->team);
+}
 void RoomWidget::awaitTeamSelection (Team team)
 {
     this->team = team;

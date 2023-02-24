@@ -46,6 +46,19 @@ signals:
     void readinessRequested ();
     void quitRequested ();
 
+private slots:
+    void joinRedTeamRequestedHandler ();
+    void joinBlueTeamRequestedHandler ();
+    void spectateRequestedHandler ();
+    void readinessRequestedHandler ();
+    void cancelJoinTeamRequestedHandler ();
+    void quitRequestedHandler ();
+
+public slots:
+    void readinessHandler ();
+    void startMatchHandler();
+    void startCountDownHandler ();
+
 protected:
     virtual void initResources () override;
     virtual void updateSize (int w, int h) override;
