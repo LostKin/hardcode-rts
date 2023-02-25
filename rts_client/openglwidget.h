@@ -31,7 +31,7 @@ protected:
 
 protected:
     QSize pixelsSize ();
-    QSharedPointer<QOpenGLTexture> loadTexture2D (const QString& path);
+    QSharedPointer<QOpenGLTexture> loadTexture2D (const QString& path, bool autogenerate_margin = false);
     QSharedPointer<QOpenGLTexture> loadTexture2DRectangle (const QString& path);
     void drawColored (GLenum mode, GLsizei vertex_count, const GLfloat* vertex_positions, const GLfloat* colors);
     void drawColored (GLenum mode, const GLfloat* vertex_positions, const GLfloat* colors, GLsizei index_count, const GLuint* indices);
@@ -41,6 +41,9 @@ protected:
     void drawTextured (GLenum mode, const GLfloat* vertex_positions, const GLfloat* texture_coords, GLsizei index_count, const GLuint* indices, QOpenGLTexture* texture);
     void drawRectangle (int x, int y, QOpenGLTexture* texture);
     void drawRectangle (int x, int y, int w, int h, QOpenGLTexture* texture);
+    void drawRectangle (int x, int y, int w, int h, const QColor& color);
+    void fillRectangle (int x, int y, int w, int h, const QColor& color);
+    void drawCircle (qreal x, qreal y, qreal radius, const QColor& color);
 
 private:
     struct ColoredProgram

@@ -10,7 +10,6 @@
         <file>gpu_programs/textured/main.vert</file>
         <file>gpu_programs/textured/main.frag</file>
 
-        <file>images/hud.png</file>
         <file>images/grass.png</file>
         <file>images/ground.png</file>
 
@@ -45,10 +44,35 @@
 	<file>images/units/seal/red-selected.png</file>
 	<file>images/units/seal/blue-plain.png</file>
 	<file>images/units/seal/blue-selected.png</file>
+	<file>images/units/seal/shooting1.png</file>
+	<file>images/units/seal/shooting2.png</file>
+	<file>images/units/seal/walking2.png</file>
+	<file>images/units/seal/walking1.png</file>
+	<file>images/units/seal/standing.png</file>
+	<file>images/units/seal/selection.png</file>
 
 	<file>images/units/crusader/red-plain.png</file>
 	<file>images/units/crusader/red-selected.png</file>
 	<file>images/units/crusader/blue-plain.png</file>
 	<file>images/units/crusader/blue-selected.png</file>
+
+	<file>fonts/AnkaCoder-bi.ttf</file>
+	<file>fonts/AnkaCoder-b.ttf</file>
+	<file>fonts/AnkaCoder-i.ttf</file>
+	<file>fonts/AnkaCoder-r.ttf</file>
+
+	<file>fonts/OpenSans-Italic.ttf</file>
+	<file>fonts/OpenSans-Regular.ttf</file>
+	<file>fonts/OpenSans-SemiboldItalic.ttf</file>
+	<file>fonts/OpenSans-Semibold.ttf</file>
+	<file>fonts/OpenSans.LICENSE</file>
+
+	<file>fonts/NotCourierSans-Bold.otf</file>
+	<file>fonts/NotCourierSans.otf</file>
+	<file>fonts/NotCourierSans.COPYING</file>
+	<file>fonts/NotCourierSans.GPL-2</file>
+
+	<file>audio/shot.wav</file>
+	<file>audio/shot2.wav</file>
     </qresource>
 </RCC>

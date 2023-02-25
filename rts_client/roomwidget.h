@@ -2,10 +2,11 @@
 
 #include "openglwidget.h"
 
+#include "matchstate.h"
+
 #include <QElapsedTimer>
 #include <QTimer>
 
-class MatchState;
 class Unit;
 
 class RoomWidget: public OpenGLWidget
@@ -13,12 +14,14 @@ class RoomWidget: public OpenGLWidget
     Q_OBJECT
 
 public:
-    enum class Team {
-        Red,
-        Blue,
-        Spectator,
-    };
     struct UnitTextureSet {
+        struct {
+            QSharedPointer<QOpenGLTexture> standing;
+            QSharedPointer<QOpenGLTexture> walking1;
+            QSharedPointer<QOpenGLTexture> walking2;
+            QSharedPointer<QOpenGLTexture> shooting1;
+            QSharedPointer<QOpenGLTexture> shooting2;
+        } basic;
         struct {
             QSharedPointer<QOpenGLTexture> plain;
             QSharedPointer<QOpenGLTexture> selected;
@@ -32,11 +35,11 @@ public:
 public:
     RoomWidget (QWidget* parent = nullptr);
     virtual ~RoomWidget ();
-    void awaitTeamSelection (Team team);
-    void queryReadiness (Team team);
-    void ready (Team team);
-    void awaitMatch (Team team);
-    void startMatch (Team team);
+    void awaitTeamSelection (Unit::Team team);
+    void queryReadiness (Unit::Team team);
+    void ready (Unit::Team team);
+    void awaitMatch (Unit::Team team);
+    void startMatch (Unit::Team team);
 
 signals:
     void joinRedTeamRequested ();
@@ -83,10 +86,14 @@ private:
     QPointF toMapCoords (const QPointF& point);
     QPointF toScreenCoords (const QPointF& point);
     bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture);
+    void centerViewportAtSelected ();
+    void drawHUD ();
     void drawUnit (const Unit& unit);
+    void drawUnitPathToTarget (const Unit& unit);
 
 private slots:
     void tick ();
+    void playSound (SoundEvent event);
 
 private:
     enum class State {
@@ -109,10 +116,11 @@ private:
     };
 
 private:
+    QFont font;
+
     struct {
         QSharedPointer<QOpenGLTexture> grass;
         QSharedPointer<QOpenGLTexture> ground;
-        QSharedPointer<QOpenGLTexture> hud;
         struct {
             QSharedPointer<QOpenGLTexture> crosshair;
         } cursors;
@@ -149,18 +157,25 @@ private:
     int w = 1;
     int h = 1;
     QRect arena_viewport = {0, 0, 1, 1};
-    QPoint arena_center = {0, 0};
+    QPointF arena_viewport_center = {0, 0};
     State state = State::TeamSelection;
     ButtonId pressed_button = ButtonId::None;
     QPoint cursor_position = {-1, -1};
-    Team team;
+    Unit::Team team;
     QElapsedTimer match_countdown_start;
     QSharedPointer<QOpenGLTexture> cursor;
     QSharedPointer<MatchState> match_state;
+    qreal map_to_screen_factor = 1.0;
     qreal viewport_scale = 1.0;
+    QRectF arena_viewport_map_coords = {0, 0, 1, 1};
     int mouse_scroll_border = 10;
     int viewport_scale_power = 0;
     QPointF viewport_center = {0.0, 0.0};
     QTimer match_timer;
     QElapsedTimer last_frame;
+    std::optional<QPoint> selection_start;
+    bool ctrl_pressed = false;
+    bool alt_pressed = false;
+    bool shift_pressed = false;
+    std::mt19937 random_generator;
 };

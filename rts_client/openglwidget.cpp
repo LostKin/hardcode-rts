@@ -1,6 +1,8 @@
 #include "openglwidget.h"
 
 #include <QFile>
+#include <QPainter>
+#include <math.h>
 
 
 OpenGLWidget::OpenGLWidget (QWidget* parent)
@@ -123,9 +125,26 @@ QSize OpenGLWidget::pixelsSize ()
 {
     return QSize (pixels_w, pixels_h);
 }
-QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2D (const QString& path)
+QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2D (const QString& path, bool autogenerate_margin)
 {
-    return QSharedPointer<QOpenGLTexture> (new QOpenGLTexture (QImage (path)));
+    if (autogenerate_margin) {
+        QImage source_image (path);
+        QImage image (source_image.width ()*2, source_image.height ()*2, QImage::Format_ARGB32);
+        image.fill (QColor (0, 0, 0, 0));
+        {
+            QPainter p (&image);
+            p.drawImage (source_image.width ()/2, source_image.height ()/2, source_image);
+        }
+        QOpenGLTexture* texture = new QOpenGLTexture (image);
+        texture->setMinificationFilter (QOpenGLTexture::LinearMipMapLinear);
+        texture->setMagnificationFilter (QOpenGLTexture::LinearMipMapLinear);
+        return QSharedPointer<QOpenGLTexture> (texture);
+    } else {
+        QOpenGLTexture* texture = new QOpenGLTexture (QImage (path));
+        texture->setMinificationFilter (QOpenGLTexture::LinearMipMapLinear);
+        texture->setMagnificationFilter (QOpenGLTexture::LinearMipMapLinear);
+        return QSharedPointer<QOpenGLTexture> (texture);
+    }
 }
 QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2DRectangle (const QString& path)
 {
@@ -358,4 +377,79 @@ void OpenGLWidget::drawRectangle (int x, int y, int w, int h, QOpenGLTexture* te
     };
 
     drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
+}
+void OpenGLWidget::drawRectangle (int x, int y, int w, int h, const QColor& color)
+{
+    const GLfloat vertices[] = {
+        GLfloat (x + 0.5), GLfloat (y + 0.5),
+        GLfloat (x + 0.5 + w), GLfloat (y + 0.5),
+        GLfloat (x + 0.5 + w), GLfloat (y + 0.5 + h),
+        GLfloat (x + 0.5), GLfloat (y + 0.5 + h),
+    };
+
+    GLfloat r = color.redF ();
+    GLfloat g = color.greenF ();
+    GLfloat b = color.blueF ();
+    GLfloat a = color.alphaF ();
+
+    const GLfloat colors[] = {
+        r, g, b, a,
+        r, g, b, a,
+        r, g, b, a,
+        r, g, b, a,
+    };
+
+    drawColored (GL_LINE_LOOP, 4, vertices, colors);
+}
+void OpenGLWidget::fillRectangle (int x, int y, int w, int h, const QColor& color)
+{
+    const GLfloat vertices[] = {
+        GLfloat (x), GLfloat (y),
+        GLfloat (x + w), GLfloat (y),
+        GLfloat (x), GLfloat (y + h),
+        GLfloat (x + w), GLfloat (y + h),
+    };
+
+    GLfloat r = color.redF ();
+    GLfloat g = color.greenF ();
+    GLfloat b = color.blueF ();
+    GLfloat a = color.alphaF ();
+
+    const GLfloat colors[] = {
+        r, g, b, a,
+        r, g, b, a,
+        r, g, b, a,
+        r, g, b, a,
+    };
+
+    drawColored (GL_TRIANGLE_STRIP, 4, vertices, colors);
+}
+void OpenGLWidget::drawCircle (qreal x, qreal y, qreal radius, const QColor& color)
+{
+    const GLfloat x_f = x;
+    const GLfloat y_f = y;
+    const GLfloat r = color.redF ();
+    const GLfloat g = color.greenF ();
+    const GLfloat b = color.blueF ();
+    const GLfloat a = color.alphaF ();
+
+    QVector<GLfloat> vertices;
+    QVector<GLfloat> colors;
+
+    size_t count = 128;
+    for (size_t i = 0; i < count; ++i) {
+        float angle = i*(M_PI*2.0)/count;
+        float dx, dy;
+        sincosf (angle, &dy, &dx);
+        vertices.append (x_f + radius*dx);
+        vertices.append (y_f + radius*dy);
+        colors.append (r);
+        colors.append (g);
+        colors.append (b);
+        colors.append (a);
+    }
+
+    glEnable (GL_LINE_SMOOTH);
+    drawColored (GL_LINE_LOOP, count, vertices.data (), colors.data ());
+    glDisable (GL_LINE_SMOOTH);
 }

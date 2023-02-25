@@ -3,7 +3,6 @@
 #include "lobbywidget.h"
 #include "application.h"
 
-
 int main (int argc, char* argv[])
 {
     Application a (argc, argv);
@@ -34,7 +33,7 @@ int main (int argc, char* argv[])
 
 #if 0
     RoomWidget room;
-    room.awaitTeamSelection (RoomWidget::Team::Red);
+    room.awaitTeamSelection (Unit::Team::Red);
     room.grabMouse ();
     room.grabKeyboard ();
     room.showFullScreen ();
@@ -42,7 +41,7 @@ int main (int argc, char* argv[])
 
 #if 0
     RoomWidget room;
-    room.queryReadiness (RoomWidget::Team::Red);
+    room.queryReadiness (Unit::Team::Red);
     room.grabMouse ();
     room.grabKeyboard ();
     room.showFullScreen ();
@@ -50,7 +49,7 @@ int main (int argc, char* argv[])
 
 #if 0
     RoomWidget room;
-    room.ready (RoomWidget::Team::Red);
+    room.ready (Unit::Team::Red);
     room.grabMouse ();
     room.grabKeyboard ();
     room.showFullScreen ();
@@ -58,7 +57,7 @@ int main (int argc, char* argv[])
 
 #if 0
     RoomWidget room;
-    room.awaitMatch (RoomWidget::Team::Red);
+    room.awaitMatch (Unit::Team::Red);
     room.grabMouse ();
     room.grabKeyboard ();
     room.showFullScreen ();
@@ -69,7 +68,7 @@ int main (int argc, char* argv[])
     room.grabMouse ();
     room.grabKeyboard ();
     room.showFullScreen ();
-    room.startMatch (RoomWidget::Team::Red);
+    room.startMatch (Unit::Team::Red);
 #endif
 
     return a.exec ();

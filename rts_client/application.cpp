@@ -6,12 +6,26 @@
 
 
 #include <QDebug>
+#include <QFontDatabase>
 
 
 Application::Application (int& argc, char** argv)
     : QApplication (argc, argv)
 {
-    setQuitOnLastWindowClosed (false);
+    QFontDatabase::addApplicationFont (":/fonts/AnkaCoder-bi.ttf");
+    QFontDatabase::addApplicationFont (":/fonts/AnkaCoder-b.ttf");
+    QFontDatabase::addApplicationFont (":/fonts/AnkaCoder-i.ttf");
+    QFontDatabase::addApplicationFont (":/fonts/AnkaCoder-r.ttf");
+
+    QFontDatabase::addApplicationFont (":/fonts/OpenSans-Italic.ttf");
+    QFontDatabase::addApplicationFont (":/fonts/OpenSans-Regular.ttf");
+    QFontDatabase::addApplicationFont (":/fonts/OpenSans-SemiboldItalic.ttf");
+    QFontDatabase::addApplicationFont (":/fonts/OpenSans-Semibold.ttf");
+
+    QFontDatabase::addApplicationFont (":/fonts/NotCourierSans-Bold.otf");
+    QFontDatabase::addApplicationFont (":/fonts/NotCourierSans.otf");
+
+    // TODO: Implement proper dialog switches and uncomment: setQuitOnLastWindowClosed (false);
     network_thread.reset (new NetworkThread ("127.0.0.1", 1331, this));
     connect (&*network_thread, &NetworkThread::datagramReceived, this, &Application::sessionDatagramHandler);
 }
