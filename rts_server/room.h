@@ -2,12 +2,14 @@
 
 #include ".proto_stubs/session_level.pb.h"
 #include "application.h"
+#include "../match_state/matchstate.h"
 
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #include <QQueue>
 #include <QMutex>
 #include <QSharedPointer>
+#include <QTimer>
 
 
 class Room: public QObject
@@ -16,12 +18,14 @@ class Room: public QObject
 
 private:
     QSharedPointer<Session> red_team;
-    bool red_ready = false;
     QSharedPointer<Session> blue_team;
-    bool blue_ready = false;
+    QSharedPointer<QTimer> timer;
+    QSharedPointer<MatchState> match_state;
+    QMap<quint32, quint32> client_to_server;
     QVector<QSharedPointer<Session> > spectators; // not gonna use for now
     //QVector<std::optional<Session*> > teams;
     void setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code);
+    void init_matchstate();
 
 public:
     Room (QObject *parent = nullptr);
@@ -33,6 +37,7 @@ signals:
 
 private slots:
     void readyHandler();
+    void tick();
 
 public slots:
     void receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer<Session> session);

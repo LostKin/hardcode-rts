@@ -3,11 +3,14 @@
 #include "network_thread.h"
 #include "roomentry.h"
 #include "session_level.pb.h"
+#include "roomwidget.h"
 
 #include <QApplication>
 #include <QSharedPointer>
 
 class QNetworkDatagram;
+//class MatchState;
+//class Unit;
 
 class Application: public QApplication
 {
@@ -23,6 +26,7 @@ signals:
     void queryReadiness ();
     void startCountdown();
     void startMatch ();
+    void updateMatchState (QVector<QPair<quint32, Unit> > units, const QVector<QPair<quint32, quint32> >& to_delete);
 
 private:
     void showLobby ();
@@ -39,6 +43,9 @@ private slots:
     void joinSpectatorCallback ();
     void readinessCallback ();
     void matchStartCallback ();
+    void createUnitCallback ();
+
+    
 
 private:
     void joinTeam(RTS::Team id);

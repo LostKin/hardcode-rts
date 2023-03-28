@@ -17,6 +17,7 @@ struct Session {
     std::optional<RTS::Team> current_team = {};
     QByteArray login;
     bool query_room_list_requested = false;
+    bool ready = false;
 };
 
 

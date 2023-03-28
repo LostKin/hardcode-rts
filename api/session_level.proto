@@ -31,6 +31,11 @@ enum Team {
     BLUE = 2;
 }
 
+enum UnitType {
+    CRUSADER = 0;
+    SEAL = 1;
+}
+
 message Error {
     int32 code = 1;
     bytes message = 2;
@@ -89,6 +94,53 @@ message JoinTeamRequest {
 message ReadyRequest {
     RequestToken request_token = 1;
     SessionToken session_token = 2;
+}
+
+message ActionTargetUnit {
+    uint32 id = 1;
+}
+message ActionTargetPosition {
+    Vector2D position = 1;
+}
+
+message AttackAction {
+    oneof target {
+        ActionTargetPosition position = 1;
+        ActionTargetUnit unit = 2;
+    }
+}
+
+message MoveAction {
+    oneof target {
+        ActionTargetPosition position = 1;
+        ActionTargetUnit unit = 2;
+    }
+}
+
+message UnitAction {
+    oneof action{
+        AttackAction attack = 1;
+        MoveAction move = 2;
+    }
+}
+
+message ClientId {
+    uint32 id = 1; // Задаётся клиентом (Старший бит == 1)                                                                                                                                                                
+}
+
+message UnitCreateRequest {
+    SessionToken session_token = 1;
+    RequestToken request_token = 2;
+    uint32 id = 3;
+    Vector2D position = 4;
+    UnitType unit_type = 6;
+}
+
+message UnitActionRequest {
+    SessionToken session_token = 1;
+    RequestToken request_token = 2;
+    uint32 unit_id = 3;
+    repeated UnitAction actions = 4;
 }
 
 message RoomListResponse {
@@ -155,6 +207,31 @@ message ReadyResponse {
     }
 }
 
+message UnitCreateResponse {
+    ClientId client_id = 1;
+    RequestToken request_token = 2;
+    uint32 unit_id = 3;
+    Vector2D position = 4;
+    UnitType unit_type = 6;
+}
+
+message Vector2D {
+    double x = 1;
+    double y = 2;
+}
+
+message Unit {
+    ClientId client_id = 7;
+    uint32 id = 1;
+    UnitType type = 2;
+    Team team = 3;
+    Vector2D position = 5;
+    double orientation = 6;
+}
+
+message MatchState {
+    repeated Unit units = 1;
+}
 
 message Request {
     oneof message {
@@ -166,6 +243,7 @@ message Request {
         DeleteRoomRequest delete_room = 9;
         JoinTeamRequest join_team = 10;
         ReadyRequest ready = 11;
+        UnitCreateRequest unit_create = 12;
     }
 }
 
@@ -181,5 +259,6 @@ message Response {
         JoinTeamResponse join_team = 10;
         ReadyResponse ready = 11;
         MatchStartResponse match_start = 12;
+        MatchState match_state = 13;
     }
 }

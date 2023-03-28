@@ -2,6 +2,7 @@
 
 #include <QtMath>
 #include <QDebug>
+#include <QSet>
 
 
 static constexpr qreal SQRT_1_2 = 0.70710678118655;
@@ -38,12 +39,19 @@ const QHash<quint32, Unit>& MatchState::unitsRef () const
 {
     return units;
 }
-Unit& MatchState::createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction)
+QHash<quint32, Unit>::iterator  MatchState::createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction)
 {
-    Unit& unit = *units.insert (next_id++, {type, quint32 (random_generator ()), team, position, direction});
+    QHash<quint32, Unit>::iterator unit = units.insert (next_id++, {type, quint32 (random_generator ()), team, position, direction});
+    unit->hp = unitMaxHP (unit->type);
+    return unit;
+}
+
+Unit& MatchState::addUnit(quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction) {
+    Unit& unit = *units.insert (id, {type, quint32 (random_generator ()), team, position, direction});
     unit.hp = unitMaxHP (unit.type);
     return unit;
 }
+
 void MatchState::trySelect (Unit::Team team, const QPointF& point, bool add)
 {
     if (add) {
@@ -479,4 +487,42 @@ void MatchState::applyAction (const AttackAction& action)
         if (unit.selected)
             unit.action = action;
     }
+}
+
+void MatchState::LoadState(const QVector<QPair<quint32, Unit> >& other, const QVector<QPair<quint32, quint32> >& to_delete) {
+    /*QSet<quint32> to_keep;
+    for (quint32 i = 0; i < other.size(); i++) {
+        to_keep.insert(other.at(i).first);
+    }
+    QVector<quint32> to_delete; // Не нашел способа лучше удалить умерших/исчезнувших юнитов
+    for (QHash<quint32, Unit>::const_iterator iter = unitsRef().cbegin(); iter != unitsRef().cend(); iter++) {
+        if (to_keep.find(iter.key()) == to_keep.end()) {
+            to_delete.push_back(iter.key());
+        }
+    }
+    for (quint32 id : to_delete) {
+        units.remove(id);
+    }*/
+    for (const QPair<quint32, quint32> &i : to_delete) {
+        units[i.second] = std::move(units[i.first]);
+        units.remove(i.first);
+    }
+
+    //qDebug() << "Deleted" << to_delete.size() << "units";
+    for (quint32 i = 0; i < other.size(); i++) {
+        if (unitsRef().find(other.at(i).first) == unitsRef().end()) {
+            addUnit(other.at(i).first, other.at(i).second.type, other.at(i).second.team, other.at(i).second.position, other.at(i).second.orientation);
+        } else {
+            QHash<quint32, Unit>::iterator to_change = units.find(other.at(i).first);
+            to_change.value().position = other.at(i).second.position;
+            to_change.value().orientation = other.at(i).second.orientation;
+        }
+    }
+    //qDebug() << "Changed" << other.size() - to_add.size() << "Units";
+    /*for (QHash<quint32, Unit>::const_iterator iter = units.cbegin(); iter != units.cend(); iter++) {
+        qDebug() << iter.key();
+    }*/
+    /*for (QHash<quint32, Unit>::const_iterator iter = other->unitsRef().cbegin(); iter != other->unitsRef().cend(); iter++) {
+        createUnit(iter->type, iter->team, iter->position, 0);
+    }*/
 }

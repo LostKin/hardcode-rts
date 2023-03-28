@@ -2,7 +2,7 @@
 #include "authorizationwidget.h"
 #include "authorizationprogresswidget.h"
 #include "lobbywidget.h"
-#include "roomwidget.h"
+
 
 
 #include <QDebug>
@@ -144,6 +144,29 @@ void Application::joinRoomCallback (quint32 room_id)
 
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
+
+void Application::createUnitCallback ()
+{
+    qDebug() << "Create unit callback";
+    if (!session_token.has_value ())
+        return;
+
+    RTS::Request request_oneof;
+    RTS::UnitCreateRequest* request = request_oneof.mutable_unit_create ();
+    request->mutable_session_token ()->set_value (session_token.value ());
+    request->mutable_request_token ()->set_value (request_token++);
+    request->mutable_position ()->set_x(50);
+    request->mutable_position ()->set_y(50);
+    request->set_unit_type(RTS::UnitType::SEAL);
+    request->set_id(10);
+
+
+    std::string message;
+    request_oneof.SerializeToString (&message);
+
+    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+}
+
 void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datagram)
 {
     QByteArray data = datagram->data ();
@@ -193,6 +216,8 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         connect(room_widget, &RoomWidget::readinessRequested, this, &Application::readinessCallback);
         connect(this, &Application::startMatch, room_widget, &RoomWidget::startMatchHandler);
         connect(this, &Application::startCountdown, room_widget, &RoomWidget::startCountDownHandler);
+        connect(this, &Application::updateMatchState, room_widget, &RoomWidget::loadMatchState);
+        connect(room_widget, &RoomWidget::createUnitRequested, this, &Application::createUnitCallback);
         room_widget->grabMouse ();
         room_widget->grabKeyboard ();
         room_widget->showFullScreen ();
@@ -214,6 +239,10 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     } break;
     case RTS::Response::MessageCase::kJoinTeam: {
         // lets manage some shit
+        const RTS::JoinTeamResponse& response = response_oneof.join_team ();
+        if (!response.has_success()) {
+            return;
+        }
         emit queryReadiness();
     } break;
     case RTS::Response::MessageCase::kReady: {
@@ -222,6 +251,41 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     case RTS::Response::MessageCase::kMatchStart: {
         qDebug() << "Ready respose caught";
         emit startMatch ();
+    } break;
+    case RTS::Response::MessageCase::kMatchState: {
+        QVector<QPair<quint32, Unit> > units;
+        QVector<QPair<quint32, quint32> > to_delete;
+        const RTS::MatchState& response = response_oneof.match_state ();
+        for (size_t i = 0; i < response.units_size(); i++) {
+            RTS::Unit r_unit = response.units(i);
+            Unit::Team team;
+            Unit::Type type;
+            if (r_unit.team() == RTS::Team::RED) {
+                team = Unit::Team::Red;
+            }
+            if (r_unit.team() == RTS::Team::BLUE) {
+                team = Unit::Team::Blue;
+            }
+            switch (r_unit.type()) {
+            case RTS::UnitType::CRUSADER: {
+                type = Unit::Type::Crusader;
+            } break;
+            case RTS::UnitType::SEAL: {
+                type = Unit::Type::Seal;
+            } break;
+            }
+            //Unit test = Unit(type, team, quint32(0), QPointF (r_unit.position_x(), r_unit.position_y()), (qreal)r_unit.rotation());
+            if (r_unit.has_client_id()) {
+                to_delete.push_back(QPair<quint32, quint32>(r_unit.client_id().id(), r_unit.id()));
+            }
+            units.push_back(QPair<quint32, Unit>(quint32(r_unit.id()), Unit(type, 
+                                                                            0, 
+                                                                            team, 
+                                                                            QPointF (r_unit.position().x(), r_unit.position().y()), 
+                                                                            (qreal)r_unit.orientation())));
+            //match_state->createUnit (type, team, QPointF (r_unit.position_x(), r_unit.position_y()), r_unit.rotation());
+        }
+        emit updateMatchState(units, to_delete);
     } break;
     default: {
         qDebug () << "Response -> UNKNOWN:" << response_oneof.message_case ();

@@ -48,6 +48,7 @@ signals:
     void cancelJoinTeamRequested ();
     void readinessRequested ();
     void quitRequested ();
+    void createUnitRequested ();
 
 private slots:
     void joinRedTeamRequestedHandler ();
@@ -55,12 +56,13 @@ private slots:
     void spectateRequestedHandler ();
     void readinessRequestedHandler ();
     void cancelJoinTeamRequestedHandler ();
-    void quitRequestedHandler ();
+    void quitRequestedHandler ();   
 
 public slots:
     void readinessHandler ();
     void startMatchHandler();
     void startCountDownHandler ();
+    void loadMatchState (QVector<QPair<quint32, Unit> > units, const QVector<QPair<quint32, quint32> >& to_delete);
 
 protected:
     virtual void initResources () override;

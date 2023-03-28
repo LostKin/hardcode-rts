@@ -29,6 +29,7 @@ public:
 
 public:
     Unit (Type type, quint64 phase_offset, Team team, const QPointF& position, qreal direction);
+    Unit (); // TODO: Remove after switch to emplace ()
     ~Unit ();
 
 public:

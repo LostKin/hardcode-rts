@@ -113,6 +113,7 @@ void RoomWidget::startCountDownHandler () {
 void RoomWidget::startMatchHandler() {
     qDebug () << "Start match handler started";
     startMatch (this->team);
+    emit createUnitRequested();
 }
 void RoomWidget::awaitTeamSelection (Unit::Team team)
 {
@@ -149,7 +150,7 @@ void RoomWidget::startMatch (Unit::Team team)
     pressed_button = ButtonId::None;
     match_state = QSharedPointer<MatchState> (new MatchState);
     connect (&*match_state, SIGNAL (soundEventEmitted (SoundEvent)), this, SLOT (playSound (SoundEvent)));
-    {
+    /*{
         match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-15, -7), 0);
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (1, 3), 0);
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 3), 0);
@@ -157,7 +158,7 @@ void RoomWidget::startMatch (Unit::Team team)
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 9), 0);
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (10, 5), 0);
         match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-20, -8), 0);
-    }
+    }*/
     viewport_scale_power = 0;
     viewport_scale = 1.0;
     viewport_center = {};
@@ -165,6 +166,12 @@ void RoomWidget::startMatch (Unit::Team team)
     last_frame.restart ();
     state = State::MatchStarted;
 }
+
+void RoomWidget::loadMatchState (QVector<QPair<quint32, Unit> > units, const QVector<QPair<quint32, quint32> >& to_delete) {
+    match_state->LoadState(units, to_delete);
+    return;
+}
+
 void RoomWidget::loadTextures ()
 {
     textures.grass = loadTexture2DRectangle (":/images/grass.png");

@@ -4,6 +4,9 @@
 #include <QPointF>
 #include <QRectF>
 #include <QObject>
+#include <QSharedPointer>
+#include <QPair>
+#include <QVector>
 #include <random>
 #include <optional>
 #include <variant>
@@ -27,7 +30,8 @@ public:
     quint64 clockNS () const;
     const QRectF& areaRef () const;
     const QHash<quint32, Unit>& unitsRef () const;
-    Unit& createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
+    QHash<quint32, Unit>::iterator createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
+    Unit& addUnit(quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
     void trySelect (Unit::Team team, const QPointF& point, bool add);
     void trySelect (Unit::Team team, const QRectF& rect, bool add);
     std::optional<QPointF> selectionCenter () const;
@@ -44,6 +48,7 @@ public:
     int unitMaxHP (Unit::Type type) const;
     const AttackDescription& unitPrimaryAttackDescription (Unit::Type type) const;
     quint64 animationPeriodNS (Unit::Type type) const;
+    void LoadState(const QVector<QPair<quint32, Unit> >& other, const QVector<QPair<quint32, quint32> >& to_delete);
 
 signals:
     void soundEventEmitted (SoundEvent event);
