@@ -1,0 +1,45 @@
+<?xml version="1.0" standalone="no"?>
+<svg width="256" height="256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style rel="stylesheet" type="text/css">
+.pestilence-missile {
+    fill: #00cc00;
+    stroke: #000000;
+    stroke-width: 5;
+}
+    </style>
+
+    <defs>
+    	<path id="pestilence-missile1" class="pestilence-missile" d="
+M 128 40
+C 168 40, 128 100, 168 100
+C 208 100, 158 40, 208 40
+C 248 40, 258 220, 128 220
+M 128 40
+C 88 40, 128 100, 88 100
+C 48 100, 98 40, 48 40
+C 8 40, -2 220, 128 220
+" />
+    	<path id="pestilence-missile2" class="pestilence-missile" d="
+M 128 60
+C 168 60, 128 90, 168 90
+C 208 90, 158 60, 208 60
+C 268 60, 283 200, 128 200
+M 128 60
+C 88 60, 128 90, 88 90
+C 48 90, 98 60, 48 60
+C -12 60, -27 200, 128 200
+" />
+    </defs>
+
+    <defs>
+	<g id="pestilence-missile1">
+	    <use xlink:href="#pestilence-missile1" />
+	</g>
+	<g id="pestilence-missile2">
+	    <use xlink:href="#pestilence-missile2" />
+	</g>
+    </defs>
+
+    <use xlink:href="#pestilence-missile1" />
+    <!-- <use xlink:href="#pestilence-missile2" /> -->
+</svg>

@@ -1,0 +1,49 @@
+#!/usr/bin/lua
+
+local prefix = [[
+<?xml version="1.0" standalone="no"?>
+<svg width="256" height="256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style rel="stylesheet" type="text/css">
+.splash {
+    fill: #00cc00;
+    stroke-width: 3;
+    stroke: #bb1111;
+}
+    </style>
+
+    <defs>
+    	<path id="splash" class="splash" d="]]
+
+local suffix = [[
+" />
+    </defs>
+
+    <use xlink:href="#splash" />
+</svg>]]
+
+print (prefix)
+
+local inner_radius = 120
+local outer_radius = 70
+
+local x, y = 128, 128
+
+local angle = (7 + 15*0)/180*math.pi
+local radius = inner_radius
+print ("M "..tostring (x + math.cos (angle)*radius).." "..tostring (y - math.sin (angle)*radius))
+
+for i = 0, 23 do
+   local angle1 = (7 + 15*i)/180*math.pi
+   local angle2 = (7 + 15*(i + 1))/180*math.pi
+   local radius1, radius2 = inner_radius, outer_radius
+   if i%2 ~= 0 then
+      radius1, radius2 = radius2, radius1
+   end
+   local x1, y1 = x + math.cos (angle1)*radius1, y - math.sin (angle1)*radius1
+   local x2, y2 = x + math.cos (angle2)*radius1, y - math.sin (angle2)*radius1
+   local x3, y3 = x + math.cos (angle1)*radius2, y - math.sin (angle1)*radius2
+   local x4, y4 = x + math.cos (angle2)*radius2, y - math.sin (angle2)*radius2
+   print ("S "..tostring (x1).." "..tostring (y1)..", "..tostring (x2).." "..tostring (y2)..", "..tostring (x3).." "..tostring (y3)..", "..tostring (x4).." "..tostring (y4))
+end
+
+print (suffix)

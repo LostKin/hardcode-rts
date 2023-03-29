@@ -303,9 +303,9 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         const RTS::JoinTeamRequest& request = request_oneof.join_team ();
         quint64 session_token;
         QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
-        /*
-        if (!session)
+        if (session.isNull ())
             break;
+        /*
         quint64 request_token;
         if (!validateRequestToken (*datagram, request, &request_token))
             break;

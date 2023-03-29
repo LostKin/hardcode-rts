@@ -1,0 +1,2 @@
+convert -background none -rotate 90 rocket1.svg rocket1.png
+convert -background none -rotate 90 rocket2.svg rocket2.png

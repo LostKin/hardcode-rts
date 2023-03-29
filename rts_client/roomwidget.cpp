@@ -26,7 +26,14 @@ static constexpr qreal POINTS_PER_VIEWPORT_VERTICALLY = 20.0; // At zoom x1.0
 
 
 static const QMap<SoundEvent, QStringList> sound_map = {
-    {SoundEvent::Shot, {":/audio/shot.wav", ":/audio/shot2.wav"}},
+    {SoundEvent::SealAttack, {":/audio/units/seal/attack1.wav", ":/audio/units/seal/attack2.wav"}},
+    {SoundEvent::CrusaderAttack, {":/audio/units/crusader/attack1.wav", ":/audio/units/crusader/attack2.wav"}},
+    {SoundEvent::BeetleAttack, {":/audio/units/beetle/attack.wav"}},
+    {SoundEvent::RocketStart, {":/audio/units/goon/rocket-start.wav"}},
+    {SoundEvent::RocketExplosion, {":/audio/effects/rocket-explosion.wav"}},
+    {SoundEvent::PestilenceSplash, {":/audio/effects/pestilence-splash1.wav", ":/audio/effects/pestilence-splash2.wav"}},
+    {SoundEvent::PestilenceMissileStart, {":/audio/units/contaminator/pestilence.wav"}},
+    {SoundEvent::SpawnBeetle, {":/audio/units/contaminator/spawn-beetle.wav"}},
 };
 
 
@@ -34,6 +41,9 @@ static const QString& unitTitle (Unit::Type type)
 {
     static const QString seal = "Seal";
     static const QString crusader = "Crusader";
+    static const QString goon = "Goon";
+    static const QString beetle = "Beetle";
+    static const QString contaminator = "Contaminator";
     static const QString unknown = "Unknown";
 
     switch (type) {
@@ -41,11 +51,17 @@ static const QString& unitTitle (Unit::Type type)
         return seal;
     case Unit::Type::Crusader:
         return crusader;
+    case Unit::Type::Goon:
+        return goon;
+    case Unit::Type::Beetle:
+        return beetle;
+    case Unit::Type::Contaminator:
+        return contaminator;
     default:
         return unknown;
     }
 }
-static const QString& unitAttackName (AttackDescription::Type type)
+static const QString& unitAttackClassName (AttackDescription::Type type)
 {
     static const QString immediate = "immediate";
     static const QString missile = "missile";
@@ -53,11 +69,15 @@ static const QString& unitAttackName (AttackDescription::Type type)
     static const QString unknown = "unknown";
 
     switch (type) {
-    case AttackDescription::Type::Immediate:
+    case AttackDescription::Type::SealShot:
+    case AttackDescription::Type::CrusaderChop:
+    case AttackDescription::Type::BeetleSlice:
         return immediate;
-    case AttackDescription::Type::Missile:
+    case AttackDescription::Type::GoonRocket:
+    case AttackDescription::Type::PestilenceMissile:
         return missile;
-    case AttackDescription::Type::Splash:
+    case AttackDescription::Type::GoonRocketExplosion:
+    case AttackDescription::Type::PestilenceSplash:
         return splash;
     default:
         return unknown;
@@ -67,6 +87,7 @@ static const QString& unitAttackName (AttackDescription::Type type)
 RoomWidget::RoomWidget (QWidget* parent)
     : OpenGLWidget (parent), font ("NotCourier", 16)
 {
+    setAttribute (Qt::WA_KeyCompression, false);
     font.setStyleHint (QFont::TypeWriter);
 
     last_frame.invalidate ();
@@ -152,13 +173,34 @@ void RoomWidget::startMatch (Unit::Team team)
     connect (&*match_state, SIGNAL (soundEventEmitted (SoundEvent)), this, SLOT (playSound (SoundEvent)));
     /*{
         match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-15, -7), 0);
+        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-10, -5), 0);
+        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-12, -3), 0);
+        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-11, -2), 0);
+        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-9, -1), 0);
+        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-8, -0), 0);
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (1, 3), 0);
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 3), 0);
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 6), 0);
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 9), 0);
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (10, 5), 0);
+        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (3, 2), 0);
+        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (5, 2), 0);
+        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (7, 2), 0);
+        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (9, 2), 0);
+        match_state->createUnit (Unit::Type::Goon, Unit::Team::Red, QPointF (10, 2), 0);
         match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-20, -8), 0);
     }*/
+        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-4, 5), 0);
+        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-3, 5), 0);
+        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-2, 5), 0);
+        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-1, 5), 0);
+        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (0, 5), 0);
+        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (1, 5), 0);
+        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (2, 5), 0);
+        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (3, 5), 0);
+        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (4, 5), 0);
+        // for (int off = -4; off <= 4; ++off)
+        //     match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (off*2.0/3.0, 7), 0);
     viewport_scale_power = 0;
     viewport_scale = 1.0;
     viewport_center = {};
@@ -166,12 +208,59 @@ void RoomWidget::startMatch (Unit::Team team)
     last_frame.restart ();
     state = State::MatchStarted;
 }
-
 void RoomWidget::loadMatchState (QVector<QPair<quint32, Unit> > units, const QVector<QPair<quint32, quint32> >& to_delete) {
     match_state->LoadState(units, to_delete);
     return;
 }
-
+quint64 RoomWidget::moveAnimationPeriodNS (Unit::Type type)
+{
+    switch (type) {
+    case Unit::Type::Seal:
+        return 500'000'000;
+    case Unit::Type::Crusader:
+        return 300'000'000;
+    case Unit::Type::Goon:
+        return 500'000'000;
+    case Unit::Type::Beetle:
+        return 300'000'000;
+    case Unit::Type::Contaminator:
+        return 800'000'000;
+    default:
+        return 0;
+    }
+}
+quint64 RoomWidget::attackAnimationPeriodNS (Unit::Type type)
+{
+    switch (type) {
+    case Unit::Type::Seal:
+        return 100'000'000;
+    case Unit::Type::Crusader:
+        return 700'000'000;
+    case Unit::Type::Goon:
+        return 200'000'000;
+    case Unit::Type::Beetle:
+        return 700'000'000;
+    case Unit::Type::Contaminator:
+        return 700'000'000;
+    default:
+        return 0;
+    }
+}
+quint64 RoomWidget::missileAnimationPeriodNS (Missile::Type type)
+{
+    switch (type) {
+    case Missile::Type::Rocket:
+        return 200'000'000;
+    case Missile::Type::Pestilence:
+        return 500'000'000;
+    default:
+        return 0;
+    }
+}
+quint64 RoomWidget::explosionAnimationPeriodNS ()
+{
+    return 400'000'000;
+}
 void RoomWidget::loadTextures ()
 {
     textures.grass = loadTexture2DRectangle (":/images/grass.png");
@@ -201,21 +290,80 @@ void RoomWidget::loadTextures ()
     textures.buttons.cancel_pressed = loadTexture2DRectangle (":/images/buttons/cancel-pressed.png");
     textures.buttons.quit_pressed = loadTexture2DRectangle (":/images/buttons/quit-pressed.png");
 
-    textures.units.seal.red.plain = loadTexture2D (":/images/units/seal/red-plain.png");
-    textures.units.seal.red.selected = loadTexture2D (":/images/units/seal/red-selected.png");
-    textures.units.seal.blue.plain = loadTexture2D (":/images/units/seal/blue-plain.png");
-    textures.units.seal.blue.selected = loadTexture2D (":/images/units/seal/blue-selected.png");
+    {
+        textures.units.seal.red.standing = loadTexture2D (":/images/units/seal/red/standing.png", true);
+        textures.units.seal.red.walking1 = loadTexture2D (":/images/units/seal/red/walking1.png", true);
+        textures.units.seal.red.walking2 = loadTexture2D (":/images/units/seal/red/walking2.png", true);
+        textures.units.seal.red.shooting1 = loadTexture2D (":/images/units/seal/red/attacking1.png", true);
+        textures.units.seal.red.shooting2 = loadTexture2D (":/images/units/seal/red/attacking2.png", true);
 
-    textures.units.crusader.red.plain = loadTexture2D (":/images/units/crusader/red-plain.png");
-    textures.units.crusader.red.selected = loadTexture2D (":/images/units/crusader/red-selected.png");
-    textures.units.crusader.blue.plain = loadTexture2D (":/images/units/crusader/blue-plain.png");
-    textures.units.crusader.blue.selected = loadTexture2D (":/images/units/crusader/blue-selected.png");
+        textures.units.seal.blue.standing = loadTexture2D (":/images/units/seal/blue/standing.png", true);
+        textures.units.seal.blue.walking1 = loadTexture2D (":/images/units/seal/blue/walking1.png", true);
+        textures.units.seal.blue.walking2 = loadTexture2D (":/images/units/seal/blue/walking2.png", true);
+        textures.units.seal.blue.shooting1 = loadTexture2D (":/images/units/seal/blue/attacking1.png", true);
+        textures.units.seal.blue.shooting2 = loadTexture2D (":/images/units/seal/blue/attacking2.png", true);
+    }
+    {
+        textures.units.crusader.red.standing = loadTexture2D (":/images/units/crusader/red/standing.png", true);
+        textures.units.crusader.red.walking1 = loadTexture2D (":/images/units/crusader/red/walking1.png", true);
+        textures.units.crusader.red.walking2 = loadTexture2D (":/images/units/crusader/red/walking2.png", true);
+        textures.units.crusader.red.shooting1 = loadTexture2D (":/images/units/crusader/red/attacking1.png", true);
+        textures.units.crusader.red.shooting2 = loadTexture2D (":/images/units/crusader/red/attacking2.png", true);
 
-    textures.units.seal.basic.standing = loadTexture2D (":/images/units/seal/standing.png", true);
-    textures.units.seal.basic.walking1 = loadTexture2D (":/images/units/seal/walking1.png", true);
-    textures.units.seal.basic.walking2 = loadTexture2D (":/images/units/seal/walking2.png", true);
-    textures.units.seal.basic.shooting1 = loadTexture2D (":/images/units/seal/shooting1.png", true);
-    textures.units.seal.basic.shooting2 = loadTexture2D (":/images/units/seal/shooting2.png", true);
+        textures.units.crusader.blue.standing = loadTexture2D (":/images/units/crusader/blue/standing.png", true);
+        textures.units.crusader.blue.walking1 = loadTexture2D (":/images/units/crusader/blue/walking1.png", true);
+        textures.units.crusader.blue.walking2 = loadTexture2D (":/images/units/crusader/blue/walking2.png", true);
+        textures.units.crusader.blue.shooting1 = loadTexture2D (":/images/units/crusader/blue/attacking1.png", true);
+        textures.units.crusader.blue.shooting2 = loadTexture2D (":/images/units/crusader/blue/attacking2.png", true);
+    }
+    {
+        textures.units.goon.red.standing = loadTexture2D (":/images/units/goon/red/standing.png", true);
+        textures.units.goon.red.walking1 = loadTexture2D (":/images/units/goon/red/walking1.png", true);
+        textures.units.goon.red.walking2 = loadTexture2D (":/images/units/goon/red/walking2.png", true);
+        textures.units.goon.red.shooting1 = loadTexture2D (":/images/units/goon/red/attacking1.png", true);
+        textures.units.goon.red.shooting2 = loadTexture2D (":/images/units/goon/red/attacking2.png", true);
+
+        textures.units.goon.blue.standing = loadTexture2D (":/images/units/goon/blue/standing.png", true);
+        textures.units.goon.blue.walking1 = loadTexture2D (":/images/units/goon/blue/walking1.png", true);
+        textures.units.goon.blue.walking2 = loadTexture2D (":/images/units/goon/blue/walking2.png", true);
+        textures.units.goon.blue.shooting1 = loadTexture2D (":/images/units/goon/blue/attacking1.png", true);
+        textures.units.goon.blue.shooting2 = loadTexture2D (":/images/units/goon/blue/attacking2.png", true);
+    }
+    {
+        textures.units.beetle.red.standing = loadTexture2D (":/images/units/beetle/red/standing.png", true);
+        textures.units.beetle.red.walking1 = loadTexture2D (":/images/units/beetle/red/walking1.png", true);
+        textures.units.beetle.red.walking2 = loadTexture2D (":/images/units/beetle/red/walking2.png", true);
+        textures.units.beetle.red.shooting1 = loadTexture2D (":/images/units/beetle/red/attacking1.png", true);
+        textures.units.beetle.red.shooting2 = loadTexture2D (":/images/units/beetle/red/attacking2.png", true);
+
+        textures.units.beetle.blue.standing = loadTexture2D (":/images/units/beetle/blue/standing.png", true);
+        textures.units.beetle.blue.walking1 = loadTexture2D (":/images/units/beetle/blue/walking1.png", true);
+        textures.units.beetle.blue.walking2 = loadTexture2D (":/images/units/beetle/blue/walking2.png", true);
+        textures.units.beetle.blue.shooting1 = loadTexture2D (":/images/units/beetle/blue/attacking1.png", true);
+        textures.units.beetle.blue.shooting2 = loadTexture2D (":/images/units/beetle/blue/attacking2.png", true);
+    }
+    {
+        textures.units.contaminator.red.standing = loadTexture2D (":/images/units/contaminator/red/standing.png", true);
+        textures.units.contaminator.red.walking1 = loadTexture2D (":/images/units/contaminator/red/walking1.png", true);
+        textures.units.contaminator.red.walking2 = loadTexture2D (":/images/units/contaminator/red/walking2.png", true);
+        textures.units.contaminator.red.shooting1 = loadTexture2D (":/images/units/contaminator/red/attacking1.png", true);
+        textures.units.contaminator.red.shooting2 = loadTexture2D (":/images/units/contaminator/red/attacking2.png", true);
+
+        textures.units.contaminator.blue.standing = loadTexture2D (":/images/units/contaminator/blue/standing.png", true);
+        textures.units.contaminator.blue.walking1 = loadTexture2D (":/images/units/contaminator/blue/walking1.png", true);
+        textures.units.contaminator.blue.walking2 = loadTexture2D (":/images/units/contaminator/blue/walking2.png", true);
+        textures.units.contaminator.blue.shooting1 = loadTexture2D (":/images/units/contaminator/blue/attacking1.png", true);
+        textures.units.contaminator.blue.shooting2 = loadTexture2D (":/images/units/contaminator/blue/attacking2.png", true);
+    }
+    {
+        textures.effects.explosion.explosion1 = loadTexture2D (":/images/effects/explosion/explosion1.png", true);
+        textures.effects.explosion.explosion2 = loadTexture2D (":/images/effects/explosion/explosion2.png", true);
+        textures.effects.goon_rocket.rocket1 = loadTexture2D (":/images/effects/goon-rocket/rocket1.png", true);
+        textures.effects.goon_rocket.rocket2 = loadTexture2D (":/images/effects/goon-rocket/rocket2.png", true);
+        textures.effects.pestilence_missile.missile1 = loadTexture2D (":/images/effects/pestilence-missile/missile1.png", true);
+        textures.effects.pestilence_missile.missile2 = loadTexture2D (":/images/effects/pestilence-missile/missile2.png", true);
+        textures.effects.pestilence_splash.splash = loadTexture2D (":/images/effects/pestilence-splash/splash.png", true);
+    }
 }
 void RoomWidget::initResources ()
 {
@@ -269,6 +417,12 @@ void RoomWidget::keyPressEvent (QKeyEvent *event)
         case Qt::Key_A:
             match_state->attackEnemy (team, toMapCoords (cursor_position));
             break;
+        case Qt::Key_E:
+            match_state->cast (CastAction::Type::Pestilence, team, toMapCoords (cursor_position));
+            break;
+        case Qt::Key_T:
+            match_state->cast (CastAction::Type::SpawnBeetle, team, toMapCoords (cursor_position));
+            break;
         case Qt::Key_G:
             match_state->move (toMapCoords (cursor_position));
             break;
@@ -296,8 +450,6 @@ void RoomWidget::keyPressEvent (QKeyEvent *event)
 }
 void RoomWidget::keyReleaseEvent (QKeyEvent *event)
 {
-    (void) event;
-
     switch (state) {
     case State::MatchStarted: {
         switch (event->key ()) {
@@ -462,7 +614,7 @@ void RoomWidget::mouseReleaseEvent (QMouseEvent *event)
 }
 void RoomWidget::wheelEvent (QWheelEvent *event)
 {
-    int dy = event->angleDelta ().y ()/120;
+    int dy = (event->angleDelta ().y () > 0) ? 1 : -1;
     switch (state) {
     case State::MatchStarted: {
         viewport_scale_power += dy;
@@ -574,12 +726,22 @@ void RoomWidget::drawMatchStarted ()
     }
 
     const QHash<quint32, Unit>& units = match_state->unitsRef ();
+    const QHash<quint32, Missile>& missiles = match_state->missilesRef ();
+    const QHash<quint32, Explosion>& explosions = match_state->explosionsRef ();
+
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
         drawUnit (it.value ());
+    for (QHash<quint32, Missile>::const_iterator it = missiles.constBegin (); it != missiles.constEnd (); ++it)
+        drawMissile (it.value ());
+    for (QHash<quint32, Explosion>::const_iterator it = explosions.constBegin (); it != explosions.constEnd (); ++it)
+        drawExplosion (it.value ());
+    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
+        drawUnitHPBar (it.value ());
     glEnable (GL_LINE_SMOOTH);
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
-        if (it->team == team)
-            drawUnitPathToTarget (it.value ());
+        const Unit& unit = *it;
+        if (unit.team == team && unit.selected)
+            drawUnitPathToTarget (unit);
     }
     glDisable (GL_LINE_SMOOTH);
 
@@ -758,7 +920,7 @@ void RoomWidget::drawHUD ()
                     unitTitle (unit.type) + "\n"
                     "\n"
                     "HP: " + QString::number (unit.hp) + "/" + QString::number (match_state->unitMaxHP (unit.type)) + "\n"
-                    "Attack: type = " + unitAttackName (primary_attack_description.type) + "; range = " + QString::number (primary_attack_description.range));
+                    "Attack: class = " + unitAttackClassName (primary_attack_description.type) + "; range = " + QString::number (primary_attack_description.range));
     } else if (selected_count) {
         int area_w = selection_panel_size.width ();
         int area_h = selection_panel_size.height ();
@@ -783,29 +945,47 @@ void RoomWidget::drawUnit (const Unit& unit)
         sprite_scale = 2.0;
         texture_set = &textures.units.crusader;
     } break;
+    case Unit::Type::Goon: {
+        sprite_scale = 1.6;
+        texture_set = &textures.units.goon;
+    } break;
+    case Unit::Type::Beetle: {
+        sprite_scale = 1.6;
+        texture_set = &textures.units.beetle;
+    } break;
+    case Unit::Type::Contaminator: {
+        sprite_scale = 1.6;
+        texture_set = &textures.units.contaminator;
+    } break;
     default: {
     } return;
     }
 
-    QOpenGLTexture* texture;
-    if (unit.team == Unit::Team::Red) {
-        if (unit.attack_remaining_ticks) {
-            quint64 clock_ns = match_state->clockNS ();
-            quint64 period = match_state->animationPeriodNS (unit.type); // TODO: Distinct animation periods
-            quint64 phase = (clock_ns + unit.phase_offset)%period;
-            texture = (phase < period/2) ? textures.units.seal.basic.shooting1.get () : textures.units.seal.basic.shooting2.get ();
-        } else if (std::holds_alternative<MoveAction> (unit.action)) {
-            quint64 clock_ns = match_state->clockNS ();
-            quint64 period = match_state->animationPeriodNS (unit.type);
-            quint64 phase = (clock_ns + unit.phase_offset)%period;
-            texture = (phase < period/2) ? textures.units.seal.basic.walking1.get () : textures.units.seal.basic.walking2.get ();
-        } else {
-            texture = textures.units.seal.basic.standing.get ();
-        }
-    } else if (unit.team == Unit::Team::Blue) {
-        texture = unit.selected ? texture_set->blue.selected.get () : texture_set->blue.plain.get ();
-    } else {
+    UnitTextureTeam* texture_team;
+    switch (unit.team) {
+    case Unit::Team::Red:
+        texture_team = &texture_set->red;
+        break;
+    case Unit::Team::Blue:
+        texture_team = &texture_set->blue;
+        break;
+    default:
         return;
+    }
+
+    QOpenGLTexture* texture;
+    if (unit.attack_remaining_ticks) {
+        quint64 clock_ns = match_state->clockNS ();
+        quint64 period = attackAnimationPeriodNS (unit.type);
+        quint64 phase = (clock_ns + unit.phase_offset)%period;
+        texture = (phase < period/2) ? texture_team->shooting1.get () : texture_team->shooting2.get ();
+    } else if (std::holds_alternative<MoveAction> (unit.action) || std::holds_alternative<AttackAction> (unit.action)) {
+        quint64 clock_ns = match_state->clockNS ();
+        quint64 period = moveAnimationPeriodNS (unit.type);
+        quint64 phase = (clock_ns + unit.phase_offset)%period;
+        texture = (phase < period/2) ? texture_team->walking1.get () : texture_team->walking2.get ();
+    } else {
+        texture = texture_team->standing.get ();
     }
 
     QPointF center = toScreenCoords (unit.position);
@@ -842,12 +1022,15 @@ void RoomWidget::drawUnit (const Unit& unit)
     drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
     if (unit.selected)
         drawCircle (center.x (), center.y (), scale*0.25, {0, 255, 0});
-
-    if (unit.hp <= match_state->unitMaxHP (unit.type)) {
+}
+void RoomWidget::drawUnitHPBar (const Unit& unit)
+{
+    if (unit.hp < match_state->unitMaxHP (unit.type)) {
+        QPointF center = toScreenCoords (unit.position);
         qreal hp_ratio = qreal (unit.hp)/match_state->unitMaxHP (unit.type);
-        qreal hitbar_height = viewport_scale*MAP_TO_SCREEN_FACTOR*0.2;
-        int hit_bar_count = match_state->unitHitBarCount (unit.type);
-        qreal radius = viewport_scale*match_state->unitDiameter (unit.type)*MAP_TO_SCREEN_FACTOR*0.5;
+        qreal hitbar_height = viewport_scale*MAP_TO_SCREEN_FACTOR*0.16;
+        // TODO: Split into bars? int hit_bar_count = match_state->unitHitBarCount (unit.type);
+        qreal radius = viewport_scale*match_state->unitDiameter (unit.type)*MAP_TO_SCREEN_FACTOR*0.42;
 
         {
             const GLfloat vertices[] = {
@@ -886,29 +1069,182 @@ void RoomWidget::drawUnit (const Unit& unit)
         }
     }
 }
+void RoomWidget::drawMissile (const Missile& missile)
+{
+    quint64 clock_ns = match_state->clockNS ();
+    qreal sprite_scale = 1.0;
+
+    quint64 period = missileAnimationPeriodNS (Missile::Type::Rocket);
+    quint64 phase = clock_ns%period;
+    QOpenGLTexture* texture;
+    switch (missile.type) {
+    case Missile::Type::Rocket:
+        texture = (phase < period/2) ? textures.effects.goon_rocket.rocket1.get () : textures.effects.goon_rocket.rocket2.get ();
+        break;
+    case Missile::Type::Pestilence:
+        texture = (phase < period/2) ? textures.effects.pestilence_missile.missile1.get () : textures.effects.pestilence_missile.missile2.get ();
+        break;
+    default:
+        return;
+    }
+
+    QPointF center = toScreenCoords (missile.position);
+
+    qreal a1_sin, a1_cos;
+    qreal a2_sin, a2_cos;
+    qreal a3_sin, a3_cos;
+    qreal a4_sin, a4_cos;
+    sincos (missile.orientation + PI_X_3_4, &a1_sin, &a1_cos);
+    sincos (missile.orientation + PI_X_1_4, &a2_sin, &a2_cos);
+    sincos (missile.orientation - PI_X_1_4, &a3_sin, &a3_cos);
+    sincos (missile.orientation - PI_X_3_4, &a4_sin, &a4_cos);
+    qreal scale = viewport_scale*sprite_scale*match_state->missileDiameter (Missile::Type::Rocket)*SQRT_2*MAP_TO_SCREEN_FACTOR;
+
+    const GLfloat vertices[] = {
+        GLfloat (center.x () + scale*a1_cos), GLfloat (center.y () + scale*a1_sin),
+        GLfloat (center.x () + scale*a2_cos), GLfloat (center.y () + scale*a2_sin),
+        GLfloat (center.x () + scale*a3_cos), GLfloat (center.y () + scale*a3_sin),
+        GLfloat (center.x () + scale*a4_cos), GLfloat (center.y () + scale*a4_sin),
+    };
+
+    const GLfloat texture_coords[] = {
+        0, 1,
+        1, 1,
+        1, 0,
+        0, 0,
+    };
+
+    const GLuint indices[] = {
+        0, 1, 2,
+        0, 2, 3,
+    };
+
+    drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
+}
+void RoomWidget::drawExplosion (const Explosion& explosion)
+{
+    const AttackDescription& attack_description = match_state->effectAttackDescription (AttackDescription::Type::GoonRocketExplosion);
+    qreal sprite_scale;
+    switch (explosion.type) {
+    case Explosion::Type::Fire:
+        sprite_scale = 1.7;
+        break;
+    case Explosion::Type::Pestilence:
+        sprite_scale = 1.2;
+        break;
+    default:
+        return;
+    }
+
+    qreal orientation = 0.0;
+    quint64 clock_ns = match_state->clockNS ();
+    GLfloat alpha = explosion.remaining_ticks*0.5/attack_description.duration_ticks;
+
+    quint64 period = explosionAnimationPeriodNS ();
+    quint64 phase = clock_ns%period;
+    QOpenGLTexture* texture;
+    switch (explosion.type) {
+    case Explosion::Type::Fire:
+        texture = (phase < period/2) ? textures.effects.explosion.explosion1.get () : textures.effects.explosion.explosion2.get ();
+        break;
+    case Explosion::Type::Pestilence:
+        texture = textures.effects.pestilence_splash.splash.get ();
+        break;
+    default:
+        return;
+    }
+
+    QPointF center = toScreenCoords (explosion.position);
+
+    qreal a1_sin, a1_cos;
+    qreal a2_sin, a2_cos;
+    qreal a3_sin, a3_cos;
+    qreal a4_sin, a4_cos;
+    sincos (orientation + PI_X_3_4, &a1_sin, &a1_cos);
+    sincos (orientation + PI_X_1_4, &a2_sin, &a2_cos);
+    sincos (orientation - PI_X_1_4, &a3_sin, &a3_cos);
+    sincos (orientation - PI_X_3_4, &a4_sin, &a4_cos);
+    qreal scale = viewport_scale*sprite_scale*match_state->explosionDiameter (explosion.type)*SQRT_2*MAP_TO_SCREEN_FACTOR;
+
+    const GLfloat colors[] = {
+        1, 1, 1, alpha,
+        1, 1, 1, alpha,
+        1, 1, 1, alpha,
+        1, 1, 1, alpha,
+    };
+
+    const GLfloat vertices[] = {
+        GLfloat (center.x () + scale*a1_cos), GLfloat (center.y () + scale*a1_sin),
+        GLfloat (center.x () + scale*a2_cos), GLfloat (center.y () + scale*a2_sin),
+        GLfloat (center.x () + scale*a3_cos), GLfloat (center.y () + scale*a3_sin),
+        GLfloat (center.x () + scale*a4_cos), GLfloat (center.y () + scale*a4_sin),
+    };
+
+    static const GLfloat texture_coords[] = {
+        0, 1,
+        1, 1,
+        1, 0,
+        0, 0,
+    };
+
+    static const GLuint indices[] = {
+        0, 1, 2,
+        0, 2, 3,
+    };
+
+    drawColoredTextured (GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, texture);
+}
 void RoomWidget::drawUnitPathToTarget (const Unit& unit)
 {
-    if (!std::holds_alternative<MoveAction> (unit.action))
-        return;
+    const QPointF* target_position = nullptr;
+    if (std::holds_alternative<MoveAction> (unit.action)) {
+        const std::variant<QPointF, quint32>& action_target = std::get<MoveAction> (unit.action).target;
+        if (std::holds_alternative<QPointF> (action_target)) {
+            target_position = &std::get<QPointF> (action_target);
+        } else if (std::holds_alternative<quint32> (action_target)) {
+            quint32 target_unit_id = std::get<quint32> (action_target);
+            const QHash<quint32, Unit>& units = match_state->unitsRef ();
+            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
+            if (target_unit_it != units.end ()) {
+                const Unit& target_unit = *target_unit_it;
+                target_position = &target_unit.position;
+            }
+        }
+    } else if (std::holds_alternative<AttackAction> (unit.action)) {
+        const std::variant<QPointF, quint32>& action_target = std::get<AttackAction> (unit.action).target;
+        if (std::holds_alternative<QPointF> (action_target)) {
+            target_position = &std::get<QPointF> (action_target);
+        } else if (std::holds_alternative<quint32> (action_target)) {
+            quint32 target_unit_id = std::get<quint32> (action_target);
+            const QHash<quint32, Unit>& units = match_state->unitsRef ();
+            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
+            if (target_unit_it != units.end ()) {
+                const Unit& target_unit = *target_unit_it;
+                target_position = &target_unit.position;
+            }
+        }
+    }
 
-    const std::variant<QPointF, quint32>& action_target = std::get<MoveAction> (unit.action).target;
-    if (!std::holds_alternative<QPointF> (action_target))
+    if (!target_position)
         return;
-
-    const QPointF& target_position = std::get<QPointF> (action_target);
 
     QPointF current = toScreenCoords (unit.position);
-    QPointF target = toScreenCoords (target_position);
+    QPointF target = toScreenCoords (*target_position);
 
     const GLfloat vertices[] = {
         GLfloat (current.x ()), GLfloat (current.y ()),
         GLfloat (target.x ()), GLfloat (target.y ()),
     };
 
-    const GLfloat colors[] = {
+    static const GLfloat attack_colors[] = {
+        1, 0, 0, 1,
+        1, 0, 0, 1,
+    };
+
+    static const GLfloat move_colors[] = {
         0, 1, 0, 1,
         0, 1, 0, 1,
     };
 
-    drawColored (GL_LINES, 2, vertices, colors);
+    drawColored (GL_LINES, 2, vertices, std::holds_alternative<AttackAction> (unit.action) ? attack_colors : move_colors);
 }

@@ -1,0 +1,103 @@
+<?xml version="1.0" standalone="no"?>
+<svg width="256" height="256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style rel="stylesheet" type="text/css">
+.unit-colored {
+    fill: #5353ff;
+}
+.stroked {
+    stroke: #000000;
+    stroke-width: 4;
+}
+    </style>
+
+    <defs>
+	<path id="body-neutral" d="
+M 128 44
+Q 128 55, 139 60
+Q 152 55, 150 40
+Q 165 61, 150 82
+Q 206 136, 166 215
+Q 128 190, 90 215
+Q 50 136, 106 82
+Q 91 61, 106 40
+Q 104 55, 117 60
+Q 128 55, 128 44
+Z
+" class="unit-colored stroked" />
+
+	<path id="body-walking1" d="
+M 128 44
+Q 128 55, 139 60
+Q 152 55, 150 40
+Q 165 61, 150 82
+Q 186 136, 161 240
+Q 128 190, 95 240
+Q 70 136, 106 82
+Q 91 61, 106 40
+Q 104 55, 117 60
+Q 128 55, 128 44
+Z
+" class="unit-colored stroked" />
+
+	<path id="body-walking2" d="
+M 128 44
+Q 128 55, 139 60
+Q 152 55, 150 40
+Q 165 61, 150 82
+Q 236 136, 166 190
+Q 128 180, 90 190
+Q 20 136, 106 82
+Q 91 61, 106 40
+Q 104 55, 117 60
+Q 128 55, 128 44
+Z
+" class="unit-colored stroked" />
+
+	<path id="body-attacking1" d="
+M 128 59
+Q 128 65, 139 70
+Q 152 65, 150 55
+Q 175 65, 150 82
+Q 206 136, 166 215
+Q 128 190, 90 215
+Q 50 136, 106 82
+Q 81 65, 106 55
+Q 104 65, 117 70
+Q 128 65, 128 59
+Z
+" class="unit-colored stroked" />
+
+	<path id="body-attacking2" d="
+M 128 26
+Q 128 45, 139 50
+Q 152 45, 150 20
+Q 155 61, 150 82
+Q 206 136, 166 215
+Q 128 190, 90 215
+Q 50 136, 106 82
+Q 101 61, 106 20
+Q 104 45, 117 50
+Q 128 45, 128 26
+Z
+" class="unit-colored stroked" />
+    </defs>
+    <defs>
+	<g id="standing">
+	    <use xlink:href="#body-neutral" />
+	</g>
+	<g id="walking1">
+	    <use xlink:href="#body-walking1" />
+	</g>
+	<g id="walking2">
+	    <use xlink:href="#body-walking2" />
+	</g>
+	<g id="attacking1">
+	    <use xlink:href="#body-attacking1" />
+	</g>
+	<g id="attacking2">
+	    <use xlink:href="#body-attacking2" />
+	</g>
+    </defs>
+
+    <use xlink:href="#attacking2" />
+</svg>

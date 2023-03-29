@@ -1,0 +1,2 @@
+convert -background none -rotate 90 explosion1.svg explosion1.png
+convert -background none -rotate 90 explosion2.svg explosion2.png

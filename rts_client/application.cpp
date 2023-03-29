@@ -12,6 +12,8 @@
 Application::Application (int& argc, char** argv)
     : QApplication (argc, argv)
 {
+    setAttribute (Qt::AA_CompressHighFrequencyEvents, false);
+
     QFontDatabase::addApplicationFont (":/fonts/AnkaCoder-bi.ttf");
     QFontDatabase::addApplicationFont (":/fonts/AnkaCoder-b.ttf");
     QFontDatabase::addApplicationFont (":/fonts/AnkaCoder-i.ttf");
@@ -31,6 +33,9 @@ Application::Application (int& argc, char** argv)
 }
 Application::~Application ()
 {
+    if (current_window)
+        current_window->deleteLater ();
+
     network_thread->exit ();
     network_thread->wait ();
 }
@@ -88,8 +93,7 @@ void Application::authorizationPromptCallback ()
     connect (authorization_widget, SIGNAL (windowsCloseRequested ()), this, SLOT (quitCallback ()));
     connect (authorization_widget, SIGNAL (loginRequested (const QString&, quint16, const QString&, const QString&)),
              this, SLOT (loginCallback (const QString&, quint16, const QString&, const QString&)));
-    current_window.reset (authorization_widget);
-    current_window->show ();
+    setCurrentWindow (authorization_widget);
 }
 void Application::loginCallback (const QString& host, quint16 port, const QString& login, const QString& password)
 {
@@ -109,8 +113,7 @@ void Application::loginCallback (const QString& host, quint16 port, const QStrin
 
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 
-    current_window.reset (authorization_progress_widget);
-    current_window->show ();
+    setCurrentWindow (authorization_progress_widget);
 }
 void Application::createRoomCallback (const QString& name)
 {
@@ -190,8 +193,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
             connect (this, SIGNAL (roomListUpdated (const QVector<RoomEntry>&)), lobby_widget, SLOT (setRoomList (const QVector<RoomEntry>&)));
             connect (lobby_widget, SIGNAL (createRoomRequested (const QString&)), this, SLOT (createRoomCallback (const QString&)));
             connect (lobby_widget, SIGNAL (joinRoomRequested (quint32)), this, SLOT (joinRoomCallback (quint32)));
-            current_window.reset (lobby_widget);
-            current_window->show ();
+            setCurrentWindow (lobby_widget);
 
             RTS::Request request_oneof;
             RTS::QueryRoomListRequest* request = request_oneof.mutable_query_room_list ();
@@ -221,7 +223,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         room_widget->grabMouse ();
         room_widget->grabKeyboard ();
         room_widget->showFullScreen ();
-        current_window.reset (room_widget);
+        setCurrentWindow (room_widget);
     } break;
     case RTS::Response::MessageCase::kCreateRoom: {
     } break;
@@ -291,4 +293,11 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         qDebug () << "Response -> UNKNOWN:" << response_oneof.message_case ();
     }
     }
+}
+void Application::setCurrentWindow (QWidget* new_window)
+{
+    if (current_window)
+        current_window->deleteLater ();
+    new_window->show ();
+    current_window = new_window;
 }

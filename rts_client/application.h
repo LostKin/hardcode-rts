@@ -30,6 +30,7 @@ signals:
 
 private:
     void showLobby ();
+    void setCurrentWindow (QWidget* new_window);
 
 private slots:
     void quitCallback ();
@@ -45,11 +46,9 @@ private slots:
     void matchStartCallback ();
     void createUnitCallback ();
 
-    
-
 private:
     void joinTeam(RTS::Team id);
-    QSharedPointer<QWidget> current_window;
+    QWidget* current_window = nullptr;
     QSharedPointer<NetworkThread> network_thread;
     QHostAddress host_address;
     quint16 port;

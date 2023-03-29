@@ -1,0 +1,134 @@
+<?xml version="1.0" standalone="no"?>
+<svg width="256" height="256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style rel="stylesheet" type="text/css">
+.unit-colored {
+    fill: #e24747;
+}
+.limb {
+    fill: none;
+    stroke: #000000;
+    stroke-width: 5;
+}
+.head {
+    fill: #000000;
+    stroke: transparent;
+}
+.stroked {
+    stroke: #000000;
+    stroke-width: 4;
+}
+    </style>
+
+    <defs>
+	<path id="body" d="
+M 128 50
+Q 70 128, 128 216
+Q 186 128, 128 50
+Z
+" class="unit-colored stroked" />
+	<g id="head-neutral">
+	    <path d="
+M 100 30
+Q 128 70, 156 30
+" class="limb" />
+	    <circle cx="128" cy="51" r="3" class="limb" />
+	</g>
+	<g id="head-attack1">
+	    <path d="
+M 80 40
+Q 128 61, 176 40
+" class="limb" />
+	    <circle cx="128" cy="51" r="3" class="limb" />
+	</g>
+	<g id="head-attack2">
+	    <path d="
+M 120 5
+Q 128 97, 136 5
+" class="limb" />
+	    <circle cx="128" cy="51" r="3" class="limb" />
+	</g>
+	<g id="legs-standing">
+	    <path id="leg1" d="
+M 116 100
+Q 86 70, 76 120
+" class="limb" />
+	    <path id="leg2" d="
+M 140 100
+Q 170 70, 180 120
+" class="limb" />
+	    <path id="leg3" d="
+M 116 156
+Q 86 126, 76 176
+" class="limb" />
+	    <path id="leg4" d="
+M 140 156
+Q 170 126, 180 176
+" class="limb" />
+	</g>
+	<g id="legs-walking1">
+	    <path id="leg1-walking1" d="
+M 116 100
+Q 86 40, 76 90
+" class="limb" />
+	    <path id="leg2-walking1" d="
+M 140 100
+Q 170 90, 180 140
+" class="limb" />
+	    <path id="leg3-walking1" d="
+M 116 156
+Q 86 156, 76 206
+" class="limb" />
+	    <path id="leg4-walking1" d="
+M 140 156
+Q 170 106, 180 156
+" class="limb" />
+	</g>
+	<g id="legs-walking2">
+	    <path id="leg1-walking2" d="
+M 116 100
+Q 86 90, 76 140
+" class="limb" />
+	    <path id="leg2-walking2" d="
+M 140 100
+Q 170 40, 180 90
+" class="limb" />
+	    <path id="leg3-walking2" d="
+M 116 156
+Q 86 106, 76 156
+" class="limb" />
+	    <path id="leg4-walking2" d="
+M 140 156
+Q 170 156, 180 206
+" class="limb" />
+	</g>
+    </defs>
+    <defs>
+	<g id="standing">
+	    <use xlink:href="#body" />
+	    <use xlink:href="#legs-standing" />
+	    <use xlink:href="#head-neutral" />
+	</g>
+	<g id="walking1">
+	    <use xlink:href="#body" />
+	    <use xlink:href="#legs-walking1" />
+	    <use xlink:href="#head-neutral" />
+	</g>
+	<g id="walking2">
+	    <use xlink:href="#body" />
+	    <use xlink:href="#legs-walking2" />
+	    <use xlink:href="#head-neutral" />
+	</g>
+	<g id="attacking1">
+	    <use xlink:href="#body" />
+	    <use xlink:href="#legs-standing" />
+	    <use xlink:href="#head-attack1" />
+	</g>
+	<g id="attacking2">
+	    <use xlink:href="#body" />
+	    <use xlink:href="#legs-standing" />
+	    <use xlink:href="#head-attack2" />
+	</g>
+    </defs>
+
+    <use xlink:href="#walking2" />
+</svg>

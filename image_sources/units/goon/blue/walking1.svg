@@ -1,0 +1,86 @@
+<?xml version="1.0" standalone="no"?>
+<svg width="256" height="256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style rel="stylesheet" type="text/css">
+.unit-colored {
+    fill: #5353ff;
+}
+.stroked {
+    stroke: #000000;
+    stroke-width: 4;
+}
+.stroke {
+    fill: #000000;
+    stroke: transparent;
+}
+.gun-burst1 {
+    fill: #eeff00;
+    stroke: transparent;
+}
+.gun-burst2 {
+    fill: #69deff;
+    stroke: transparent;
+}
+    </style>
+
+    <defs>
+    	<g id="feet-centered">
+    	    <ellipse id="left-foot-centered" cx="86" cy="72" rx="28" ry="48" class="unit-colored stroked" />
+    	    <ellipse id="right-foot-centered" cx="170" cy="72" rx="28" ry="48" class="unit-colored stroked" />
+    	</g>
+    	<g id="feet-walk1">
+    	    <ellipse id="left-foot-forward" cx="86" cy="56" rx="28" ry="48" class="unit-colored stroked" />
+    	    <ellipse id="right-foot-back" cx="170" cy="86" rx="28" ry="48" class="unit-colored stroked" />
+    	</g>
+    	<g id="feet-walk2">
+    	    <ellipse id="left-foot-back" cx="86" cy="86" rx="28" ry="48" class="unit-colored stroked" />
+    	    <ellipse id="right-foot-forward" cx="170" cy="56" rx="28" ry="48" class="unit-colored stroked" />
+    	</g>
+    	<polygon id="body" points="48,103 93,58 163,58 208,103 208,198 188,178 68,178 48,198" class="unit-colored stroked" />
+    	<g id="head">
+    	    <ellipse cx="114" cy="108" rx="3" ry="6" class="stroke" />
+    	    <ellipse cx="128" cy="105" rx="2" ry="4" class="stroke" />
+    	    <ellipse cx="142" cy="108" rx="3" ry="6" class="stroke" />
+    	    <circle cx="128" cy="128" r="24" class="unit-colored stroked" />
+    	</g>
+    	<polygon id="gun" points="160,50 170,55 190,55 200,50 200,190 190,205 170,205 160,190" class="unit-colored stroked" />
+    	<polygon id="gun-burst1" points="190,55 205.98076211353,40 190.6066017178,44.393398282202 195,29.019237886467 183.88228567654,40.511112605664 180,25 176.11771432346,40.511112605664 165,29.019237886467 169.3933982822,44.393398282202 154.01923788647,40 170,55" class="gun-burst1" />
+    	<polygon id="gun-burst2" points="190,55 204.24871130596,41 192.02081528017,42.979184719829 194,30.751288694036 184.39992376674,38.579260953086 180,27 175.60007623326,38.579260953086 166,30.751288694036 167.97918471983,42.979184719829 155.75128869404,41 170,55" class="gun-burst2" />
+    </defs>
+
+    <defs>
+	<g id="standing">
+	    <use xlink:href="#feet-centered" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	    <use xlink:href="#gun" />
+	</g>
+	<g id="walking1">
+	    <use xlink:href="#feet-walk1" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	    <use xlink:href="#gun" />
+	</g>
+	<g id="walking2">
+	    <use xlink:href="#feet-walk2" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	    <use xlink:href="#gun" />
+	</g>
+	<g id="attacking1">
+	    <use xlink:href="#feet-centered" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	    <use xlink:href="#gun-burst1" />
+	    <use xlink:href="#gun" />
+	</g>
+	<g id="attacking2">
+	    <use xlink:href="#feet-centered" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	    <use xlink:href="#gun-burst2" />
+	    <use xlink:href="#gun" />
+	</g>
+    </defs>
+
+    <use xlink:href="#walking1" />
+</svg>

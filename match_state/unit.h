@@ -12,6 +12,9 @@ public:
     enum class Type {
         Seal,
         Crusader,
+        Goon,
+        Beetle,
+        Contaminator,
     };
 
     enum class Team {
@@ -20,17 +23,9 @@ public:
         Blue,
     };
 
-    enum class Action {
-        Stop = 0,
-        Move,
-        Attack,
-        Auto,
-    };
-
 public:
     Unit (Type type, quint64 phase_offset, Team team, const QPointF& position, qreal direction);
     Unit (); // TODO: Remove after switch to emplace ()
-    ~Unit ();
 
 public:
     Type type;
@@ -39,7 +34,8 @@ public:
     QPointF position;
     qreal orientation = 0.0;
     bool selected = false;
-    std::variant<std::monostate, AttackAction, MoveAction> action;
-    int hp = 0;
-    int attack_remaining_ticks = 0;
+    std::variant<std::monostate, AttackAction, MoveAction, CastAction> action;
+    qint64 hp = 0;
+    qint64 attack_remaining_ticks = 0;
+    qint64 cast_cooldown_left_ticks = 0;
 };

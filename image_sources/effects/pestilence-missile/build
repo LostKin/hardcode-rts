@@ -1,0 +1,2 @@
+convert -background none -rotate 90 pestilence-missile1.svg pestilence-missile1.png
+convert -background none -rotate 90 pestilence-missile2.svg pestilence-missile2.png

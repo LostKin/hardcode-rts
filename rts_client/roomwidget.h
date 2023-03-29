@@ -14,22 +14,16 @@ class RoomWidget: public OpenGLWidget
     Q_OBJECT
 
 public:
+    struct UnitTextureTeam {
+        QSharedPointer<QOpenGLTexture> standing;
+        QSharedPointer<QOpenGLTexture> walking1;
+        QSharedPointer<QOpenGLTexture> walking2;
+        QSharedPointer<QOpenGLTexture> shooting1;
+        QSharedPointer<QOpenGLTexture> shooting2;
+    };
     struct UnitTextureSet {
-        struct {
-            QSharedPointer<QOpenGLTexture> standing;
-            QSharedPointer<QOpenGLTexture> walking1;
-            QSharedPointer<QOpenGLTexture> walking2;
-            QSharedPointer<QOpenGLTexture> shooting1;
-            QSharedPointer<QOpenGLTexture> shooting2;
-        } basic;
-        struct {
-            QSharedPointer<QOpenGLTexture> plain;
-            QSharedPointer<QOpenGLTexture> selected;
-        } red;
-        struct {
-            QSharedPointer<QOpenGLTexture> plain;
-            QSharedPointer<QOpenGLTexture> selected;
-        } blue;
+        UnitTextureTeam red;
+        UnitTextureTeam blue;
     };
 
 public:
@@ -68,14 +62,18 @@ protected:
     virtual void initResources () override;
     virtual void updateSize (int w, int h) override;
     virtual void draw () override;
-    virtual void keyPressEvent (QKeyEvent *event) override;
-    virtual void keyReleaseEvent (QKeyEvent *event) override;
-    virtual void mouseMoveEvent (QMouseEvent *event) override;
-    virtual void mousePressEvent (QMouseEvent *event) override;
-    virtual void mouseReleaseEvent (QMouseEvent *event) override;
-    virtual void wheelEvent (QWheelEvent *event) override;
+    virtual void keyPressEvent (QKeyEvent* event) override;
+    virtual void keyReleaseEvent (QKeyEvent* event) override;
+    virtual void mouseMoveEvent (QMouseEvent* event) override;
+    virtual void mousePressEvent (QMouseEvent* event) override;
+    virtual void mouseReleaseEvent (QMouseEvent* event) override;
+    virtual void wheelEvent (QWheelEvent* event) override;
 
 private:
+    static quint64 moveAnimationPeriodNS (Unit::Type type);
+    static quint64 attackAnimationPeriodNS (Unit::Type type);
+    static quint64 missileAnimationPeriodNS (Missile::Type type);
+    static quint64 explosionAnimationPeriodNS ();
     void loadTextures ();
     void drawTeamSelection ();
     void drawTeamSelectionRequested ();
@@ -91,6 +89,9 @@ private:
     void centerViewportAtSelected ();
     void drawHUD ();
     void drawUnit (const Unit& unit);
+    void drawUnitHPBar (const Unit& unit);
+    void drawMissile (const Missile& missile);
+    void drawExplosion (const Explosion& explosion);
     void drawUnitPathToTarget (const Unit& unit);
 
 private slots:
@@ -153,7 +154,27 @@ private:
         struct {
             UnitTextureSet seal;
             UnitTextureSet crusader;
+            UnitTextureSet goon;
+            UnitTextureSet beetle;
+            UnitTextureSet contaminator;
         } units;
+        struct {
+            struct {
+                QSharedPointer<QOpenGLTexture> explosion1;
+                QSharedPointer<QOpenGLTexture> explosion2;
+            } explosion;
+            struct {
+                QSharedPointer<QOpenGLTexture> rocket1;
+                QSharedPointer<QOpenGLTexture> rocket2;
+            } goon_rocket;
+            struct {
+                QSharedPointer<QOpenGLTexture> missile1;
+                QSharedPointer<QOpenGLTexture> missile2;
+            } pestilence_missile;
+            struct {
+                QSharedPointer<QOpenGLTexture> splash;
+            } pestilence_splash;
+        } effects;
     } textures;
 
     int w = 1;

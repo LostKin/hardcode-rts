@@ -40,21 +40,73 @@
         <file>images/buttons/cancel-pressed.png</file>
         <file>images/buttons/quit-pressed.png</file>
 
-	<file>images/units/seal/red-plain.png</file>
-	<file>images/units/seal/red-selected.png</file>
-	<file>images/units/seal/blue-plain.png</file>
-	<file>images/units/seal/blue-selected.png</file>
-	<file>images/units/seal/shooting1.png</file>
-	<file>images/units/seal/shooting2.png</file>
-	<file>images/units/seal/walking2.png</file>
-	<file>images/units/seal/walking1.png</file>
-	<file>images/units/seal/standing.png</file>
-	<file>images/units/seal/selection.png</file>
+	<file>images/units/seal/red/attacking1.png</file>
+	<file>images/units/seal/red/attacking2.png</file>
+	<file>images/units/seal/red/walking2.png</file>
+	<file>images/units/seal/red/walking1.png</file>
+	<file>images/units/seal/red/standing.png</file>
 
-	<file>images/units/crusader/red-plain.png</file>
-	<file>images/units/crusader/red-selected.png</file>
-	<file>images/units/crusader/blue-plain.png</file>
-	<file>images/units/crusader/blue-selected.png</file>
+	<file>images/units/seal/blue/attacking1.png</file>
+	<file>images/units/seal/blue/attacking2.png</file>
+	<file>images/units/seal/blue/walking2.png</file>
+	<file>images/units/seal/blue/walking1.png</file>
+	<file>images/units/seal/blue/standing.png</file>
+
+	<file>images/units/crusader/red/attacking1.png</file>
+	<file>images/units/crusader/red/attacking2.png</file>
+	<file>images/units/crusader/red/walking2.png</file>
+	<file>images/units/crusader/red/walking1.png</file>
+	<file>images/units/crusader/red/standing.png</file>
+
+	<file>images/units/crusader/blue/attacking1.png</file>
+	<file>images/units/crusader/blue/attacking2.png</file>
+	<file>images/units/crusader/blue/walking2.png</file>
+	<file>images/units/crusader/blue/walking1.png</file>
+	<file>images/units/crusader/blue/standing.png</file>
+
+	<file>images/units/goon/red/attacking1.png</file>
+	<file>images/units/goon/red/attacking2.png</file>
+	<file>images/units/goon/red/walking2.png</file>
+	<file>images/units/goon/red/walking1.png</file>
+	<file>images/units/goon/red/standing.png</file>
+
+	<file>images/units/goon/blue/attacking1.png</file>
+	<file>images/units/goon/blue/attacking2.png</file>
+	<file>images/units/goon/blue/walking2.png</file>
+	<file>images/units/goon/blue/walking1.png</file>
+	<file>images/units/goon/blue/standing.png</file>
+
+	<file>images/units/contaminator/red/attacking1.png</file>
+	<file>images/units/contaminator/red/attacking2.png</file>
+	<file>images/units/contaminator/red/walking2.png</file>
+	<file>images/units/contaminator/red/walking1.png</file>
+	<file>images/units/contaminator/red/standing.png</file>
+
+	<file>images/units/contaminator/blue/attacking1.png</file>
+	<file>images/units/contaminator/blue/attacking2.png</file>
+	<file>images/units/contaminator/blue/walking2.png</file>
+	<file>images/units/contaminator/blue/walking1.png</file>
+	<file>images/units/contaminator/blue/standing.png</file>
+
+	<file>images/units/beetle/red/attacking1.png</file>
+	<file>images/units/beetle/red/attacking2.png</file>
+	<file>images/units/beetle/red/walking2.png</file>
+	<file>images/units/beetle/red/walking1.png</file>
+	<file>images/units/beetle/red/standing.png</file>
+
+	<file>images/units/beetle/blue/attacking1.png</file>
+	<file>images/units/beetle/blue/attacking2.png</file>
+	<file>images/units/beetle/blue/walking2.png</file>
+	<file>images/units/beetle/blue/walking1.png</file>
+	<file>images/units/beetle/blue/standing.png</file>
+
+	<file>images/effects/explosion/explosion1.png</file>
+	<file>images/effects/explosion/explosion2.png</file>
+	<file>images/effects/goon-rocket/rocket1.png</file>
+	<file>images/effects/goon-rocket/rocket2.png</file>
+	<file>images/effects/pestilence-splash/splash.png</file>
+	<file>images/effects/pestilence-missile/missile1.png</file>
+	<file>images/effects/pestilence-missile/missile2.png</file>
 
 	<file>fonts/AnkaCoder-bi.ttf</file>
 	<file>fonts/AnkaCoder-b.ttf</file>
@@ -72,7 +124,22 @@
 	<file>fonts/NotCourierSans.COPYING</file>
 	<file>fonts/NotCourierSans.GPL-2</file>
 
-	<file>audio/shot.wav</file>
-	<file>audio/shot2.wav</file>
+	<file>audio/units/seal/attack1.wav</file>
+	<file>audio/units/seal/attack2.wav</file>
+
+	<file>audio/units/crusader/attack1.wav</file>
+	<file>audio/units/crusader/attack2.wav</file>
+
+	<file>audio/units/goon/rocket-start.wav</file>
+
+	<file>audio/units/contaminator/pestilence.wav</file>
+	<file>audio/units/contaminator/spawn-beetle.wav</file>
+
+	<file>audio/units/beetle/attack.wav</file>
+
+	<file>audio/effects/contaminator-pestilence.wav</file>
+	<file>audio/effects/pestilence-splash1.wav</file>
+	<file>audio/effects/pestilence-splash2.wav</file>
+	<file>audio/effects/rocket-explosion.wav</file>
     </qresource>
 </RCC>

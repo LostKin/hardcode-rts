@@ -13,12 +13,54 @@ static inline qreal unitSquareDistance (const Unit& a, const Unit& b)
     QPointF delta = a.position - b.position;
     return delta.x ()*delta.x () + delta.y ()*delta.y ();
 }
+static inline qreal vectorRadius (const QPointF& v)
+{
+    return qAtan2 (v.y (), v.x ());
+}
+static inline qreal vectorSize (const QPointF& v)
+{
+    return std::hypot (v.x (), v.y ());
+}
 static inline qreal unitDistance (const Unit& a, const Unit& b)
 {
-    QPointF delta = a.position - b.position;
-    return std::hypot (delta.x (), delta.y ());
+    return vectorSize (a.position - b.position);
 }
-
+static bool intersectRectangleCircle (const QRectF& rect, const QPointF& center, qreal radius)
+{
+    if (center.x () < rect.left ()) {
+        if (center.y () < rect.top ()) {
+            QPointF delta = center - rect.topLeft ();
+            return QPointF::dotProduct (delta, delta) <= radius*radius;
+        } else if (center.y () > rect.bottom ()) {
+            QPointF delta = center - rect.bottomLeft ();
+            return QPointF::dotProduct (delta, delta) <= radius*radius;
+        } else {
+            return center.x () >= (rect.left () - radius);
+        }
+    } else if (center.x () > rect.right ()) {
+        if (center.y () < rect.top ()) {
+            QPointF delta = center - rect.topRight ();
+            return QPointF::dotProduct (delta, delta) <= radius*radius;
+        } else if (center.y () > rect.bottom ()) {
+            QPointF delta = center - rect.bottomRight ();
+            return QPointF::dotProduct (delta, delta) <= radius*radius;
+        } else {
+            return center.x () <= (rect.right () + radius);
+        }
+    } else {
+        if (center.y () < rect.top ()) {
+            return center.y () >= (rect.top () - radius);
+        } else if (center.y () > rect.bottom ()) {
+            return center.y () <= (rect.bottom () + radius);
+        } else {
+            return true;
+        }
+    }
+}
+static bool orientationsFuzzyMatch (qreal a, qreal b)
+{
+    return qAbs (remainder (a - b, M_PI*2.0)) <= (M_PI/180.0); // Within 1 degree
+}
 
 MatchState::MatchState ()
 {
@@ -39,7 +81,15 @@ const QHash<quint32, Unit>& MatchState::unitsRef () const
 {
     return units;
 }
-QHash<quint32, Unit>::iterator  MatchState::createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction)
+const QHash<quint32, Missile>& MatchState::missilesRef () const
+{
+    return missiles;
+}
+const QHash<quint32, Explosion>& MatchState::explosionsRef () const
+{
+    return explosions;
+}
+QHash<quint32, Unit>::iterator MatchState::createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction)
 {
     QHash<quint32, Unit>::iterator unit = units.insert (next_id++, {type, quint32 (random_generator ()), team, position, direction});
     unit->hp = unitMaxHP (unit->type);
@@ -121,7 +171,11 @@ void MatchState::attackEnemy (Unit::Team attacker_team, const QPointF& point)
             break;
         }
     }
-    applyAction (target.has_value () ? AttackAction (*target) : AttackAction (point));
+    startAction (target.has_value () ? AttackAction (*target) : AttackAction (point));
+}
+void MatchState::cast (CastAction::Type cast_type, Unit::Team attacker_team, const QPointF& point)
+{
+    startAction (CastAction (cast_type, point));
 }
 void MatchState::move (const QPointF& point)
 {
@@ -133,7 +187,7 @@ void MatchState::move (const QPointF& point)
             break;
         }
     }
-    applyAction (target.has_value () ? MoveAction (*target) : MoveAction (point));
+    startAction (target.has_value () ? MoveAction (*target) : MoveAction (point));
 }
 void MatchState::stop ()
 {
@@ -157,191 +211,35 @@ void MatchState::autoAction (Unit::Team attacker_team, const QPointF& point)
     }
     if (target.has_value ()) {
         if (target_is_enemy) {
-            applyAction (AttackAction (*target));
+            startAction (AttackAction (*target));
         } else {
-            applyAction (MoveAction (*target));
+            startAction (MoveAction (*target));
         }
     } else {
-        applyAction (MoveAction (point));
+        startAction (MoveAction (point));
     }
 }
 void MatchState::tick ()
 {
-    constexpr uint64_t dt_nsec = 20000000;
+    constexpr uint64_t dt_nsec = 20'000'000;
     constexpr qreal dt = 0.020;
 
     clock_ns += dt_nsec;
 
-    // TODO: Implement current and new positions
+#if 0
+    space_art.unit[]:contrained (#self <= 8) units = find_units_at (center, 8);
+    for (index (units) i = 0 asc 200) {
+    }
+    QVector<Unit> units = findUnitsAtCircle (center, radius, max_count);
+    QVector<Unit> units = findUnitsAtCircleByType (center, radius, type_id, max_count);
+#endif
 
-    // Apply action
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = it.value ();
-        QPointF& position = unit.position;
-        if (unit.attack_remaining_ticks > 0) {
-            --unit.attack_remaining_ticks;
-        } else if (std::holds_alternative<MoveAction> (unit.action)) {
-            const std::variant<QPointF, quint32>& target = std::get<MoveAction> (unit.action).target;
-            if (std::holds_alternative<QPointF> (target)) {
-                const QPointF& target_position = std::get<QPointF> (target);
-                qreal max_velocity = unitMaxVelocity (unit.type);
-                QPointF off = target_position - position;
-                rotateUnit (unit, dt, qAtan2 (off.y (), off.x ()));
-                qreal path_length = max_velocity*dt;
-                qreal square_length = QPointF::dotProduct (off, off);
-                if (square_length <= path_length*path_length) {
-                    position = target_position;
-                } else {
-                    position += off*(path_length/qSqrt (square_length));
-                }
-            }
-        } else if (std::holds_alternative<AttackAction> (unit.action)) {
-            const std::variant<QPointF, quint32>& target = std::get<AttackAction> (unit.action).target;
-            const AttackDescription& attack_description = unitPrimaryAttackDescription (unit.type);
-            if (std::holds_alternative<quint32> (target)) {
-                quint32 target_unit_id = std::get<quint32> (target);
-                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
-                if (target_unit_it != units.end ()) {
-                    Unit& target_unit = target_unit_it.value ();
-                    QPointF direction = target_unit.position - position;
-                    qreal target_orientation = qAtan2 (direction.y (), direction.x ());
-                    bool in_range = false;
-                    qreal max_velocity = unitMaxVelocity (unit.type);
-                    QPointF off = target_unit.position - position;
-                    rotateUnit (unit, dt, qAtan2 (off.y (), off.x ()));
-                    qreal length = qSqrt (QPointF::dotProduct (off, off));
-                    qreal path_length = max_velocity*dt;
-                    qreal full_attack_range = attack_description.range + unitRadius (unit.type) + unitRadius (target_unit.type);
-                    if (length > full_attack_range) {
-                        if (path_length > length - full_attack_range)
-                            path_length = length - full_attack_range;
-                        position += off*(path_length/length);
-                        in_range = unitDistance (unit, target_unit) <= full_attack_range;
-                    } else {
-                        in_range = true;
-                    }
-                    if (in_range && qAbs (unit.orientation - target_orientation) <= (M_PI/180.0)) {
-                        target_unit.hp = std::max (target_unit.hp - attack_description.damage, 0);
-                        unit.attack_remaining_ticks = attack_description.duration_ticks;
-                        emit soundEventEmitted (SoundEvent::Shot);
-                    }
-                } else {
-                    unit.action = std::monostate ();
-                }
-            }
-        }
-    }
+    // TODO: Implement current and new positions for actions
 
-    // Apply area boundary collisions
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = it.value ();
-        QPointF& position = unit.position;
-        qreal unit_radius = unitRadius (unit.type);
-        qreal max_velocity = unitMaxVelocity (unit.type)*2.0;
-        QPointF off;
-        if (position.x () < (area.left () + unit_radius)) {
-            off.setX ((area.left () + unit_radius) - position.x ());
-        } else if (position.x () > (area.right () - unit_radius)) {
-            off.setX ((area.right () - unit_radius) - position.x ());
-        }
-        if (position.y () < (area.top () + unit_radius)) {
-            off.setY ((area.top () + unit_radius) - position.y ());
-        } else if (position.y () > (area.bottom () - unit_radius)) {
-            off.setY ((area.bottom () - unit_radius) - position.y ());
-        }
-        qreal path_length = max_velocity*dt;
-        qreal square_length = QPointF::dotProduct (off, off);
-        if (square_length <= path_length*path_length) {
-            position += off;
-        } else {
-            position += off*(path_length/qSqrt (square_length));
-        }
-    }
-
-    // Apply unit collisions: O (N^2)
-    QVector<QPointF> offsets;
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = it.value ();
-        QPointF& position = unit.position;
-        qreal unit_radius = unitRadius (unit.type);
-        QPointF off;
-        for (QHash<quint32, Unit>::iterator related_it = units.begin (); related_it != units.end (); ++related_it) {
-            if (related_it == it)
-                continue;
-            Unit& related_unit = related_it.value ();
-            QPointF& related_position = related_unit.position;
-            qreal related_unit_radius = unitRadius (related_unit.type);
-            qreal min_distance = unit_radius + related_unit_radius;
-            QPointF delta = position - related_position;
-            if (QPointF::dotProduct (delta, delta) < min_distance*min_distance) {
-                qreal delta_length = qSqrt (QPointF::dotProduct (delta, delta));
-                if (delta_length < 0.00001) {
-                    qreal dx, dy;
-                    qreal angle = qreal (M_PI*2.0*random_generator ())/(qreal (std::numeric_limits<quint32>::max ()) + 1.0);
-                    sincos (angle, &dy, &dx);
-                    delta.setX (dx*min_distance);
-                    delta.setY (dy*min_distance);
-                } else {
-                    qreal distance_to_comfort = min_distance - delta_length;
-                    delta *= distance_to_comfort/delta_length;
-                }
-                off += delta;
-            }
-        }
-        offsets.append (off);
-    }
-    {
-        size_t i = 0;
-        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-            Unit& unit = it.value ();
-            QPointF& position = unit.position;
-            QPointF off = offsets[i++];
-            qreal max_velocity = unitMaxVelocity (unit.type)*0.9; // TODO: Make force depend on distance
-            qreal path_length = max_velocity*dt;
-            qreal square_length = QPointF::dotProduct (off, off);
-            if (square_length <= path_length*path_length) {
-                position += off;
-            } else {
-                position += off*(path_length/qSqrt (square_length));
-            }
-        }
-    }
-}
-bool MatchState::intersectRectangleCircle (const QRectF& rect, const QPointF& center, qreal radius)
-{
-    if (center.x () < rect.left ()) {
-        if (center.y () < rect.top ()) {
-            QPointF delta = center - rect.topLeft ();
-            return QPointF::dotProduct (delta, delta) <= radius*radius;
-        } else if (center.y () > rect.bottom ()) {
-            QPointF delta = center - rect.bottomLeft ();
-            return QPointF::dotProduct (delta, delta) <= radius*radius;
-        } else {
-            return center.x () >= (rect.left () - radius);
-        }
-    } else if (center.x () > rect.right ()) {
-        if (center.y () < rect.top ()) {
-            QPointF delta = center - rect.topRight ();
-            return QPointF::dotProduct (delta, delta) <= radius*radius;
-        } else if (center.y () > rect.bottom ()) {
-            QPointF delta = center - rect.bottomRight ();
-            return QPointF::dotProduct (delta, delta) <= radius*radius;
-        } else {
-            return center.x () <= (rect.right () + radius);
-        }
-    } else {
-        if (center.y () < rect.top ()) {
-            return center.y () >= (rect.top () - radius);
-        } else if (center.y () > rect.bottom ()) {
-            return center.y () <= (rect.bottom () + radius);
-        } else {
-            return true;
-        }
-    }
-}
-qreal MatchState::normalizeOrientation (qreal orientation)
-{
-    return remainder (orientation, M_PI*2.0);
+    applyActions (dt);
+    applyEffects (dt);
+    applyAreaBoundaryCollisions (dt);
+    applyUnitCollisions (dt); // TODO: Possibly optimize fron O (N^2) to O (N*log (N))
 }
 void MatchState::clearSelection ()
 {
@@ -368,6 +266,34 @@ qreal MatchState::unitDiameter (Unit::Type type) const
         return 2.0/3.0;
     case Unit::Type::Crusader:
         return 1.0;
+    case Unit::Type::Goon:
+        return 1.0;
+    case Unit::Type::Beetle:
+        return 0.5;
+    case Unit::Type::Contaminator:
+        return 1.5;
+    default:
+        return 0.0;
+    }
+}
+qreal MatchState::missileDiameter (Missile::Type type) const
+{
+    switch (type) {
+    case Missile::Type::Rocket:
+        return 0.5;
+    case Missile::Type::Pestilence:
+        return 0.5;
+    default:
+        return 0.0;
+    }
+}
+qreal MatchState::explosionDiameter (Explosion::Type type) const
+{
+    switch (type) {
+    case Explosion::Type::Fire:
+        return 3.0;
+    case Explosion::Type::Pestilence:
+        return 3.0;
     default:
         return 0.0;
     }
@@ -383,6 +309,12 @@ qreal MatchState::unitMaxVelocity (Unit::Type type) const
         return 4.0;
     case Unit::Type::Crusader:
         return 7.0;
+    case Unit::Type::Goon:
+        return 4.0;
+    case Unit::Type::Beetle:
+        return 5.0;
+    case Unit::Type::Contaminator:
+        return 3.5;
     default:
         return 0.0;
     }
@@ -394,6 +326,12 @@ qreal MatchState::unitMaxAngularVelocity (Unit::Type type) const
         return M_PI*4.0;
     case Unit::Type::Crusader:
         return M_PI*7.0;
+    case Unit::Type::Goon:
+        return M_PI*4.0;
+    case Unit::Type::Beetle:
+        return M_PI*7.0;
+    case Unit::Type::Contaminator:
+        return M_PI*4.0;
     default:
         return 0.0;
     }
@@ -405,6 +343,12 @@ int MatchState::unitHitBarCount (Unit::Type type) const
         return 4;
     case Unit::Type::Crusader:
         return 5;
+    case Unit::Type::Goon:
+        return 5;
+    case Unit::Type::Beetle:
+        return 4;
+    case Unit::Type::Contaminator:
+        return 7;
     default:
         return 0;
     }
@@ -416,6 +360,12 @@ int MatchState::unitMaxHP (Unit::Type type) const
         return 40;
     case Unit::Type::Crusader:
         return 100;
+    case Unit::Type::Goon:
+        return 80;
+    case Unit::Type::Beetle:
+        return 20;
+    case Unit::Type::Contaminator:
+        return 120;
     default:
         return 0;
     }
@@ -424,15 +374,35 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
 {
     static const AttackDescription seal = ({
         AttackDescription ret;
-        ret.type = AttackDescription::Type::Immediate;
+        ret.type = AttackDescription::Type::SealShot;
         ret.range = 5.0;
+        ret.damage = 10;
         ret.duration_ticks = 20;
         ret;
     });
     static const AttackDescription crusader = ({
         AttackDescription ret;
-        ret.type = AttackDescription::Type::Immediate;
-        ret.duration_ticks = 20;
+        ret.type = AttackDescription::Type::CrusaderChop;
+        ret.range = 0.1;
+        ret.damage = 16;
+        ret.duration_ticks = 40;
+        ret;
+    });
+    static const AttackDescription goon = ({
+        AttackDescription ret;
+        ret.type = AttackDescription::Type::GoonRocket;
+        ret.range = 8.0;
+        ret.damage = 12;
+        ret.missile_velocity = 16.0;
+        ret.duration_ticks = 60;
+        ret;
+    });
+    static const AttackDescription beetle = ({
+        AttackDescription ret;
+        ret.type = AttackDescription::Type::BeetleSlice;
+        ret.range = 0.1;
+        ret.damage = 8;
+        ret.duration_ticks = 40;
         ret;
     });
     static const AttackDescription unkown = {};
@@ -442,19 +412,64 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         return seal;
     case Unit::Type::Crusader:
         return crusader;
+    case Unit::Type::Goon:
+        return goon;
+    case Unit::Type::Beetle:
+        return beetle;
     default:
         return unkown;
     }
 }
-quint64 MatchState::animationPeriodNS (Unit::Type type) const
+const AttackDescription& MatchState::effectAttackDescription (AttackDescription::Type type) const
 {
+    static const AttackDescription goon_rocket_explosion = ({
+        AttackDescription ret;
+        ret.type = type;
+        ret.range = 1.4;
+        ret.damage = 8;
+        ret.duration_ticks = 20;
+        ret;
+    });
+    static const AttackDescription pestilence_missile = ({
+        AttackDescription ret;
+        ret.type = type;
+        ret.range = 7.0;
+        ret.damage = 0;
+        ret.missile_velocity = 16.0;
+        ret.duration_ticks = 20;
+        ret.cooldown_ticks = 40;
+        ret;
+    });
+    static const AttackDescription pestilence_splash = ({
+        AttackDescription ret;
+        ret.type = type;
+        ret.range = 1.8;
+        ret.damage = 6;
+        ret.duration_ticks = 20;
+        ret.friendly_fire = false;
+        ret;
+    });
+    static const AttackDescription spawn_beetle = ({
+        AttackDescription ret;
+        ret.type = type;
+        ret.range = 4;
+        ret.duration_ticks = 20;
+        ret.cooldown_ticks = 20;
+        ret;
+    });
+    static const AttackDescription unkown = {};
+
     switch (type) {
-    case Unit::Type::Seal:
-        return 500000000;
-    case Unit::Type::Crusader:
-        return 300000000;
+    case AttackDescription::Type::GoonRocketExplosion:
+        return goon_rocket_explosion;
+    case AttackDescription::Type::PestilenceMissile:
+        return pestilence_missile;
+    case AttackDescription::Type::PestilenceSplash:
+        return pestilence_splash;
+    case AttackDescription::Type::SpawnBeetle:
+        return spawn_beetle;
     default:
-        return 0;
+        return unkown;
     }
 }
 bool MatchState::checkUnitSelection (const Unit& unit, const QPointF& point) const
@@ -472,23 +487,24 @@ bool MatchState::checkUnitSelection (const Unit& unit, const QRectF& rect) const
         return false;
     return intersectRectangleCircle (rect, unit.position, radius);
 }
-void MatchState::applyAction (const MoveAction& action)
+void MatchState::startAction (const MoveAction& action)
 {
+    // TODO: Check for team
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
         if (unit.selected)
             unit.action = action;
     }
 }
-void MatchState::applyAction (const AttackAction& action)
+void MatchState::startAction (const AttackAction& action)
 {
+    // TODO: Check for team
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
         if (unit.selected)
             unit.action = action;
     }
 }
-
 void MatchState::LoadState(const QVector<QPair<quint32, Unit> >& other, const QVector<QPair<quint32, quint32> >& to_delete) {
     /*QSet<quint32> to_keep;
     for (quint32 i = 0; i < other.size(); i++) {
@@ -525,4 +541,391 @@ void MatchState::LoadState(const QVector<QPair<quint32, Unit> >& other, const QV
     /*for (QHash<quint32, Unit>::const_iterator iter = other->unitsRef().cbegin(); iter != other->unitsRef().cend(); iter++) {
         createUnit(iter->type, iter->team, iter->position, 0);
     }*/
+}
+void MatchState::startAction (const CastAction& action)
+{
+    // TODO: Check for team
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it.value ();
+        if (unit.selected) {
+            if (unit.type == Unit::Type::Contaminator && unit.cast_cooldown_left_ticks <= 0) {
+                switch (action.type) {
+                case CastAction::Type::Pestilence:
+                    unit.action = action;
+                    break;
+                case CastAction::Type::SpawnBeetle:
+                    unit.action = action;
+                    break;
+                default:
+                    break;
+                }
+                break;
+            }
+        }
+    }
+}
+void MatchState::emitMissile (Missile::Type missile_type, const Unit& unit, quint32 target_unit_id, const Unit& target_unit)
+{
+    missiles.insert (next_id++, {missile_type, unit.team, unit.position, target_unit_id, target_unit.position});
+}
+void MatchState::emitMissile (Missile::Type missile_type, const Unit& unit, const QPointF& target)
+{
+    missiles.insert (next_id++, {missile_type, unit.team, unit.position, target});
+}
+void MatchState::emitExplosion (Explosion::Type explosion_type, Unit::Team sender_team, const QPointF& position)
+{
+    const AttackDescription& attack_description = ({
+        const AttackDescription* ret;
+        switch (explosion_type) {
+        case Explosion::Type::Fire:
+            ret = &effectAttackDescription (AttackDescription::Type::GoonRocketExplosion);
+            break;
+        case Explosion::Type::Pestilence:
+            ret = &effectAttackDescription (AttackDescription::Type::PestilenceSplash);
+            break;
+        default:
+            return;
+        }
+        *ret;
+    });
+
+    *explosions.insert (next_id++, {explosion_type, position, attack_description.duration_ticks});
+
+    for (QMutableHashIterator<quint32, Unit> it (units); it.hasNext ();) {
+        it.next ();
+        Unit& target_unit = it.value ();
+        if (attack_description.friendly_fire || target_unit.team != sender_team) {
+            QPointF displacement = target_unit.position - position;
+            qreal displacement_length = vectorSize (displacement);
+            if (displacement_length <= attack_description.range + unitRadius (target_unit.type))
+                dealDamage (target_unit, attack_description.damage);
+        }
+    }
+    switch (explosion_type) {
+    case Explosion::Type::Fire:
+        emit soundEventEmitted (SoundEvent::RocketExplosion);
+        break;
+    case Explosion::Type::Pestilence:
+        emit soundEventEmitted (SoundEvent::PestilenceSplash);
+        break;
+    default:
+        break;
+    }
+}
+void MatchState::applyAreaBoundaryCollisions (qreal dt)
+{
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it.value ();
+        applyAreaBoundaryCollision (unit, dt);
+    }
+}
+void MatchState::applyActions (qreal dt)
+{
+    // Apply action
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = *it;
+        if (unit.cast_cooldown_left_ticks > 0)
+            --unit.cast_cooldown_left_ticks;
+        if (unit.attack_remaining_ticks > 1) {
+            --unit.attack_remaining_ticks;
+        } else if (std::holds_alternative<MoveAction> (unit.action)) {
+            if (unit.attack_remaining_ticks > 0)
+                --unit.attack_remaining_ticks;
+            const std::variant<QPointF, quint32>& target = std::get<MoveAction> (unit.action).target;
+            if (std::holds_alternative<QPointF> (target)) {
+                const QPointF& target_position = std::get<QPointF> (target);
+                applyMovement (unit, target_position, dt, true);
+            } else if (std::holds_alternative<quint32> (target)) {
+                quint32 target_unit_id = std::get<quint32> (target);
+                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                if (target_unit_it != units.end ()) {
+                    Unit& target_unit = *target_unit_it;
+                    applyMovement (unit, target_unit.position, dt, false);
+                } else {
+                    unit.action = std::monostate ();
+                }
+            }
+        } else if (std::holds_alternative<AttackAction> (unit.action)) {
+            if (unit.attack_remaining_ticks > 0)
+                --unit.attack_remaining_ticks;
+            const std::variant<QPointF, quint32>& target = std::get<AttackAction> (unit.action).target;
+            if (std::holds_alternative<quint32> (target)) {
+                quint32 target_unit_id = std::get<quint32> (target);
+                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                if (target_unit_it != units.end ()) {
+                    Unit& target_unit = *target_unit_it;
+                    applyAttack (unit, target_unit_id, target_unit, dt);
+                } else {
+                    unit.action = std::monostate ();
+                }
+            }
+        } else if (std::holds_alternative<CastAction> (unit.action)) {
+            const CastAction& cast_action = std::get<CastAction> (unit.action);
+            applyCast (unit, cast_action.type, cast_action.target, dt);
+        } else if (unit.attack_remaining_ticks > 0) {
+            --unit.attack_remaining_ticks;
+        }
+    }
+}
+void MatchState::applyEffects (qreal dt)
+{
+    applyMissilesMovement (dt);
+    applyExplosionEffects (dt);
+}
+void MatchState::applyMissilesMovement (qreal dt)
+{
+    for (QMutableHashIterator<quint32, Missile> it (missiles); it.hasNext ();) {
+        it.next ();
+        Missile& missile = it.value ();
+        if (missile.target_unit.has_value ()) {
+            quint32 target_unit_id = *missile.target_unit;
+            QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+            if (target_unit_it != units.end ()) {
+                missile.target_position = target_unit_it->position;
+                QPointF direction = missile.target_position - missile.position;
+                missile.orientation = qAtan2 (direction.y (), direction.x ());
+            } else {
+                missile.target_unit.reset ();
+            }
+        }
+        QPointF displacement = missile.target_position - missile.position;
+        qreal max_velocity = 0.0;
+        switch (missile.type) {
+        case Missile::Type::Rocket: {
+            const AttackDescription& attack_description = unitPrimaryAttackDescription (Unit::Type::Goon);
+            max_velocity = attack_description.missile_velocity;
+        } break;
+        case Missile::Type::Pestilence: {
+            const AttackDescription& attack_description = effectAttackDescription (AttackDescription::Type::PestilenceMissile);
+            max_velocity = attack_description.missile_velocity;
+        } break;
+        default: {
+        }
+        }
+        qreal path_length = max_velocity*dt;
+        qreal displacement_length = vectorSize (displacement);
+        if (displacement_length <= path_length) {
+            if (missile.target_unit.has_value ()) {
+                quint32 target_unit_id = *missile.target_unit;
+                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                if (target_unit_it != units.end ()) {
+                    Unit& target_unit = *target_unit_it;
+                    switch (missile.type) {
+                    case Missile::Type::Rocket: {
+                        const AttackDescription& attack_description = unitPrimaryAttackDescription (Unit::Type::Goon);
+                        dealDamage (target_unit, attack_description.damage);
+                    } break;
+                    default: {
+                    }
+                    }
+                }
+            }
+            switch (missile.type) {
+            case Missile::Type::Rocket:
+                emitExplosion (Explosion::Type::Fire, missile.sender_team, missile.target_position);
+                break;
+            case Missile::Type::Pestilence:
+                emitExplosion (Explosion::Type::Pestilence, missile.sender_team, missile.target_position);
+                break;
+            default:
+                break;
+            }
+            it.remove ();
+        } else {
+            missile.position += displacement*(path_length/displacement_length);
+        }
+    }
+}
+void MatchState::applyExplosionEffects (qreal /* dt */)
+{
+    for (QMutableHashIterator<quint32, Explosion> it (explosions); it.hasNext ();) {
+        it.next ();
+        Explosion& explosion = it.value ();
+        if (--explosion.remaining_ticks <= 0)
+            it.remove ();
+    }
+}
+void MatchState::applyMovement (Unit& unit, const QPointF& target_position, qreal dt, bool clear_action_on_completion)
+{
+    qreal max_velocity = unitMaxVelocity (unit.type);
+    QPointF displacement = target_position - unit.position;
+    rotateUnit (unit, dt, vectorRadius (displacement));
+    qreal path_length = max_velocity*dt;
+    qreal displacement_length = vectorSize (displacement);
+    if (displacement_length <= path_length) {
+        unit.position = target_position;
+        if (clear_action_on_completion)
+            unit.action = std::monostate ();
+    } else {
+        unit.position += displacement*(path_length/displacement_length);
+    }
+}
+void MatchState::applyAttack (Unit& unit, quint32 target_unit_id, Unit& target_unit, qreal dt)
+{
+    const AttackDescription& attack_description = unitPrimaryAttackDescription (unit.type);
+    QPointF displacement = target_unit.position - unit.position;
+    qreal target_orientation = vectorRadius (displacement);
+    rotateUnit (unit, dt, target_orientation);
+    qreal displacement_length = vectorSize (displacement);
+    qreal full_attack_range = attack_description.range + unitRadius (unit.type) + unitRadius (target_unit.type);
+    bool in_range = false;
+    if (displacement_length > full_attack_range) {
+        qreal path_length = unitMaxVelocity (unit.type)*dt;
+        if (path_length >= displacement_length - full_attack_range) {
+            path_length = displacement_length - full_attack_range;
+            in_range = true;
+        }
+        unit.position += displacement*(path_length/displacement_length);
+    } else {
+        in_range = true;
+    }
+    if (in_range && orientationsFuzzyMatch (unit.orientation, target_orientation)) {
+        switch (attack_description.type) {
+        case AttackDescription::Type::SealShot: {
+            dealDamage (target_unit, attack_description.damage);
+            unit.attack_remaining_ticks = attack_description.duration_ticks;
+            emit soundEventEmitted (SoundEvent::SealAttack);
+        } break;
+        case AttackDescription::Type::CrusaderChop: {
+            dealDamage (target_unit, attack_description.damage);
+            unit.attack_remaining_ticks = attack_description.duration_ticks;
+            emit soundEventEmitted (SoundEvent::CrusaderAttack);
+        } break;
+        case AttackDescription::Type::GoonRocket: {
+            unit.attack_remaining_ticks = attack_description.duration_ticks;
+            emitMissile (Missile::Type::Rocket, unit, target_unit_id, target_unit);
+            emit soundEventEmitted (SoundEvent::RocketStart);
+        } break;
+        case AttackDescription::Type::BeetleSlice: {
+            dealDamage (target_unit, attack_description.damage);
+            unit.attack_remaining_ticks = attack_description.duration_ticks;
+            emit soundEventEmitted (SoundEvent::BeetleAttack);
+        } break;
+        default: {
+        }
+        }
+    }
+}
+void MatchState::applyCast (Unit& unit, CastAction::Type cast_type, const QPointF& target, qreal dt)
+{
+    const AttackDescription& attack_description = ({
+        const AttackDescription* ret;
+        switch (cast_type) {
+        case CastAction::Type::Pestilence:
+            ret = &effectAttackDescription (AttackDescription::Type::PestilenceMissile);
+            break;
+        case CastAction::Type::SpawnBeetle:
+            ret = &effectAttackDescription (AttackDescription::Type::SpawnBeetle);
+            break;
+        default:
+            return;
+        }
+        *ret;
+    });
+    QPointF displacement = target - unit.position;
+    qreal target_orientation = vectorRadius (displacement);
+    rotateUnit (unit, dt, target_orientation);
+    qreal displacement_length = vectorSize (displacement);
+    qreal full_attack_range = attack_description.range + unitRadius (unit.type);
+    bool in_range = false;
+    if (displacement_length > full_attack_range) {
+        qreal path_length = unitMaxVelocity (unit.type)*dt;
+        if (path_length >= displacement_length - full_attack_range) {
+            path_length = displacement_length - full_attack_range;
+            in_range = true;
+        }
+        unit.position += displacement*(path_length/displacement_length);
+    } else {
+        in_range = true;
+    }
+    if (in_range && orientationsFuzzyMatch (unit.orientation, target_orientation)) {
+        switch (cast_type) {
+        case CastAction::Type::Pestilence:
+            emitMissile (Missile::Type::Pestilence, unit, target);
+            unit.action = std::monostate ();
+            unit.cast_cooldown_left_ticks = attack_description.cooldown_ticks;
+            emit soundEventEmitted (SoundEvent::PestilenceMissileStart);
+            break;
+        case CastAction::Type::SpawnBeetle:
+            createUnit (Unit::Type::Beetle, unit.team, target, unit.orientation);
+            unit.action = std::monostate ();
+            unit.cast_cooldown_left_ticks = attack_description.cooldown_ticks;
+            emit soundEventEmitted (SoundEvent::SpawnBeetle);
+            break;
+        default:
+            return;
+        }
+    }
+}
+void MatchState::applyAreaBoundaryCollision (Unit& unit, qreal dt)
+{
+    QPointF& position = unit.position;
+    qreal unit_radius = unitRadius (unit.type);
+    qreal max_velocity = unitMaxVelocity (unit.type)*2.0;
+    QPointF off;
+    if (position.x () < (area.left () + unit_radius)) {
+        off.setX ((area.left () + unit_radius) - position.x ());
+    } else if (position.x () > (area.right () - unit_radius)) {
+        off.setX ((area.right () - unit_radius) - position.x ());
+    }
+    if (position.y () < (area.top () + unit_radius)) {
+        off.setY ((area.top () + unit_radius) - position.y ());
+    } else if (position.y () > (area.bottom () - unit_radius)) {
+        off.setY ((area.bottom () - unit_radius) - position.y ());
+    }
+    qreal path_length = max_velocity*dt;
+    qreal square_length = QPointF::dotProduct (off, off);
+    if (square_length <= path_length*path_length) {
+        position += off;
+    } else {
+        position += off*(path_length/qSqrt (square_length));
+    }
+}
+void MatchState::applyUnitCollisions (qreal dt)
+{
+    // Apply unit collisions: O (N^2)
+    QVector<QPointF> offsets;
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = *it;
+        qreal unit_radius = unitRadius (unit.type);
+        QPointF off;
+        for (QHash<quint32, Unit>::iterator related_it = units.begin (); related_it != units.end (); ++related_it) {
+            if (related_it == it)
+                continue;
+            Unit& related_unit = *related_it;
+            qreal related_unit_radius = unitRadius (related_unit.type);
+            qreal min_distance = unit_radius + related_unit_radius;
+            QPointF delta = unit.position - related_unit.position;
+            if (vectorSize (delta) < min_distance) {
+                qreal delta_length = qSqrt (QPointF::dotProduct (delta, delta));
+                if (delta_length < 0.00001) {
+                    qreal dx, dy;
+                    qreal angle = qreal (M_PI*2.0*random_generator ())/(qreal (std::numeric_limits<quint32>::max ()) + 1.0);
+                    sincos (angle, &dy, &dx);
+                    delta = {dx*min_distance, dy*min_distance};
+                } else {
+                    qreal distance_to_comfort = min_distance - delta_length;
+                    delta *= distance_to_comfort/delta_length;
+                }
+                off += delta;
+            }
+        }
+        offsets.append (off);
+    }
+    {
+        size_t i = 0;
+        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it.value ();
+            QPointF& position = unit.position;
+            QPointF off = offsets[i++];
+            qreal max_velocity = unitMaxVelocity (unit.type)*0.9; // TODO: Make force depend on distance
+            qreal path_length = max_velocity*dt;
+            qreal length = vectorSize (off);
+            position += (length <= path_length) ? off : off*(path_length/length);
+        }
+    }
+}
+void MatchState::dealDamage (Unit& unit, qint64 damage)
+{
+    unit.hp = std::max<qint64> (unit.hp - damage, 0);
 }

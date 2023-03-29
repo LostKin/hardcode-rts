@@ -31,3 +31,20 @@ struct AttackAction
 
     std::variant<QPointF, quint32> target;
 };
+
+struct CastAction
+{
+    enum class Type {
+        Unknown,
+        Pestilence,
+        SpawnBeetle,
+    };
+
+    CastAction (Type type, const QPointF& target_position)
+        : type (type), target (target_position)
+    {
+    }
+
+    Type type;
+    QPointF target;
+};

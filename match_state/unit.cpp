@@ -13,6 +13,3 @@ Unit::Unit() // TODO: Remove after switch to emplace ()
     position = QPointF(0, 0);
     orientation = 0;
 }
-Unit::~Unit ()
-{
-}

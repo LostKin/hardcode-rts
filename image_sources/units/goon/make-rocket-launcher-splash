@@ -1,0 +1,17 @@
+#!/usr/bin/lua
+
+local inner_radius = 17
+local outer_radius = 28
+
+local x, y = 180, 55
+
+for i = 0, 10 do
+   local angle = (90-15*5 + 15*i)/180*math.pi
+   local radius
+   if i%2 == 0 then
+      radius = inner_radius
+   else
+      radius = outer_radius
+   end
+   print (tostring (x + math.cos (angle)*radius)..","..tostring (y - math.sin (angle)*radius))
+end

@@ -7,14 +7,21 @@ struct AttackDescription
 {
     enum class Type {
         Unknown = 0,
-        Immediate,
-        Missile,
-        Splash,
+        SealShot,
+        CrusaderChop,
+        GoonRocket,
+        GoonRocketExplosion,
+        BeetleSlice,
+        PestilenceMissile,
+        PestilenceSplash,
+        SpawnBeetle,
     };
 
     Type type = Type::Unknown;
     qreal range = 0.0;
-    int damage = 10;
-    qreal splash_radius = 0.0;
-    int duration_ticks = 0;
+    qreal missile_velocity = 0.0;
+    qint64 damage = 0;
+    qint64 duration_ticks = 0;
+    bool friendly_fire = true;
+    qint64 cooldown_ticks = 0;
 };
