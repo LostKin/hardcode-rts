@@ -2,8 +2,7 @@
 #include "authorizationwidget.h"
 #include "authorizationprogresswidget.h"
 #include "lobbywidget.h"
-
-
+#include "matchstate.h"
 
 #include <QDebug>
 #include <QFontDatabase>
@@ -12,6 +11,9 @@
 Application::Application (int& argc, char** argv)
     : QApplication (argc, argv)
 {
+    if (argc == 2 && !strcmp (argv[1], "--single-mode"))
+        single_mode = true;
+
     setAttribute (Qt::AA_CompressHighFrequencyEvents, false);
 
     QFontDatabase::addApplicationFont (":/fonts/AnkaCoder-bi.ttf");
@@ -43,7 +45,10 @@ Application::~Application ()
 void Application::start ()
 {
     network_thread->start ();
-    authorizationPromptCallback ();
+    if (single_mode)
+        showRoom (true);
+    else
+        authorizationPromptCallback ();
 }
 
 void Application::joinTeam (RTS::Team team) {
@@ -189,11 +194,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         case RTS::AuthorizationResponse::kSessionToken: {
             const RTS::SessionToken& session_token = response.session_token ();
             this->session_token = session_token.value ();
-            LobbyWidget* lobby_widget = new LobbyWidget (login);
-            connect (this, SIGNAL (roomListUpdated (const QVector<RoomEntry>&)), lobby_widget, SLOT (setRoomList (const QVector<RoomEntry>&)));
-            connect (lobby_widget, SIGNAL (createRoomRequested (const QString&)), this, SLOT (createRoomCallback (const QString&)));
-            connect (lobby_widget, SIGNAL (joinRoomRequested (quint32)), this, SLOT (joinRoomCallback (quint32)));
-            setCurrentWindow (lobby_widget);
+            showLobby (login);
 
             RTS::Request request_oneof;
             RTS::QueryRoomListRequest* request = request_oneof.mutable_query_room_list ();
@@ -210,20 +211,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         }
     } break;
     case RTS::Response::MessageCase::kJoinRoom: {
-        RoomWidget* room_widget = new RoomWidget; // connect roomwidget signals ...
-        connect(room_widget, &RoomWidget::joinRedTeamRequested, this, &Application::joinRedTeamCallback);
-        connect(room_widget, &RoomWidget::joinBlueTeamRequested, this, &Application::joinBlueTeamCallback);
-        connect(room_widget, &RoomWidget::spectateRequested, this, &Application::joinSpectatorCallback);
-        connect(this, &Application::queryReadiness, room_widget, &RoomWidget::readinessHandler);
-        connect(room_widget, &RoomWidget::readinessRequested, this, &Application::readinessCallback);
-        connect(this, &Application::startMatch, room_widget, &RoomWidget::startMatchHandler);
-        connect(this, &Application::startCountdown, room_widget, &RoomWidget::startCountDownHandler);
-        connect(this, &Application::updateMatchState, room_widget, &RoomWidget::loadMatchState);
-        connect(room_widget, &RoomWidget::createUnitRequested, this, &Application::createUnitCallback);
-        room_widget->grabMouse ();
-        room_widget->grabKeyboard ();
-        room_widget->showFullScreen ();
-        setCurrentWindow (room_widget);
+        showRoom ();
     } break;
     case RTS::Response::MessageCase::kCreateRoom: {
     } break;
@@ -293,6 +281,72 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         qDebug () << "Response -> UNKNOWN:" << response_oneof.message_case ();
     }
     }
+}
+void Application::showLobby (const QString& login)
+{
+    LobbyWidget* lobby_widget = new LobbyWidget (login);
+    connect (this, SIGNAL (roomListUpdated (const QVector<RoomEntry>&)), lobby_widget, SLOT (setRoomList (const QVector<RoomEntry>&)));
+    connect (lobby_widget, SIGNAL (createRoomRequested (const QString&)), this, SLOT (createRoomCallback (const QString&)));
+    connect (lobby_widget, SIGNAL (joinRoomRequested (quint32)), this, SLOT (joinRoomCallback (quint32)));
+    setCurrentWindow (lobby_widget);
+}
+void Application::showRoom (bool single_mode)
+{
+    RoomWidget* room_widget = new RoomWidget; // connect roomwidget signals ...
+    connect(room_widget, &RoomWidget::joinRedTeamRequested, this, &Application::joinRedTeamCallback);
+    connect(room_widget, &RoomWidget::joinBlueTeamRequested, this, &Application::joinBlueTeamCallback);
+    connect(room_widget, &RoomWidget::spectateRequested, this, &Application::joinSpectatorCallback);
+    connect(this, &Application::queryReadiness, room_widget, &RoomWidget::readinessHandler);
+    connect(room_widget, &RoomWidget::readinessRequested, this, &Application::readinessCallback);
+    connect(this, &Application::startMatch, room_widget, &RoomWidget::startMatchHandler);
+    connect(this, &Application::startCountdown, room_widget, &RoomWidget::startCountDownHandler);
+    connect(this, &Application::updateMatchState, room_widget, &RoomWidget::loadMatchState);
+    connect(room_widget, &RoomWidget::createUnitRequested, this, &Application::createUnitCallback);
+    room_widget->grabMouse ();
+    room_widget->grabKeyboard ();
+    room_widget->showFullScreen ();
+    setCurrentWindow (room_widget);
+
+    if (single_mode)
+        startSingleMode (room_widget);
+}
+void Application::startSingleMode (RoomWidget* room_widget)
+{
+    room_widget->startMatch (Unit::Team::Red);
+
+    quint32 unit_id = 0;
+    std::mt19937 random_generator;
+    QVector<QPair<quint32, Unit>> units = {
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-10, -5}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-12, -3}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-11, -2}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-9, -1}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-8, 0}, 0}},
+        {unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Red, {1, 3}, 0}},
+        {unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Red, {8, 3}, 0}},
+        {unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Red, {8, 6}, 0}},
+        {unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Red, {8, 9}, 0}},
+        {unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Blue, {10, 5}, 0}},
+        {unit_id++, {Unit::Type::Contaminator, random_generator (), Unit::Team::Red, {3, 2}, 0}},
+        {unit_id++, {Unit::Type::Contaminator, random_generator (), Unit::Team::Red, {5, 2}, 0}},
+        {unit_id++, {Unit::Type::Contaminator, random_generator (), Unit::Team::Red, {7, 2}, 0}},
+        {unit_id++, {Unit::Type::Contaminator, random_generator (), Unit::Team::Red, {9, 2}, 0}},
+        {unit_id++, {Unit::Type::Goon, random_generator (), Unit::Team::Red, {10, 2}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-20, -8}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {-4, 5}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {-3, 5}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {-2, 5}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {-1, 5}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {0, 5}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {1, 5}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {2, 5}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {3, 5}, 0}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {4, 5}, 0}},
+    };
+    for (int off = -4; off <= 4; ++off)
+        units.push_back ({unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Blue, {off*2.0/3.0, 7}, 0}});
+    emit updateMatchState (units, {});
 }
 void Application::setCurrentWindow (QWidget* new_window)
 {

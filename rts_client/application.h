@@ -29,8 +29,10 @@ signals:
     void updateMatchState (QVector<QPair<quint32, Unit> > units, const QVector<QPair<quint32, quint32> >& to_delete);
 
 private:
-    void showLobby ();
+    void showLobby (const QString& login);
+    void showRoom (bool single_mode = false);
     void setCurrentWindow (QWidget* new_window);
+    void startSingleMode (RoomWidget* room_widget);
 
 private slots:
     void quitCallback ();
@@ -48,6 +50,7 @@ private slots:
 
 private:
     void joinTeam(RTS::Team id);
+    bool single_mode = false;
     QWidget* current_window = nullptr;
     QSharedPointer<NetworkThread> network_thread;
     QHostAddress host_address;

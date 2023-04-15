@@ -171,36 +171,6 @@ void RoomWidget::startMatch (Unit::Team team)
     pressed_button = ButtonId::None;
     match_state = QSharedPointer<MatchState> (new MatchState);
     connect (&*match_state, SIGNAL (soundEventEmitted (SoundEvent)), this, SLOT (playSound (SoundEvent)));
-    /*{
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-15, -7), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-10, -5), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-12, -3), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-11, -2), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-9, -1), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-8, -0), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (1, 3), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 3), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 6), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 9), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (10, 5), 0);
-        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (3, 2), 0);
-        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (5, 2), 0);
-        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (7, 2), 0);
-        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (9, 2), 0);
-        match_state->createUnit (Unit::Type::Goon, Unit::Team::Red, QPointF (10, 2), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-20, -8), 0);
-    }*/
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-4, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-3, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-2, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-1, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (0, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (1, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (2, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (3, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (4, 5), 0);
-        // for (int off = -4; off <= 4; ++off)
-        //     match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (off*2.0/3.0, 7), 0);
     viewport_scale_power = 0;
     viewport_scale = 1.0;
     viewport_center = {};
