@@ -83,9 +83,10 @@ private:
     void drawMatchStarted ();
     void frameUpdate (qreal dt);
     void matchFrameUpdate (qreal dt);
-    QPointF toMapCoords (const QPointF& point);
-    QPointF toScreenCoords (const QPointF& point);
-    bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture);
+    QPointF toMapCoords (const QPointF& point) const;
+    QRectF toMapCoords (const QRectF& rect) const;
+    QPointF toScreenCoords (const QPointF& point) const;
+    bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const;
     void centerViewportAtSelected ();
     void drawHUD ();
     void drawUnit (const Unit& unit);
@@ -190,7 +191,6 @@ private:
     QSharedPointer<MatchState> match_state;
     qreal map_to_screen_factor = 1.0;
     qreal viewport_scale = 1.0;
-    QRectF arena_viewport_map_coords = {0, 0, 1, 1};
     int mouse_scroll_border = 10;
     int viewport_scale_power = 0;
     QPointF viewport_center = {0.0, 0.0};

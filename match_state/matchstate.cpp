@@ -107,13 +107,13 @@ void MatchState::trySelect (Unit::Team team, const QPointF& point, bool add)
     if (add) {
         for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
             Unit& unit = it.value ();
-            if (unit.team == team && checkUnitSelection (unit, point))
+            if (unit.team == team && checkUnitInsideSelection (unit, point))
                 unit.selected = true;
         }
     } else {
         for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
             Unit& unit = it.value ();
-            if (unit.team == team && checkUnitSelection (unit, point)) {
+            if (unit.team == team && checkUnitInsideSelection (unit, point)) {
                 clearSelection ();
                 unit.selected = true;
                 break;
@@ -126,14 +126,14 @@ void MatchState::trySelect (Unit::Team team, const QRectF& rect, bool add)
     if (add) {
         for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
             Unit& unit = it.value ();
-            if (unit.team == team && checkUnitSelection (unit, rect))
+            if (unit.team == team && checkUnitInsideSelection (unit, rect))
                 unit.selected = true;
         }
     } else {
         bool selection_found = false;
         for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
             Unit& unit = it.value ();
-            if (unit.team == team && checkUnitSelection (unit, rect)) {
+            if (unit.team == team && checkUnitInsideSelection (unit, rect)) {
                 selection_found = true;
                 break;
             }
@@ -142,9 +142,24 @@ void MatchState::trySelect (Unit::Team team, const QRectF& rect, bool add)
             clearSelection ();
             for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
                 Unit& unit = it.value ();
-                if (unit.team == team && checkUnitSelection (unit, rect))
+                if (unit.team == team && checkUnitInsideSelection (unit, rect))
                     unit.selected = true;
             }
+        }
+    }
+}
+void MatchState::trySelectByType (Unit::Team team, const QPointF& point, const QRectF& viewport, bool add)
+{
+    Unit* unit = findUnitAt (team, point);
+    if (!unit)
+        return;
+    Unit::Type type = unit->type;
+    if (!add)
+        clearSelection ();
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it.value ();
+        if (unit.team == team && unit.type == type && checkUnitInsideViewport (unit, viewport)) {
+            unit.selected = true;
         }
     }
 }
@@ -166,7 +181,7 @@ void MatchState::attackEnemy (Unit::Team attacker_team, const QPointF& point)
     std::optional<quint32> target;
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
-        if (unit.team != attacker_team && checkUnitSelection (unit, point)) {
+        if (unit.team != attacker_team && checkUnitInsideSelection (unit, point)) {
             target = it.key ();
             break;
         }
@@ -182,7 +197,7 @@ void MatchState::move (const QPointF& point)
     std::optional<quint32> target;
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
-        if (checkUnitSelection (unit, point)) {
+        if (checkUnitInsideSelection (unit, point)) {
             target = it.key ();
             break;
         }
@@ -203,7 +218,7 @@ void MatchState::autoAction (Unit::Team attacker_team, const QPointF& point)
     bool target_is_enemy = false;
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
-        if (checkUnitSelection (unit, point)) {
+        if (checkUnitInsideSelection (unit, point)) {
             target = it.key ();
             target_is_enemy = it->team != attacker_team;
             break;
@@ -472,7 +487,7 @@ const AttackDescription& MatchState::effectAttackDescription (AttackDescription:
         return unkown;
     }
 }
-bool MatchState::checkUnitSelection (const Unit& unit, const QPointF& point) const
+bool MatchState::checkUnitInsideSelection (const Unit& unit, const QPointF& point) const
 {
     qreal radius = unitRadius (unit.type);
     if (radius == 0.0)
@@ -480,12 +495,19 @@ bool MatchState::checkUnitSelection (const Unit& unit, const QPointF& point) con
     QPointF delta = point - unit.position;
     return QPointF::dotProduct (delta, delta) <= radius*radius;
 }
-bool MatchState::checkUnitSelection (const Unit& unit, const QRectF& rect) const
+bool MatchState::checkUnitInsideSelection (const Unit& unit, const QRectF& rect) const
 {
     qreal radius = unitRadius (unit.type);
     if (radius == 0.0)
         return false;
     return intersectRectangleCircle (rect, unit.position, radius);
+}
+bool MatchState::checkUnitInsideViewport (const Unit& unit, const QRectF& viewport) const
+{
+    qreal radius = unitRadius (unit.type);
+    if (radius == 0.0)
+        return false;
+    return intersectRectangleCircle (viewport, unit.position, radius);
 }
 void MatchState::startAction (const MoveAction& action)
 {
@@ -928,4 +950,13 @@ void MatchState::applyUnitCollisions (qreal dt)
 void MatchState::dealDamage (Unit& unit, qint64 damage)
 {
     unit.hp = std::max<qint64> (unit.hp - damage, 0);
+}
+Unit* MatchState::findUnitAt (Unit::Team team, const QPointF& point)
+{
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it.value ();
+        if (unit.team == team && checkUnitInsideSelection (unit, point))
+            return &unit;
+    }
+    return nullptr;
 }

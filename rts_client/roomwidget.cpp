@@ -423,7 +423,7 @@ void RoomWidget::keyReleaseEvent (QKeyEvent *event)
     switch (state) {
     case State::MatchStarted: {
         switch (event->key ()) {
-        case Qt::Key_Control:
+        case Qt::Key_Control: // TODO: Check modifiers on events and drop if released outside window
             ctrl_pressed = false;
             break;
         case Qt::Key_Alt:
@@ -488,7 +488,11 @@ void RoomWidget::mousePressEvent (QMouseEvent *event)
     case State::MatchStarted: {
         switch (event->button ()) {
         case Qt::LeftButton: {
-            selection_start = cursor_position;
+            if (ctrl_pressed) {
+                match_state->trySelectByType (team, toMapCoords (cursor_position), toMapCoords (arena_viewport), shift_pressed);
+            } else {
+                selection_start = cursor_position;
+            }
         } break;
         case Qt::RightButton: {
             match_state->autoAction (team, toMapCoords (cursor_position));
@@ -785,17 +789,21 @@ void RoomWidget::matchFrameUpdate (qreal dt)
     else if (viewport_center.y () > area.bottom ()*scale)
         viewport_center.setY (area.bottom ()*scale);
 }
-QPointF RoomWidget::toMapCoords(const QPointF& point)
+QPointF RoomWidget::toMapCoords (const QPointF& point) const
 {
     qreal scale = viewport_scale*MAP_TO_SCREEN_FACTOR;
     return (viewport_center - arena_viewport_center + point)/scale;
 }
-QPointF RoomWidget::toScreenCoords (const QPointF& point)
+QRectF RoomWidget::toMapCoords (const QRectF& rect) const
+{
+    return QRectF (toMapCoords (rect.topLeft ()), toMapCoords (rect.bottomRight ()));
+}
+QPointF RoomWidget::toScreenCoords (const QPointF& point) const
 {
     qreal scale = viewport_scale*MAP_TO_SCREEN_FACTOR;
     return arena_viewport_center - viewport_center + scale*point;
 }
-bool RoomWidget::pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture)
+bool RoomWidget::pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const
 {
     return
         point.x () >= button_pos.x () &&

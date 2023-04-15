@@ -44,6 +44,7 @@ public:
     QHash<quint32, Unit>::iterator createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
     void trySelect (Unit::Team team, const QPointF& point, bool add);
     void trySelect (Unit::Team team, const QRectF& rect, bool add);
+    void trySelectByType (Unit::Team team, const QPointF& point, const QRectF& viewport, bool add);
     std::optional<QPointF> selectionCenter () const;
     void attackEnemy (Unit::Team attacker_team, const QPointF& point);
     void cast (CastAction::Type cast_type, Unit::Team attacker_team, const QPointF& point);
@@ -70,8 +71,9 @@ signals:
 private:
     void clearSelection ();
     void rotateUnit (Unit& unit, qreal dt, qreal dest_orientation);
-    bool checkUnitSelection (const Unit& unit, const QPointF& point) const;
-    bool checkUnitSelection (const Unit& unit, const QRectF& rect) const;
+    bool checkUnitInsideSelection (const Unit& unit, const QPointF& point) const;
+    bool checkUnitInsideSelection (const Unit& unit, const QRectF& rect) const;
+    bool checkUnitInsideViewport (const Unit& unit, const QRectF& viewport) const;
     void startAction (const MoveAction& action);
     void startAction (const AttackAction& action);
     void startAction (const CastAction& action);
@@ -89,6 +91,7 @@ private:
     void applyAreaBoundaryCollision (Unit& unit, qreal dt);
     void applyUnitCollisions (qreal dt);
     void dealDamage (Unit& unit, qint64 damage);
+    Unit* findUnitAt (Unit::Team team, const QPointF& point);
 
 private:
     quint64 clock_ns = 0;
