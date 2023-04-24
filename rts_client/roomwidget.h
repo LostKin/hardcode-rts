@@ -74,6 +74,12 @@ private:
     static quint64 attackAnimationPeriodNS (Unit::Type type);
     static quint64 missileAnimationPeriodNS (Missile::Type type);
     static quint64 explosionAnimationPeriodNS ();
+    void matchKeyPressEvent (QKeyEvent* event);
+    void matchKeyReleaseEvent (QKeyEvent* event);
+    void matchMouseMoveEvent (QMouseEvent* event);
+    void matchMousePressEvent (QMouseEvent* event);
+    void matchMouseReleaseEvent (QMouseEvent* event);
+    void matchWheelEvent (QWheelEvent* event);
     void loadTextures ();
     void drawTeamSelection ();
     void drawTeamSelectionRequested ();
@@ -94,6 +100,9 @@ private:
     void drawMissile (const Missile& missile);
     void drawExplosion (const Explosion& explosion);
     void drawUnitPathToTarget (const Unit& unit);
+    void selectGroup (quint64 group);
+    void bindSelectionToGroup (quint64 group);
+    void groupEvent (quint64 group_num);
 
 private slots:
     void tick ();

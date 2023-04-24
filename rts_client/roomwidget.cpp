@@ -10,6 +10,7 @@
 #include <QDebug>
 #include <QPainter>
 #include <QSound>
+#include <QGuiApplication>
 #include <math.h>
 #include <mutex>
 
@@ -381,38 +382,13 @@ void RoomWidget::draw ()
 }
 void RoomWidget::keyPressEvent (QKeyEvent *event)
 {
+    Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
+    ctrl_pressed = modifiers & Qt::ControlModifier;
+    shift_pressed = modifiers & Qt::ShiftModifier;
+    alt_pressed = modifiers & Qt::AltModifier;
     switch (state) {
     case State::MatchStarted: {
-        switch (event->key ()) {
-        case Qt::Key_A:
-            match_state->attackEnemy (team, toMapCoords (cursor_position));
-            break;
-        case Qt::Key_E:
-            match_state->cast (CastAction::Type::Pestilence, team, toMapCoords (cursor_position));
-            break;
-        case Qt::Key_T:
-            match_state->cast (CastAction::Type::SpawnBeetle, team, toMapCoords (cursor_position));
-            break;
-        case Qt::Key_G:
-            match_state->move (toMapCoords (cursor_position));
-            break;
-        case Qt::Key_S:
-            match_state->stop ();
-            break;
-        case Qt::Key_F:
-            if (ctrl_pressed)
-                centerViewportAtSelected ();
-            break;
-        case Qt::Key_Control:
-            ctrl_pressed = true;
-            break;
-        case Qt::Key_Alt:
-            alt_pressed = true;
-            break;
-        case Qt::Key_Shift:
-            shift_pressed = true;
-            break;
-        }
+        matchKeyPressEvent (event);
     } break;
     default: {
     }
@@ -420,19 +396,13 @@ void RoomWidget::keyPressEvent (QKeyEvent *event)
 }
 void RoomWidget::keyReleaseEvent (QKeyEvent *event)
 {
+    Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
+    ctrl_pressed = modifiers & Qt::ControlModifier;
+    shift_pressed = modifiers & Qt::ShiftModifier;
+    alt_pressed = modifiers & Qt::AltModifier;
     switch (state) {
     case State::MatchStarted: {
-        switch (event->key ()) {
-        case Qt::Key_Control: // TODO: Check modifiers on events and drop if released outside window
-            ctrl_pressed = false;
-            break;
-        case Qt::Key_Alt:
-            alt_pressed = false;
-            break;
-        case Qt::Key_Shift:
-            shift_pressed = false;
-            break;
-        }
+        matchKeyReleaseEvent (event);
     } break;
     default: {
     }
@@ -440,10 +410,25 @@ void RoomWidget::keyReleaseEvent (QKeyEvent *event)
 }
 void RoomWidget::mouseMoveEvent (QMouseEvent *event)
 {
+    Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
+    ctrl_pressed = modifiers & Qt::ControlModifier;
+    shift_pressed = modifiers & Qt::ShiftModifier;
+    alt_pressed = modifiers & Qt::AltModifier;
     cursor_position = event->pos ();
+    switch (state) {
+    case State::MatchStarted: {
+        matchMouseMoveEvent (event);
+    } break;
+    default: {
+    }
+    }
 }
 void RoomWidget::mousePressEvent (QMouseEvent *event)
 {
+    Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
+    ctrl_pressed = modifiers & Qt::ControlModifier;
+    shift_pressed = modifiers & Qt::ShiftModifier;
+    alt_pressed = modifiers & Qt::AltModifier;
     switch (state) {
     case State::TeamSelection: {
         if (event->button () == Qt::LeftButton) {
@@ -486,20 +471,7 @@ void RoomWidget::mousePressEvent (QMouseEvent *event)
         }
     } break;
     case State::MatchStarted: {
-        switch (event->button ()) {
-        case Qt::LeftButton: {
-            if (ctrl_pressed) {
-                match_state->trySelectByType (team, toMapCoords (cursor_position), toMapCoords (arena_viewport), shift_pressed);
-            } else {
-                selection_start = cursor_position;
-            }
-        } break;
-        case Qt::RightButton: {
-            match_state->autoAction (team, toMapCoords (cursor_position));
-        } break;
-        default: {
-        }
-        }
+        matchMousePressEvent (event);
     } break;
     default: {
     }
@@ -507,6 +479,10 @@ void RoomWidget::mousePressEvent (QMouseEvent *event)
 }
 void RoomWidget::mouseReleaseEvent (QMouseEvent *event)
 {
+    Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
+    ctrl_pressed = modifiers & Qt::ControlModifier;
+    shift_pressed = modifiers & Qt::ShiftModifier;
+    alt_pressed = modifiers & Qt::AltModifier;
     switch (state) {
     case State::TeamSelection: {
         if (event->button () == Qt::LeftButton) {
@@ -564,22 +540,7 @@ void RoomWidget::mouseReleaseEvent (QMouseEvent *event)
         }
     } break;
     case State::MatchStarted: {
-        switch (event->button ()) {
-        case Qt::LeftButton: {
-            if (selection_start.has_value ()) {
-                if (*selection_start == cursor_position) {
-                    match_state->trySelect (team, toMapCoords (cursor_position), shift_pressed);
-                } else {
-                    QPointF p1 = toMapCoords (*selection_start);
-                    QPointF p2 = toMapCoords (cursor_position);
-                    match_state->trySelect (team, {qMin (p1.x (), p2.x ()), qMin (p1.y (), p2.y ()), qAbs (p1.x () - p2.x ()), qAbs (p1.y () - p2.y ())}, shift_pressed);
-                }
-                selection_start.reset ();
-            }
-        } break;
-        default: {
-        }
-        }
+        matchMouseReleaseEvent (event);
     } break;
     default: {
     }
@@ -588,16 +549,134 @@ void RoomWidget::mouseReleaseEvent (QMouseEvent *event)
 }
 void RoomWidget::wheelEvent (QWheelEvent *event)
 {
-    int dy = (event->angleDelta ().y () > 0) ? 1 : -1;
+    Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
+    ctrl_pressed = modifiers & Qt::ControlModifier;
+    shift_pressed = modifiers & Qt::ShiftModifier;
+    alt_pressed = modifiers & Qt::AltModifier;
     switch (state) {
     case State::MatchStarted: {
-        viewport_scale_power += dy;
-        viewport_scale_power = qBound (-10, viewport_scale_power, 10);
-        viewport_scale = pow (1.125, viewport_scale_power);
+        matchWheelEvent (event);
     } break;
     default: {
     }
     }
+}
+void RoomWidget::matchKeyPressEvent (QKeyEvent *event)
+{
+    switch (event->key ()) {
+    case Qt::Key_A:
+        match_state->attackEnemy (team, toMapCoords (cursor_position));
+        break;
+    case Qt::Key_E:
+        match_state->cast (CastAction::Type::Pestilence, team, toMapCoords (cursor_position));
+        break;
+    case Qt::Key_T:
+        match_state->cast (CastAction::Type::SpawnBeetle, team, toMapCoords (cursor_position));
+        break;
+    case Qt::Key_G:
+        match_state->move (toMapCoords (cursor_position));
+        break;
+    case Qt::Key_S:
+        match_state->stop ();
+        break;
+    case Qt::Key_F:
+        if (ctrl_pressed)
+            centerViewportAtSelected ();
+        break;
+    case Qt::Key_1:
+    case Qt::Key_Exclam:
+        groupEvent (1);
+        break;
+    case Qt::Key_2:
+    case Qt::Key_At:
+        groupEvent (2);
+        break;
+    case Qt::Key_3:
+    case Qt::Key_NumberSign:
+        groupEvent (3);
+        break;
+    case Qt::Key_4:
+    case Qt::Key_Dollar:
+        groupEvent (4);
+        break;
+    case Qt::Key_5:
+    case Qt::Key_Percent:
+        groupEvent (5);
+        break;
+    case Qt::Key_6:
+    case Qt::Key_AsciiCircum:
+        groupEvent (6);
+        break;
+    case Qt::Key_7:
+    case Qt::Key_Ampersand:
+        groupEvent (7);
+        break;
+    case Qt::Key_8:
+    case Qt::Key_Asterisk:
+        groupEvent (8);
+        break;
+    case Qt::Key_9:
+    case Qt::Key_ParenLeft:
+    case Qt::Key_QuoteLeft:
+    case Qt::Key_AsciiTilde:
+        groupEvent (9);
+        break;
+    case Qt::Key_0:
+    case Qt::Key_ParenRight:
+        groupEvent (10);
+        break;
+    }
+}
+void RoomWidget::matchKeyReleaseEvent (QKeyEvent *event)
+{
+    switch (event->key ()) {
+    }
+}
+void RoomWidget::matchMouseMoveEvent (QMouseEvent* /* event */)
+{
+}
+void RoomWidget::matchMousePressEvent (QMouseEvent *event)
+{
+    switch (event->button ()) {
+    case Qt::LeftButton: {
+        if (ctrl_pressed) {
+            match_state->trySelectByType (team, toMapCoords (cursor_position), toMapCoords (arena_viewport), shift_pressed);
+        } else {
+            selection_start = cursor_position;
+        }
+    } break;
+    case Qt::RightButton: {
+        match_state->autoAction (team, toMapCoords (cursor_position));
+    } break;
+    default: {
+    }
+    }
+}
+void RoomWidget::matchMouseReleaseEvent (QMouseEvent *event)
+{
+    switch (event->button ()) {
+    case Qt::LeftButton: {
+        if (selection_start.has_value ()) {
+            if (*selection_start == cursor_position) {
+                match_state->trySelect (team, toMapCoords (cursor_position), shift_pressed);
+            } else {
+                QPointF p1 = toMapCoords (*selection_start);
+                QPointF p2 = toMapCoords (cursor_position);
+                match_state->trySelect (team, {qMin (p1.x (), p2.x ()), qMin (p1.y (), p2.y ()), qAbs (p1.x () - p2.x ()), qAbs (p1.y () - p2.y ())}, shift_pressed);
+            }
+            selection_start.reset ();
+        }
+    } break;
+    default: {
+    }
+    }
+}
+void RoomWidget::matchWheelEvent (QWheelEvent *event)
+{
+    int dy = (event->angleDelta ().y () > 0) ? 1 : -1;
+    viewport_scale_power += dy;
+    viewport_scale_power = qBound (-10, viewport_scale_power, 10);
+    viewport_scale = pow (1.125, viewport_scale_power);
 }
 void RoomWidget::drawTeamSelection ()
 {
@@ -1225,4 +1304,17 @@ void RoomWidget::drawUnitPathToTarget (const Unit& unit)
     };
 
     drawColored (GL_LINES, 2, vertices, std::holds_alternative<AttackAction> (unit.action) ? attack_colors : move_colors);
+}
+void RoomWidget::groupEvent (quint64 group_num)
+{
+    if (alt_pressed) {
+        match_state->moveSelectionToGroup (group_num, shift_pressed);
+    } else if (ctrl_pressed) {
+        match_state->bindSelectionToGroup (group_num);
+    } else {
+        if (shift_pressed)
+            match_state->addSelectionToGroup (group_num);
+        else
+            match_state->selectGroup (group_num);
+    }
 }

@@ -64,6 +64,10 @@ public:
     quint64 animationPeriodNS (Unit::Type type) const;
     void LoadState(const QVector<QPair<quint32, Unit> >& other, const QVector<QPair<quint32, quint32> >& to_delete);
     const AttackDescription& effectAttackDescription (AttackDescription::Type type) const;
+    void selectGroup (quint64 group);
+    void bindSelectionToGroup (quint64 group);
+    void addSelectionToGroup (quint64 group);
+    void moveSelectionToGroup (quint64 group, bool add);
 
 signals:
     void soundEventEmitted (SoundEvent event);

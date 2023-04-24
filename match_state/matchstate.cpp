@@ -487,6 +487,45 @@ const AttackDescription& MatchState::effectAttackDescription (AttackDescription:
         return unkown;
     }
 }
+void MatchState::selectGroup (quint64 group)
+{
+    quint64 group_flag = 1 << group;
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it.value ();
+        unit.selected = (unit.groups & group_flag) ? true : false;
+    }
+}
+void MatchState::bindSelectionToGroup (quint64 group)
+{
+    quint64 group_flag = 1 << group;
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it.value ();
+        if (unit.selected)
+            unit.groups |= group_flag;
+        else
+            unit.groups &= ~group_flag;
+    }
+}
+void MatchState::addSelectionToGroup (quint64 group)
+{
+    quint64 group_flag = 1 << group;
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it.value ();
+        if (unit.selected)
+            unit.groups |= group_flag;
+    }
+}
+void MatchState::moveSelectionToGroup (quint64 group, bool add)
+{
+    quint64 group_flag = 1 << group;
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it.value ();
+        if (unit.selected)
+            unit.groups = group_flag;
+        else if (!add)
+            unit.groups &= ~group_flag;
+    }
+}
 bool MatchState::checkUnitInsideSelection (const Unit& unit, const QPointF& point) const
 {
     qreal radius = unitRadius (unit.type);

@@ -38,4 +38,5 @@ public:
     qint64 hp = 0;
     qint64 attack_remaining_ticks = 0;
     qint64 cast_cooldown_left_ticks = 0;
+    quint64 groups = 0;
 };
