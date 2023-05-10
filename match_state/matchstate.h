@@ -28,12 +28,18 @@ enum class SoundEvent {
     SpawnBeetle,
 };
 
+enum class ActionType {
+    Movement,
+    Attack,
+    Cast,
+};
+
 class MatchState: public QObject
 {
     Q_OBJECT
 
 public:
-    MatchState ();
+    MatchState (bool is_client);
     ~MatchState ();
     quint64 clockNS () const;
     const QRectF& areaRef () const;
@@ -45,6 +51,8 @@ public:
     void trySelect (Unit::Team team, const QPointF& point, bool add);
     void trySelect (Unit::Team team, const QRectF& rect, bool add);
     void trySelectByType (Unit::Team team, const QPointF& point, const QRectF& viewport, bool add);
+    void select(quint32 unit_id, bool add); // DELETE
+    void setAction(quint32 unit_id, MoveAction action);
     std::optional<QPointF> selectionCenter () const;
     void attackEnemy (Unit::Team attacker_team, const QPointF& point);
     void cast (CastAction::Type cast_type, Unit::Team attacker_team, const QPointF& point);
@@ -71,6 +79,7 @@ public:
 
 signals:
     void soundEventEmitted (SoundEvent event);
+    void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
 private:
     void clearSelection ();
@@ -96,8 +105,10 @@ private:
     void applyUnitCollisions (qreal dt);
     void dealDamage (Unit& unit, qint64 damage);
     Unit* findUnitAt (Unit::Team team, const QPointF& point);
+    quint32 getRandomNumber ();
 
 private:
+    const bool is_client;
     quint64 clock_ns = 0;
     QRectF area = {-64, -32, 128, 64};
     QHash<quint32, Unit> units;

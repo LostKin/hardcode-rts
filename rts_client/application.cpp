@@ -153,7 +153,7 @@ void Application::joinRoomCallback (quint32 room_id)
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
 
-void Application::createUnitCallback ()
+void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF position)
 {
     qDebug() << "Create unit callback";
     if (!session_token.has_value ())
@@ -168,6 +168,40 @@ void Application::createUnitCallback ()
     request->set_unit_type(RTS::UnitType::SEAL);
     request->set_id(10);
 
+
+    std::string message;
+    request_oneof.SerializeToString (&message);
+
+    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+}
+
+void Application::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target)
+{
+    qDebug() << "Create unit action callback";
+    if (!session_token.has_value ())
+        return;
+
+    RTS::Request request_oneof;
+    RTS::UnitActionRequest* request = request_oneof.mutable_unit_action ();
+
+    request->mutable_session_token ()->set_value (session_token.value ());
+    request->mutable_request_token ()->set_value (request_token++);
+    request->set_unit_id(id);
+    RTS::UnitAction* action = request->mutable_action();
+    switch (type) {
+    case ActionType::Movement: {
+        RTS::MoveAction* move = action->mutable_move();
+        if (target.index() == 0) {
+            move->mutable_position()->mutable_position()->set_x(std::get<QPointF>(target).x());
+            move->mutable_position()->mutable_position()->set_y(std::get<QPointF>(target).y());
+        } else {
+            move->mutable_unit()->set_id(std::get<quint32>(target));
+        }
+    } break;
+
+    }
+
+    qDebug() << "creating unit action request";
 
     std::string message;
     request_oneof.SerializeToString (&message);
@@ -252,7 +286,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
             Unit::Type type;
             if (r_unit.team() == RTS::Team::RED) {
                 team = Unit::Team::Red;
-            }
+            } 
             if (r_unit.team() == RTS::Team::BLUE) {
                 team = Unit::Team::Blue;
             }
@@ -302,6 +336,7 @@ void Application::showRoom (bool single_mode)
     connect(this, &Application::startCountdown, room_widget, &RoomWidget::startCountDownHandler);
     connect(this, &Application::updateMatchState, room_widget, &RoomWidget::loadMatchState);
     connect(room_widget, &RoomWidget::createUnitRequested, this, &Application::createUnitCallback);
+    connect(room_widget, &RoomWidget::unitActionRequested, this, &Application::unitActionCallback);
     room_widget->grabMouse ();
     room_widget->grabKeyboard ();
     room_widget->showFullScreen ();

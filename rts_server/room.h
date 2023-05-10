@@ -21,7 +21,8 @@ private:
     QSharedPointer<Session> blue_team;
     QSharedPointer<QTimer> timer;
     QSharedPointer<MatchState> match_state;
-    QMap<quint32, quint32> client_to_server;
+    QMap<quint32, quint32> red_client_to_server;
+    QMap<quint32, quint32> blue_client_to_server;
     QVector<QSharedPointer<Session> > spectators; // not gonna use for now
     //QVector<std::optional<Session*> > teams;
     void setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code);

@@ -25,16 +25,16 @@ void Room::tick () {
         if (iter->team == Unit::Team::Red) {
             unit_red->set_team(RTS::Team::RED);
             unit_blue->set_team(RTS::Team::RED);
-            QMap<quint32, quint32>::const_iterator it = client_to_server.find(iter.key());
-            if (it != client_to_server.cend()) {
+            QMap<quint32, quint32>::const_iterator it = red_client_to_server.find(iter.key());
+            if (it != red_client_to_server.cend()) {
                 unit_red->mutable_client_id()->set_id(it.key());
             }
         }
         if (iter->team == Unit::Team::Blue) {
             unit_red->set_team(RTS::Team::BLUE);
-            unit_blue->set_team(RTS::Team::RED);
-            QMap<quint32, quint32>::const_iterator it = client_to_server.find(iter.key());
-            if (it != client_to_server.cend()) {
+            unit_blue->set_team(RTS::Team::BLUE);
+            QMap<quint32, quint32>::const_iterator it = blue_client_to_server.find(iter.key());
+            if (it != blue_client_to_server.cend()) {
                 unit_blue->mutable_client_id()->set_id(it.key());
             }
         }
@@ -71,7 +71,7 @@ void Room::setError (RTS::Error* error, const std::string& error_message, RTS::E
 }
 
 void Room::init_matchstate () {
-    match_state.reset(new MatchState());
+    match_state.reset(new MatchState(false));
     {
         match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-15, -7), 0);
         match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (1, 3), 0);
@@ -168,9 +168,17 @@ void Room::receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer
     } break;
     case RTS::Request::MessageCase::kUnitCreate: {
         const RTS::UnitCreateRequest& request = request_oneof.unit_create ();
-        Unit::Team team = Unit::Team::Blue;
+        Unit::Team team;
         if (session->current_team == RTS::Team::RED) {
             team = Unit::Team::Red;
+        } else if (session->current_team == RTS::Team::BLUE) {
+            team = Unit::Team::Blue;
+        } else {
+            RTS::Response response_oneof;
+            RTS::ErrorResponse* response = response_oneof.mutable_error ();
+            response->mutable_request_token ()->set_value (request_oneof.join_team().request_token().value());
+            setError(response->mutable_error(), "Malformed message", RTS::MALFORMED_MESSAGE);
+            emit sendResponseRoom(response_oneof, session);
         }
         Unit::Type type;
         switch (request.unit_type()) {
@@ -182,8 +190,39 @@ void Room::receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer
         } break;
         }
         QHash<quint32, Unit>::iterator unit = match_state->createUnit (type, team, QPointF (request.position().x(), request.position().y()), 0);
-        client_to_server[request.id()] = unit.key();
-    }
+        if (session->current_team == RTS::Team::BLUE) {
+            blue_client_to_server[request.id()] = unit.key();
+        } else if (session->current_team == RTS::Team::RED) {
+            red_client_to_server[request.id()] = unit.key();
+        }
+        
+    } break;
+    case RTS::Request::MessageCase::kUnitAction: {
+        const RTS::UnitActionRequest& request = request_oneof.unit_action ();
+        const RTS::UnitAction& action = request.action();
+        quint32 id = 0;
+        if (session->current_team == RTS::Team::RED) {
+            id = red_client_to_server[request.unit_id()];
+        } else if (session->current_team == RTS::Team::BLUE) {
+            id = blue_client_to_server[request.unit_id()];
+        }
+        if (action.move().has_position()) {
+            match_state->setAction(request.unit_id(), MoveAction(QPointF(request.action().move().position().position().x(), 
+                                                                         request.action().move().position().position().y())));
+        } else if (action.move().has_unit()) {
+            //qDebug() << "Moving to unit";
+            match_state->setAction(request.unit_id(), MoveAction(action.move().unit().id()));
+        } else {
+            RTS::Response response_oneof;
+            RTS::ErrorResponse* response = response_oneof.mutable_error ();
+            response->mutable_request_token ()->set_value (request_oneof.join_team().request_token().value());
+            setError(response->mutable_error(), "Malformed message", RTS::MALFORMED_MESSAGE);
+            emit sendResponseRoom(response_oneof, session);
+        }
+        //match_state->select(request.unit_id(), false);
+        //match_state->move (QPointF(request.action().move().position().position().x(), request.action().move().position().position().y()));
+        
+    } break;
     }
 }
 

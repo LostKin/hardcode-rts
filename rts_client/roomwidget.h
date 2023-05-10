@@ -42,7 +42,8 @@ signals:
     void cancelJoinTeamRequested ();
     void readinessRequested ();
     void quitRequested ();
-    void createUnitRequested ();
+    void createUnitRequested (Unit::Team team, Unit::Type type, QPointF position);
+    void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
 private slots:
     void joinRedTeamRequestedHandler ();
@@ -57,6 +58,7 @@ public slots:
     void startMatchHandler();
     void startCountDownHandler ();
     void loadMatchState (QVector<QPair<quint32, Unit> > units, const QVector<QPair<quint32, quint32> >& to_delete);
+    void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
 protected:
     virtual void initResources () override;

@@ -62,7 +62,7 @@ static bool orientationsFuzzyMatch (qreal a, qreal b)
     return qAbs (remainder (a - b, M_PI*2.0)) <= (M_PI/180.0); // Within 1 degree
 }
 
-MatchState::MatchState ()
+MatchState::MatchState (bool is_client) : is_client(is_client)
 {
 }
 MatchState::~MatchState ()
@@ -89,9 +89,20 @@ const QHash<quint32, Explosion>& MatchState::explosionsRef () const
 {
     return explosions;
 }
+
+quint32 MatchState::getRandomNumber() {
+    quint32 id = quint32 (random_generator ());
+    id = id % (1 << 30);
+    id = id + (int(is_client) << 30);
+    return id;
+}
+
 QHash<quint32, Unit>::iterator MatchState::createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction)
 {
-    QHash<quint32, Unit>::iterator unit = units.insert (next_id++, {type, quint32 (random_generator ()), team, position, direction});
+
+    quint32 id = getRandomNumber();
+    
+    QHash<quint32, Unit>::iterator unit = units.insert (next_id++, {type, id, team, position, direction});
     unit->hp = unitMaxHP (unit->type);
     return unit;
 }
@@ -121,6 +132,29 @@ void MatchState::trySelect (Unit::Team team, const QPointF& point, bool add)
         }
     }
 }
+
+void MatchState::setAction(quint32 unit_id, MoveAction action) {
+    QHash<quint32, Unit>::iterator iter = units.find(unit_id);
+    if (iter == units.end()) {
+        return;
+    }
+    iter->action = action;
+}
+
+void MatchState::select(quint32 unit_id, bool add) {
+    if (!add) {
+        clearSelection();
+    }
+    QHash<quint32, Unit>::iterator it = units.find(unit_id);
+    Unit& unit = it.value ();
+    if (unit.team == Unit::Team::Red) {
+        qDebug() << "Red";
+    } else {
+        qDebug() << "Blue";
+    }
+    unit.selected = true; 
+}
+
 void MatchState::trySelect (Unit::Team team, const QRectF& rect, bool add)
 {
     if (add) {
@@ -229,9 +263,11 @@ void MatchState::autoAction (Unit::Team attacker_team, const QPointF& point)
             startAction (AttackAction (*target));
         } else {
             startAction (MoveAction (*target));
+            //emit unitActionRequested ();
         }
     } else {
         startAction (MoveAction (point));
+        //emit unitActionRequested ();
     }
 }
 void MatchState::tick ()
@@ -553,8 +589,22 @@ void MatchState::startAction (const MoveAction& action)
     // TODO: Check for team
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
-        if (unit.selected)
+        if (unit.selected) {
             unit.action = action;
+            qDebug() << "assigned action to unit" << it.key();
+            QPointF target;
+            if (std::holds_alternative<quint32> (action.target)) {
+                quint32 target_unit_id = std::get<quint32> (action.target);
+                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                if (target_unit_it != units.end ()) {
+                    Unit& target_unit = *target_unit_it;
+                    target = target_unit.position;
+                }
+            } else {
+                target = std::get<QPointF>(action.target);
+            }
+            emit unitActionRequested (it.key(), ActionType::Movement, action.target);
+        }
     }
 }
 void MatchState::startAction (const AttackAction& action)
@@ -564,6 +614,7 @@ void MatchState::startAction (const AttackAction& action)
         Unit& unit = it.value ();
         if (unit.selected)
             unit.action = action;
+        //emit unitActionRequested ();
     }
 }
 void MatchState::LoadState(const QVector<QPair<quint32, Unit> >& other, const QVector<QPair<quint32, quint32> >& to_delete) {
@@ -580,15 +631,16 @@ void MatchState::LoadState(const QVector<QPair<quint32, Unit> >& other, const QV
     for (quint32 id : to_delete) {
         units.remove(id);
     }*/
-    for (const QPair<quint32, quint32> &i : to_delete) {
+    /*for (const QPair<quint32, quint32> &i : to_delete) {
         units[i.second] = std::move(units[i.first]);
         units.remove(i.first);
-    }
+    }*/
 
     //qDebug() << "Deleted" << to_delete.size() << "units";
     for (quint32 i = 0; i < other.size(); i++) {
         if (unitsRef().find(other.at(i).first) == unitsRef().end()) {
             addUnit(other.at(i).first, other.at(i).second.type, other.at(i).second.team, other.at(i).second.position, other.at(i).second.orientation);
+            qDebug() << "created a new unit";
         } else {
             QHash<quint32, Unit>::iterator to_change = units.find(other.at(i).first);
             to_change.value().position = other.at(i).second.position;
@@ -622,6 +674,8 @@ void MatchState::startAction (const CastAction& action)
                 }
                 break;
             }
+            qDebug() << "Unit action started";
+            //emit unitActionRequested ();
         }
     }
 }

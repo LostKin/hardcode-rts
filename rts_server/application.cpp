@@ -331,6 +331,15 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
         emit room_list[session->current_room.value()]->receiveRequest(request_oneof, session);
     } break;
+    case RTS::Request::MessageCase::kUnitAction: {
+        //qDebug() << "Unit action";
+        const RTS::UnitActionRequest& request = request_oneof.unit_action ();
+        quint64 session_token;
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        //qDebug() << "Unit action request";
+        emit room_list[session->current_room.value()]->receiveRequest(request_oneof, session);
+        // emit room_list[session->current_room.value()]->receiveRequest(request_oneof, session);
+    }
     }
 }
 void Application::setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code)

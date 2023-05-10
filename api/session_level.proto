@@ -140,7 +140,7 @@ message UnitActionRequest {
     SessionToken session_token = 1;
     RequestToken request_token = 2;
     uint32 unit_id = 3;
-    repeated UnitAction actions = 4;
+    UnitAction action = 4;
 }
 
 message RoomListResponse {
@@ -212,7 +212,7 @@ message UnitCreateResponse {
     RequestToken request_token = 2;
     uint32 unit_id = 3;
     Vector2D position = 4;
-    UnitType unit_type = 6;
+    UnitType unit_type = 5;
 }
 
 message Vector2D {
@@ -221,12 +221,13 @@ message Vector2D {
 }
 
 message Unit {
-    ClientId client_id = 7;
-    uint32 id = 1;
-    UnitType type = 2;
-    Team team = 3;
+    ClientId client_id = 1;
+    uint32 id = 2;
+    UnitType type = 3;
+    Team team = 4;
     Vector2D position = 5;
     double orientation = 6;
+    uint32 health = 7;
 }
 
 message MatchState {
@@ -244,6 +245,7 @@ message Request {
         JoinTeamRequest join_team = 10;
         ReadyRequest ready = 11;
         UnitCreateRequest unit_create = 12;
+        UnitActionRequest unit_action = 13;
     }
 }
 

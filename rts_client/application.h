@@ -46,7 +46,8 @@ private slots:
     void joinSpectatorCallback ();
     void readinessCallback ();
     void matchStartCallback ();
-    void createUnitCallback ();
+    void createUnitCallback (Unit::Team team, Unit::Type type, QPointF positon);
+    void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
 private:
     void joinTeam(RTS::Team id);
