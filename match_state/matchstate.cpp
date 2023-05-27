@@ -119,7 +119,7 @@ void MatchState::trySelect (Unit::Team team, const QPointF& point, bool add)
         for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
             Unit& unit = it.value ();
             if (unit.team == team && checkUnitInsideSelection (unit, point))
-                unit.selected = true;
+                unit.selected = !unit.selected;
         }
     } else {
         for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
@@ -561,6 +561,11 @@ void MatchState::moveSelectionToGroup (quint64 group, bool add)
         else if (!add)
             unit.groups &= ~group_flag;
     }
+}
+bool MatchState::fuzzyMatchPoints (const QPointF& p1, const QPointF& p2) const
+{
+    const qreal ratio = 0.5;
+    return vectorSize (p2 - p1) < unitDiameter (Unit::Type::Beetle)*ratio;
 }
 bool MatchState::checkUnitInsideSelection (const Unit& unit, const QPointF& point) const
 {

@@ -781,11 +781,11 @@ void RoomWidget::matchMouseReleaseEvent (QMouseEvent *event)
         switch (event->button ()) {
         case Qt::LeftButton: {
             if (selection_start.has_value ()) {
-                if (*selection_start == cursor_position) {
-                    match_state->trySelect (team, toMapCoords (cursor_position), shift_pressed);
+                QPointF p1 = toMapCoords (*selection_start);
+                QPointF p2 = toMapCoords (cursor_position);
+                if (match_state->fuzzyMatchPoints (p1, p2)) {
+                    match_state->trySelect (team, p1, shift_pressed);
                 } else {
-                    QPointF p1 = toMapCoords (*selection_start);
-                    QPointF p2 = toMapCoords (cursor_position);
                     match_state->trySelect (team, {qMin (p1.x (), p2.x ()), qMin (p1.y (), p2.y ()), qAbs (p1.x () - p2.x ()), qAbs (p1.y () - p2.y ())}, shift_pressed);
                 }
             }

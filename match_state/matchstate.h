@@ -76,6 +76,7 @@ public:
     void bindSelectionToGroup (quint64 group);
     void addSelectionToGroup (quint64 group);
     void moveSelectionToGroup (quint64 group, bool add);
+    bool fuzzyMatchPoints (const QPointF& p1, const QPointF& p2) const;
 
 signals:
     void soundEventEmitted (SoundEvent event);
