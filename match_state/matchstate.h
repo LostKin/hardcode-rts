@@ -51,6 +51,7 @@ public:
     void trySelect (Unit::Team team, const QPointF& point, bool add);
     void trySelect (Unit::Team team, const QRectF& rect, bool add);
     void trySelectByType (Unit::Team team, const QPointF& point, const QRectF& viewport, bool add);
+    void selectAll (Unit::Team team);
     void select(quint32 unit_id, bool add); // DELETE
     void setAction(quint32 unit_id, MoveAction action);
     std::optional<QPointF> selectionCenter () const;

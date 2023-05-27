@@ -722,6 +722,9 @@ void RoomWidget::matchKeyPressEvent (QKeyEvent *event)
     case Qt::Key_ParenRight:
         groupEvent (10);
         break;
+    case Qt::Key_F1:
+        match_state->selectAll (team);
+        break;
     }
 }
 void RoomWidget::matchKeyReleaseEvent (QKeyEvent *event)

@@ -197,6 +197,15 @@ void MatchState::trySelectByType (Unit::Team team, const QPointF& point, const Q
         }
     }
 }
+void MatchState::selectAll (Unit::Team team)
+{
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it.value ();
+        if (unit.team == team) {
+            unit.selected = true;
+        }
+    }
+}
 std::optional<QPointF> MatchState::selectionCenter () const
 {
     size_t selection_count = 0;
