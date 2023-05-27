@@ -424,6 +424,10 @@ void OpenGLWidget::fillRectangle (int x, int y, int w, int h, const QColor& colo
 
     drawColored (GL_TRIANGLE_STRIP, 4, vertices, colors);
 }
+void OpenGLWidget::fillRectangle (const QRect& rect, const QColor& color)
+{
+    fillRectangle (rect.x (), rect.y (), rect.width (), rect.height (), color);
+}
 void OpenGLWidget::drawCircle (qreal x, qreal y, qreal radius, const QColor& color)
 {
     const GLfloat x_f = x;

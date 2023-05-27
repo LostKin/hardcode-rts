@@ -108,6 +108,20 @@
 	<file>images/effects/pestilence-missile/missile1.png</file>
 	<file>images/effects/pestilence-missile/missile2.png</file>
 
+	<file>images/actions/move.png</file>
+	<file>images/actions/stop.png</file>
+	<file>images/actions/hold.png</file>
+	<file>images/actions/attack.png</file>
+	<file>images/actions/pestilence.png</file>
+	<file>images/actions/spawn.png</file>
+
+	<file>images/actions/move-active.png</file>
+	<file>images/actions/stop-active.png</file>
+	<file>images/actions/hold-active.png</file>
+	<file>images/actions/attack-active.png</file>
+	<file>images/actions/pestilence-active.png</file>
+	<file>images/actions/spawn-active.png</file>
+
 	<file>fonts/AnkaCoder-bi.ttf</file>
 	<file>fonts/AnkaCoder-b.ttf</file>
 	<file>fonts/AnkaCoder-i.ttf</file>

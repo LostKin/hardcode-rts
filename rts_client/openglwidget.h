@@ -43,6 +43,7 @@ protected:
     void drawRectangle (int x, int y, int w, int h, QOpenGLTexture* texture);
     void drawRectangle (int x, int y, int w, int h, const QColor& color);
     void fillRectangle (int x, int y, int w, int h, const QColor& color);
+    void fillRectangle (const QRect& rect, const QColor& color);
     void drawCircle (qreal x, qreal y, qreal radius, const QColor& color);
 
 private:

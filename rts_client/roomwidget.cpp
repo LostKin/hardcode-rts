@@ -267,6 +267,38 @@ quint64 RoomWidget::explosionAnimationPeriodNS ()
 {
     return 400'000'000;
 }
+RoomWidget::ActionButtonId RoomWidget::getActionButtonFromGrid (int row, int col)
+{
+    switch (row) {
+    case 0:
+        switch (col) {
+        case 0:
+            return ActionButtonId::Move;
+        case 1:
+            return ActionButtonId::Stop;
+        case 2:
+            return ActionButtonId::Hold;
+        case 4:
+            return ActionButtonId::Attack;
+        default:
+            break;
+        }
+        break;
+    case 2:
+        switch (col) {
+        case 0:
+            return ActionButtonId::Pestilence;
+        case 1:
+            return ActionButtonId::Spawn;
+        default:
+            break;
+        }
+        break;
+    default:
+        break;
+    }
+    return ActionButtonId::None;
+}
 void RoomWidget::loadTextures ()
 {
     textures.grass = loadTexture2DRectangle (":/images/grass.png");
@@ -370,6 +402,20 @@ void RoomWidget::loadTextures ()
         textures.effects.pestilence_missile.missile2 = loadTexture2D (":/images/effects/pestilence-missile/missile2.png", true);
         textures.effects.pestilence_splash.splash = loadTexture2D (":/images/effects/pestilence-splash/splash.png", true);
     }
+
+    textures.actions.basic.move = loadTexture2D (":/images/actions/move.png");
+    textures.actions.basic.stop = loadTexture2D (":/images/actions/stop.png");
+    textures.actions.basic.hold = loadTexture2D (":/images/actions/hold.png");
+    textures.actions.basic.attack = loadTexture2D (":/images/actions/attack.png");
+    textures.actions.basic.pestilence = loadTexture2D (":/images/actions/pestilence.png");
+    textures.actions.basic.spawn = loadTexture2D (":/images/actions/spawn.png");
+
+    textures.actions.active.move = loadTexture2D (":/images/actions/move-active.png");
+    textures.actions.active.stop = loadTexture2D (":/images/actions/stop-active.png");
+    textures.actions.active.hold = loadTexture2D (":/images/actions/hold-active.png");
+    textures.actions.active.attack = loadTexture2D (":/images/actions/attack-active.png");
+    textures.actions.active.pestilence = loadTexture2D (":/images/actions/pestilence-active.png");
+    textures.actions.active.spawn = loadTexture2D (":/images/actions/spawn-active.png");
 }
 void RoomWidget::initResources ()
 {
@@ -384,6 +430,22 @@ void RoomWidget::updateSize (int w, int h)
     arena_viewport = {0, 0, w, h - 220};
     arena_viewport_center = QRectF (arena_viewport).center ();
     map_to_screen_factor = arena_viewport.height ()/POINTS_PER_VIEWPORT_VERTICALLY;
+
+    if (w >= 3656)
+        hud.margin = 24;
+    else if (w >= 2560)
+        hud.margin = 18;
+    else
+        hud.margin = 12;
+    hud.stroke_width = (w >= 3656) ? 4 : 2;
+    hud.action_button_size = {int (h*0.064), int (h*0.064)};
+    hud.minimap_panel_size = {int (h*0.30), int (h*0.24)};
+    {
+        int area_w = hud.action_button_size.width ()*5;
+        int area_h = hud.action_button_size.height ()*3;
+        hud.action_panel_rect = {w - area_w - hud.margin, h - area_h - hud.margin, area_w, area_h};
+    }
+    hud.selection_panel_size = {w - hud.minimap_panel_size.width () - hud.action_panel_rect.width () - hud.margin*4, int (h*0.18)};
 }
 void RoomWidget::draw ()
 {
@@ -672,38 +734,69 @@ void RoomWidget::matchMouseMoveEvent (QMouseEvent* /* event */)
 }
 void RoomWidget::matchMousePressEvent (QMouseEvent *event)
 {
-    switch (event->button ()) {
-    case Qt::LeftButton: {
-        if (ctrl_pressed) {
-            match_state->trySelectByType (team, toMapCoords (cursor_position), toMapCoords (arena_viewport), shift_pressed);
-        } else {
-            selection_start = cursor_position;
+    int action_row, action_col;
+    if (getActionButtonUnderCursor (cursor_position, action_row, action_col)) {
+        switch (event->button ()) {
+        case Qt::LeftButton: {
+            if (current_action_button == ActionButtonId::None &&
+                pressed_action_button == ActionButtonId::None)
+                pressed_action_button = getActionButtonFromGrid (action_row, action_col);
+        } break;
+        default: {
         }
-    } break;
-    case Qt::RightButton: {
-        match_state->autoAction (team, toMapCoords (cursor_position));
-    } break;
-    default: {
-    }
+        }
+    } else {
+        switch (event->button ()) {
+        case Qt::LeftButton: {
+            if (ctrl_pressed) {
+                match_state->trySelectByType (team, toMapCoords (cursor_position), toMapCoords (arena_viewport), shift_pressed);
+            } else {
+                selection_start = cursor_position;
+            }
+        } break;
+        case Qt::RightButton: {
+            match_state->autoAction (team, toMapCoords (cursor_position));
+        } break;
+        default: {
+        }
+        }
     }
 }
 void RoomWidget::matchMouseReleaseEvent (QMouseEvent *event)
 {
-    switch (event->button ()) {
-    case Qt::LeftButton: {
-        if (selection_start.has_value ()) {
-            if (*selection_start == cursor_position) {
-                match_state->trySelect (team, toMapCoords (cursor_position), shift_pressed);
-            } else {
-                QPointF p1 = toMapCoords (*selection_start);
-                QPointF p2 = toMapCoords (cursor_position);
-                match_state->trySelect (team, {qMin (p1.x (), p2.x ()), qMin (p1.y (), p2.y ()), qAbs (p1.x () - p2.x ()), qAbs (p1.y () - p2.y ())}, shift_pressed);
+    int action_row, action_col;
+    if (getActionButtonUnderCursor (cursor_position, action_row, action_col)) {
+        switch (event->button ()) {
+        case Qt::LeftButton: {
+            if (current_action_button == ActionButtonId::None &&
+                pressed_action_button != ActionButtonId::None &&
+                pressed_action_button == getActionButtonFromGrid (action_row, action_col)) {
+                // TODO: Stateful actions
             }
-            selection_start.reset ();
+        } break;
+        default: {
         }
-    } break;
-    default: {
+        }
+    } else {
+        switch (event->button ()) {
+        case Qt::LeftButton: {
+            if (selection_start.has_value ()) {
+                if (*selection_start == cursor_position) {
+                    match_state->trySelect (team, toMapCoords (cursor_position), shift_pressed);
+                } else {
+                    QPointF p1 = toMapCoords (*selection_start);
+                    QPointF p2 = toMapCoords (cursor_position);
+                    match_state->trySelect (team, {qMin (p1.x (), p2.x ()), qMin (p1.y (), p2.y ()), qAbs (p1.x () - p2.x ()), qAbs (p1.y () - p2.y ())}, shift_pressed);
+                }
+            }
+        } break;
+        default: {
+        }
+        }
     }
+    if (event->button () == Qt::LeftButton) {
+        pressed_action_button = ActionButtonId::None;
+        selection_start.reset ();
     }
 }
 void RoomWidget::matchWheelEvent (QWheelEvent *event)
@@ -925,6 +1018,12 @@ bool RoomWidget::pointInsideButton (const QPoint& point, const QPoint& button_po
         point.y () >= button_pos.y () &&
         point.y () < (button_pos.y () + texture->height ());
 }
+bool RoomWidget::getActionButtonUnderCursor (const QPoint& cursor_pos, int& row, int& col) const
+{
+    row = (cursor_pos.y () - hud.action_panel_rect.y ())/hud.action_button_size.height ();
+    col = (cursor_pos.x () - hud.action_panel_rect.x ())/hud.action_button_size.width ();
+    return row >= 0 && row <= 2 && col >= 0 && col <= 4;
+}
 void RoomWidget::centerViewportAtSelected ()
 {
     std::optional<QPointF> center = match_state->selectionCenter ();
@@ -935,75 +1034,217 @@ void RoomWidget::centerViewportAtSelected ()
 }
 void RoomWidget::drawHUD ()
 {
-    QColor margin_color (0, 0, 255);
-    QColor panel_color (0x0c, 0x72, 0x73);
+    QColor stroke_color (0, 0, 0);
+    QColor margin_color (0x2f, 0x90, 0x92);
+    QColor panel_color (0x21, 0x2f, 0x3a);
     QColor panel_inner_color (0, 0xaa, 0xaa);
-    int margin = 12;
-    QSize action_button_size (h*0.064, h*0.064);
-    QSize minimap_panel_size (h*0.30, h*0.24);
-    QSize action_panel_size (action_button_size.width ()*5, action_button_size.height ()*3);
-    QSize unit_panel_size (h*0.12, h*0.18);
-    QSize selection_panel_size (w - minimap_panel_size.width () - action_panel_size.width () - unit_panel_size.width () - margin*5, h*0.18);
+
+    int margin = hud.margin;
 
     {
-        int area_w = minimap_panel_size.width () + margin*2;
-        int area_h = minimap_panel_size.height () + margin*2;
+        int area_w = hud.minimap_panel_size.width () + margin*2;
+        int area_h = hud.minimap_panel_size.height () + margin*2;
         fillRectangle (0, h - area_h, area_w, area_h, margin_color);
     }
     {
-        int area_w = action_panel_size.width () + margin*2;
-        int area_h = action_panel_size.height () + margin*2;
+        int area_w = hud.action_panel_rect.width () + margin*2;
+        int area_h = hud.action_panel_rect.height () + margin*2;
         fillRectangle (w - area_w, h - area_h, area_w, area_h, margin_color);
     }
     {
-        fillRectangle (minimap_panel_size.width () + margin*2, h - selection_panel_size.height () - margin*2,
-                       w - minimap_panel_size.width () - action_panel_size.width () - margin*4, selection_panel_size.height () + margin*2,
+        fillRectangle (hud.minimap_panel_size.width () + margin*2, h - hud.selection_panel_size.height () - margin*2,
+                       w - hud.minimap_panel_size.width () - hud.action_panel_rect.width () - margin*4, hud.selection_panel_size.height () + margin*2,
                        margin_color);
     }
     {
-        int area_w = minimap_panel_size.width ();
-        int area_h = minimap_panel_size.height ();
+        int area_w = hud.minimap_panel_size.width ();
+        int area_h = hud.minimap_panel_size.height ();
         fillRectangle (margin, h - area_h - margin, area_w, area_h, panel_color);
     }
     {
-        int area_w = selection_panel_size.width ();
-        int area_h = selection_panel_size.height ();
-        fillRectangle (margin*2 + minimap_panel_size.width (), h - area_h - margin, area_w, area_h, panel_color);
+        int area_w = hud.selection_panel_size.width ();
+        int area_h = hud.selection_panel_size.height ();
+        fillRectangle (margin*2 + hud.minimap_panel_size.width (), h - area_h - margin, area_w, area_h, panel_color);
     }
+
     {
-        int area_w = unit_panel_size.width ();
-        int area_h = unit_panel_size.height ();
-        fillRectangle (w - area_w - action_panel_size.width () - margin * 2, h - area_h - margin, area_w, area_h, panel_color);
-    }
-    {
-        int area_w = action_panel_size.width ();
-        int area_h = action_panel_size.height ();
-        fillRectangle (w - area_w - margin, h - area_h - margin, area_w, area_h, QColor (panel_color));
-        fillRectangle (w - area_w - margin, h - area_h - margin, action_button_size.width (), action_button_size.height (), panel_inner_color);
-        fillRectangle (w - area_w - margin + action_button_size.width ()*2, h - area_h - margin, action_button_size.width (), action_button_size.height (), panel_inner_color);
-        fillRectangle (w - area_w - margin + action_button_size.width ()*4, h - area_h - margin, action_button_size.width (), action_button_size.height (), panel_inner_color);
-        fillRectangle (w - area_w - margin + action_button_size.width (), h - area_h - margin + action_button_size.height (), action_button_size.width (), action_button_size.height (), panel_inner_color);
-        fillRectangle (w - area_w - margin + action_button_size.width ()*3, h - area_h - margin + action_button_size.height (), action_button_size.width (), action_button_size.height (), panel_inner_color);
-        fillRectangle (w - area_w - margin, h - area_h - margin + action_button_size.height ()*2, action_button_size.width (), action_button_size.height (), panel_inner_color);
-        fillRectangle (w - area_w - margin + action_button_size.width ()*2, h - area_h - margin + action_button_size.height ()*2, action_button_size.width (), action_button_size.height (), panel_inner_color);
-        fillRectangle (w - area_w - margin + action_button_size.width ()*4, h - area_h - margin + action_button_size.height ()*2, action_button_size.width (), action_button_size.height (), panel_inner_color);
+        const qreal half_stroke_width = hud.stroke_width*0.5;
+
+        glLineWidth (hud.stroke_width);
+
+        const GLfloat vertices[] = {
+            GLfloat (margin - half_stroke_width), GLfloat (h - hud.minimap_panel_size.height () - margin),
+            GLfloat (margin + hud.minimap_panel_size.width () + half_stroke_width), GLfloat (h - hud.minimap_panel_size.height () - margin),
+            GLfloat (margin - half_stroke_width), GLfloat (h - margin),
+            GLfloat (margin + hud.minimap_panel_size.width () + half_stroke_width), GLfloat (h - margin),
+            GLfloat (margin), GLfloat (h - hud.minimap_panel_size.height () - margin + half_stroke_width),
+            GLfloat (margin), GLfloat (h - margin - half_stroke_width),
+            GLfloat (margin + hud.minimap_panel_size.width ()), GLfloat (h - hud.minimap_panel_size.height () - margin + half_stroke_width),
+            GLfloat (margin + hud.minimap_panel_size.width ()), GLfloat (h - margin - half_stroke_width),
+
+            GLfloat (margin*2 + hud.minimap_panel_size.width () - half_stroke_width), GLfloat (h - hud.selection_panel_size.height () - margin),
+            GLfloat (margin*2 + hud.minimap_panel_size.width () + hud.selection_panel_size.width () + half_stroke_width), GLfloat (h - hud.selection_panel_size.height () - margin),
+            GLfloat (margin*2 + hud.minimap_panel_size.width () - half_stroke_width), GLfloat (h - margin),
+            GLfloat (margin*2 + hud.minimap_panel_size.width () + hud.selection_panel_size.width () + half_stroke_width), GLfloat (h - margin),
+            GLfloat (margin*2 + hud.minimap_panel_size.width ()), GLfloat (h - hud.selection_panel_size.height () - margin + half_stroke_width),
+            GLfloat (margin*2 + hud.minimap_panel_size.width ()), GLfloat (h - margin - half_stroke_width),
+            GLfloat (margin*2 + hud.minimap_panel_size.width () + hud.selection_panel_size.width ()), GLfloat (h - hud.selection_panel_size.height () - margin + half_stroke_width),
+            GLfloat (margin*2 + hud.minimap_panel_size.width () + hud.selection_panel_size.width ()), GLfloat (h - margin - half_stroke_width),
+
+            GLfloat (w - hud.action_panel_rect.width () - margin - half_stroke_width), GLfloat (h - hud.action_panel_rect.height () - margin),
+            GLfloat (w - margin + half_stroke_width), GLfloat (h - hud.action_panel_rect.height () - margin),
+            GLfloat (w - hud.action_panel_rect.width () - margin - half_stroke_width), GLfloat (h - margin),
+            GLfloat (w - margin + half_stroke_width), GLfloat (h - margin),
+            GLfloat (w - hud.action_panel_rect.width () - margin), GLfloat (h - hud.action_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (w - hud.action_panel_rect.width () - margin), GLfloat (h - margin - half_stroke_width),
+            GLfloat (w - margin), GLfloat (h - hud.action_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (w - margin), GLfloat (h - margin - half_stroke_width),
+
+            GLfloat (0), GLfloat (h - hud.minimap_panel_size.height () - margin*2),
+            GLfloat (hud.minimap_panel_size.width () + margin*2 + half_stroke_width), GLfloat (h - hud.minimap_panel_size.height () - margin*2),
+            GLfloat (hud.minimap_panel_size.width () + margin*2), GLfloat (h - hud.minimap_panel_size.height () - margin*2 + half_stroke_width),
+            GLfloat (hud.minimap_panel_size.width () + margin*2), GLfloat (h - hud.selection_panel_size.height () - margin*2 - half_stroke_width),
+            GLfloat (hud.minimap_panel_size.width () + margin*2 - half_stroke_width), GLfloat (h - hud.selection_panel_size.height () - margin*2),
+            GLfloat (w - hud.action_panel_rect.width () - margin*2 + half_stroke_width), GLfloat (h - hud.selection_panel_size.height () - margin*2),
+            GLfloat (w - hud.action_panel_rect.width () - margin*2), GLfloat (h - hud.selection_panel_size.height () - margin*2 - half_stroke_width),
+            GLfloat (w - hud.action_panel_rect.width () - margin*2), GLfloat (h - hud.action_panel_rect.height () - margin*2 + half_stroke_width),
+            GLfloat (w - hud.action_panel_rect.width () - margin*2 - half_stroke_width), GLfloat (h - hud.action_panel_rect.height () - margin*2),
+            GLfloat (w), GLfloat (h - hud.action_panel_rect.height () - margin*2),
+            GLfloat (w), GLfloat (h - hud.action_panel_rect.height () - margin*2 + half_stroke_width),
+            GLfloat (w), GLfloat (h - half_stroke_width),
+            GLfloat (w), GLfloat (h),
+            GLfloat (0), GLfloat (h),
+            GLfloat (0), GLfloat (h - half_stroke_width),
+            GLfloat (0), GLfloat (h - hud.minimap_panel_size.height () - margin*2 + half_stroke_width),
+        };
+
+        const GLfloat colors[] = {
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+        };
+
+        drawColored (GL_LINES, 40, vertices, colors);
+
+        glLineWidth (1);
     }
 
     size_t selected_count = 0;
+    bool contaminator_selected = false;
+    quint64 active_actions = 0;
     const Unit* last_selected_unit = nullptr;
     const QHash<quint32, Unit>& units = match_state->unitsRef ();
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
         if (it->selected) {
+            if (std::holds_alternative<AttackAction> (it->action)) {
+                active_actions |= 1 << quint64 (ActionButtonId::Attack);
+            } else if (std::holds_alternative<MoveAction> (it->action)) {
+                active_actions |= 1 << quint64 (ActionButtonId::Move);
+            } else if (std::holds_alternative<CastAction> (it->action)) {
+                switch (std::get<CastAction> (it->action).type) {
+                case CastAction::Type::Pestilence:
+                    active_actions |= 1 << quint64 (ActionButtonId::Pestilence);
+                    break;
+                case CastAction::Type::SpawnBeetle:
+                    active_actions |= 1 << quint64 (ActionButtonId::Spawn);
+                    break;
+                default:
+                    break;
+                }
+            } else {
+                active_actions |= 1 << quint64 (ActionButtonId::Stop);
+            }
+
+            if (it->type == Unit::Type::Contaminator)
+                contaminator_selected = true;
             ++selected_count;
             last_selected_unit = &*it;
         }
     }
+
+    {
+        int area_w = hud.selection_panel_size.width ();
+        int area_h = hud.selection_panel_size.height ();
+        QRect rect (margin*2 + hud.minimap_panel_size.width (), h - area_h - margin, area_w, area_h);
+        drawSelectionBar (rect, selected_count, contaminator_selected, last_selected_unit);
+    }
+
+    {
+        int area_w = hud.action_panel_rect.width ();
+        int area_h = hud.action_panel_rect.height ();
+        fillRectangle (w - area_w - margin, h - area_h - margin, area_w, area_h, QColor (panel_color));
+
+        if (selected_count > 0) {
+            drawActionButton ({w - area_w - margin, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
+                              pressed_action_button == ActionButtonId::Move,
+                              (active_actions & (1 << quint64 (ActionButtonId::Move))) ? textures.actions.active.move.get () : textures.actions.basic.move.get ());
+            drawActionButton ({w - area_w - margin + hud.action_button_size.width (), h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
+                              pressed_action_button == ActionButtonId::Stop,
+                              (active_actions & (1 << quint64 (ActionButtonId::Stop))) ? textures.actions.active.stop.get () : textures.actions.basic.stop.get ());
+            drawActionButton ({w - area_w - margin + hud.action_button_size.width ()*2, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
+                              pressed_action_button == ActionButtonId::Hold,
+                              (active_actions & (1 << quint64 (ActionButtonId::Hold))) ? textures.actions.active.hold.get () : textures.actions.basic.hold.get ());
+            drawActionButton ({w - area_w - margin + hud.action_button_size.width ()*4, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
+                              pressed_action_button == ActionButtonId::Attack,
+                              (active_actions & (1 << quint64 (ActionButtonId::Attack))) ? textures.actions.active.attack.get () : textures.actions.basic.attack.get ());
+
+            if (contaminator_selected) {
+                drawActionButton ({w - area_w - margin, h - area_h - margin + hud.action_button_size.height ()*2, hud.action_button_size.width (), hud.action_button_size.height ()},
+                                  pressed_action_button == ActionButtonId::Pestilence,
+                                  (active_actions & (1 << quint64 (ActionButtonId::Pestilence))) ? textures.actions.active.pestilence.get () : textures.actions.basic.pestilence.get ());
+                drawActionButton ({w - area_w - margin + hud.action_button_size.width (), h - area_h - margin + hud.action_button_size.height ()*2,
+                                   hud.action_button_size.width (), hud.action_button_size.height ()},
+                                  pressed_action_button == ActionButtonId::Spawn,
+                                  (active_actions & (1 << quint64 (ActionButtonId::Spawn))) ? textures.actions.active.spawn.get () : textures.actions.basic.spawn.get ());
+            }
+        }
+    }
+}
+void RoomWidget::drawSelectionBar (const QRect& rect, size_t selected_count, bool contaminator_selected, const Unit* last_selected_unit)
+{
     if (selected_count == 1) {
         const Unit& unit = *last_selected_unit;
         const AttackDescription& primary_attack_description = match_state->unitPrimaryAttackDescription (unit.type);
-        int area_w = selection_panel_size.width ();
-        int area_h = selection_panel_size.height ();
-        QRectF rect (margin*2 + minimap_panel_size.width (), h - area_h - margin, area_w, area_h);
 
         QPainter p (this);
         p.setFont (font);
@@ -1014,10 +1255,6 @@ void RoomWidget::drawHUD ()
                     "HP: " + QString::number (unit.hp) + "/" + QString::number (match_state->unitMaxHP (unit.type)) + "\n"
                     "Attack: class = " + unitAttackClassName (primary_attack_description.type) + "; range = " + QString::number (primary_attack_description.range));
     } else if (selected_count) {
-        int area_w = selection_panel_size.width ();
-        int area_h = selection_panel_size.height ();
-        QRectF rect (margin*2 + minimap_panel_size.width (), h - area_h - margin, area_w, area_h);
-
         QPainter p (this);
         p.setFont (font);
         p.setPen (QColor (0xff, 0xff, 0xff));
@@ -1339,6 +1576,120 @@ void RoomWidget::drawUnitPathToTarget (const Unit& unit)
     };
 
     drawColored (GL_LINES, 2, vertices, std::holds_alternative<AttackAction> (unit.action) ? attack_colors : move_colors);
+}
+void RoomWidget::drawActionButton (const QRect& rect, bool pressed, QOpenGLTexture* texture)
+{
+    QColor bright (0x50, 0x0f, 0x94);
+    QColor light (0xa8, 0x72, 0xe0);
+    QColor dark (0x31, 0x1e, 0x44);
+    QColor gray (0x5b, 0x46, 0x72);
+
+    qreal outer_factor = pressed ? 0.2 : 0.1;
+    qreal inner_factor = pressed ? (1.0/3.0) : 0.25;
+
+    QPointF o1 (rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5));
+    QPointF o2 (rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5));
+    QPointF o3 (rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5));
+    QPointF o4 (rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5));
+
+    QPointF i1 (rect.x () + rect.width ()*(inner_factor*0.5), rect.y () + rect.height ()*(inner_factor*0.5));
+    QPointF i2 (rect.x () + rect.width ()*(1 - inner_factor*0.5), rect.y () + rect.height ()*(inner_factor*0.5));
+    QPointF i3 (rect.x () + rect.width ()*(inner_factor*0.5), rect.y () + rect.height ()*(1 - inner_factor*0.5));
+    QPointF i4 (rect.x () + rect.width ()*(1 - inner_factor*0.5), rect.y () + rect.height ()*(1 - inner_factor*0.5));
+
+    {
+        const GLfloat vertices[] = {
+            GLfloat (i1.x ()), GLfloat (i1.y ()),
+            GLfloat (i2.x ()), GLfloat (i2.y ()),
+            GLfloat (i3.x ()), GLfloat (i3.y ()),
+            GLfloat (i4.x ()), GLfloat (i4.y ()),
+
+            GLfloat (o1.x ()), GLfloat (o1.y ()),
+            GLfloat (o2.x ()), GLfloat (o2.y ()),
+            GLfloat (i1.x ()), GLfloat (i1.y ()),
+            GLfloat (i2.x ()), GLfloat (i2.y ()),
+
+            GLfloat (i3.x ()), GLfloat (i3.y ()),
+            GLfloat (i4.x ()), GLfloat (i4.y ()),
+            GLfloat (o3.x ()), GLfloat (o3.y ()),
+            GLfloat (o4.x ()), GLfloat (o4.y ()),
+
+            GLfloat (o1.x ()), GLfloat (o1.y ()),
+            GLfloat (i1.x ()), GLfloat (i1.y ()),
+            GLfloat (o3.x ()), GLfloat (o3.y ()),
+            GLfloat (i3.x ()), GLfloat (i3.y ()),
+
+            GLfloat (i2.x ()), GLfloat (i2.y ()),
+            GLfloat (o2.x ()), GLfloat (o2.y ()),
+            GLfloat (i4.x ()), GLfloat (i4.y ()),
+            GLfloat (o4.x ()), GLfloat (o4.y ()),
+        };
+
+        const GLfloat colors[] = {
+            GLfloat (bright.redF ()), GLfloat (bright.greenF ()), GLfloat (bright.blueF ()), GLfloat (1),
+            GLfloat (bright.redF ()), GLfloat (bright.greenF ()), GLfloat (bright.blueF ()), GLfloat (1),
+            GLfloat (bright.redF ()), GLfloat (bright.greenF ()), GLfloat (bright.blueF ()), GLfloat (1),
+            GLfloat (bright.redF ()), GLfloat (bright.greenF ()), GLfloat (bright.blueF ()), GLfloat (1),
+
+            GLfloat (gray.redF ()), GLfloat (gray.greenF ()), GLfloat (gray.blueF ()), GLfloat (1),
+            GLfloat (gray.redF ()), GLfloat (gray.greenF ()), GLfloat (gray.blueF ()), GLfloat (1),
+            GLfloat (gray.redF ()), GLfloat (gray.greenF ()), GLfloat (gray.blueF ()), GLfloat (1),
+            GLfloat (gray.redF ()), GLfloat (gray.greenF ()), GLfloat (gray.blueF ()), GLfloat (1),
+
+            GLfloat (dark.redF ()), GLfloat (dark.greenF ()), GLfloat (dark.blueF ()), GLfloat (1),
+            GLfloat (dark.redF ()), GLfloat (dark.greenF ()), GLfloat (dark.blueF ()), GLfloat (1),
+            GLfloat (dark.redF ()), GLfloat (dark.greenF ()), GLfloat (dark.blueF ()), GLfloat (1),
+            GLfloat (dark.redF ()), GLfloat (dark.greenF ()), GLfloat (dark.blueF ()), GLfloat (1),
+
+            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+
+            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+        };
+
+        const GLuint indices[] = {
+            0, 1, 3,
+            0, 3, 2,
+            4, 5, 7,
+            4, 7, 6,
+            8, 9, 11,
+            8, 11, 10,
+            12, 13, 15,
+            12, 15, 14,
+            16, 17, 19,
+            16, 19, 18,
+        };
+
+        drawColored (GL_TRIANGLES, vertices, colors, sizeof (indices)/sizeof (indices[0]), indices);
+    }
+
+    {
+        const GLfloat vertices[] = {
+            GLfloat (i1.x ()), GLfloat (i1.y ()),
+            GLfloat (i2.x ()), GLfloat (i2.y ()),
+            GLfloat (i3.x ()), GLfloat (i3.y ()),
+            GLfloat (i4.x ()), GLfloat (i4.y ()),
+        };
+
+        const GLfloat texture_coords[] = {
+            0, 0,
+            1, 0,
+            0, 1,
+            1, 1,
+        };
+
+        const GLuint indices[] = {
+            0, 1, 3,
+            0, 3, 2,
+        };
+
+        drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
+    }
 }
 void RoomWidget::groupEvent (quint64 group_num)
 {

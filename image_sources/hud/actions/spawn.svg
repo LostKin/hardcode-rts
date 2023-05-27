@@ -1,0 +1,122 @@
+<?xml version="1.0" standalone="no"?>
+<svg width="256" height="256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style rel="stylesheet" type="text/css">
+.button-stroke {
+    fill: none;
+    stroke: #aadd00;
+}
+.button-fill {
+    fill: #aadd00;
+    stroke: none;
+}
+.button-stroke-fill {
+    fill: #aadd00;
+    stroke: #aadd00;
+}
+.limb {
+    stroke-width: 5;
+}
+.stroked {
+    stroke-width: 4;
+}
+.pestilence-missile {
+    stroke-width: 5;
+}
+    </style>
+
+    <defs>
+	<circle id="movement-circle" cx="128" cy="128" r="110" class="button-stroke" style="stroke-width: 20" />
+	<polygon id="movement-move" points="60,70 160,100 160,60 220,128 160,196 160,155 60,186" class="button-fill" />
+	<polygon id="movement-stop" points="50,90 90,50 128,105 166,50 206,90 151,128 206,166 166,206 128,151 90,206 50,166 105,128" class="button-fill" />
+	<circle id="movement-hold-circle" cx="128" cy="128" r="45" class="button-fill" />
+	<g id="action-sight" class="button-fill">
+	    <polygon points="20,20 70,20 70,40 40,40 40,70 20,70" />
+	    <polygon points="236,20 186,20 186,40 216,40 216,70 236,70" />
+	    <polygon points="236,236 186,236 186,216 216,216 216,186 236,186" />
+	    <polygon points="20,236 70,236 70,216 40,216 40,186 20,186" />
+	</g>
+	<g id="attack-aim" class="button-fill">
+	    <circle id="movement-hold-circle" cx="128" cy="128" r="20" />
+	    <polygon points="100,25 156,25 141,100 115,100" />
+	    <polygon points="25,100 25,156 100,141 100,115" />
+	    <polygon points="100,231 156,231 141,156 115,156" />
+	    <polygon points="231,100 231,156 156,141 156,115" />
+	</g>
+	<path id="body" d="
+M 128 50
+Q 70 128, 128 216
+Q 186 128, 128 50
+Z
+" class="stroked button-stroke-fill" />
+	<g id="head-neutral">
+	    <path d="
+M 100 30
+Q 128 70, 156 30
+" class="limb button-stroke" />
+	    <circle cx="128" cy="51" r="3" class="limb button-stroke" />
+	</g>
+	<g id="legs-standing">
+	    <path id="leg1" d="
+M 116 100
+Q 86 70, 76 120
+" class="limb button-stroke" />
+	    <path id="leg2" d="
+M 140 100
+Q 170 70, 180 120
+" class="limb button-stroke" />
+	    <path id="leg3" d="
+M 116 156
+Q 86 126, 76 176
+" class="limb button-stroke" />
+	    <path id="leg4" d="
+M 140 156
+Q 170 126, 180 176
+" class="limb button-stroke" />
+	</g>
+	<g id="beetle">
+	    <use xlink:href="#body" />
+	    <use xlink:href="#legs-standing" />
+	    <use xlink:href="#head-neutral" />
+	</g>
+    	<path id="pestilence-missile1" class="pestilence-missile button-stroke-fill" d="
+M 128 40
+C 168 40, 128 100, 168 100
+C 208 100, 158 40, 208 40
+C 248 40, 258 220, 128 220
+M 128 40
+C 88 40, 128 100, 88 100
+C 48 100, 98 40, 48 40
+C 8 40, -2 220, 128 220
+"
+transform="translate(32,32) scale(0.75)" />
+    </defs>
+    <defs>
+	<g id="move">
+	    <use xlink:href="#movement-circle" />
+	    <use xlink:href="#movement-move" />
+	</g>
+	<g id="stop">
+	    <use xlink:href="#movement-circle" />
+	    <use xlink:href="#movement-stop" />
+	</g>
+	<g id="hold">
+	    <use xlink:href="#movement-circle" />
+	    <use xlink:href="#movement-stop" />
+	    <use xlink:href="#movement-hold-circle" />
+	</g>
+	<g id="attack">
+	    <use xlink:href="#action-sight" />
+	    <use xlink:href="#attack-aim" />
+	</g>
+	<g id="spawn">
+	    <use xlink:href="#action-sight" />
+	    <use xlink:href="#beetle" />
+	</g>
+	<g id="pestilence">
+	    <use xlink:href="#action-sight" />
+	    <use xlink:href="#pestilence-missile1" />
+	</g>
+    </defs>
+
+    <use xlink:href="#spawn" />
+</svg>

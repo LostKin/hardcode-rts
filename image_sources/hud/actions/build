@@ -1,0 +1,13 @@
+convert -background none attack.svg attack.png
+convert -background none hold.svg hold.png
+convert -background none move.svg move.png
+convert -background none pestilence.svg pestilence.png
+convert -background none spawn.svg spawn.png
+convert -background none stop.svg stop.png
+
+convert -background none attack-active.svg attack-active.png
+convert -background none hold-active.svg hold-active.png
+convert -background none move-active.svg move-active.png
+convert -background none pestilence-active.svg pestilence-active.png
+convert -background none spawn-active.svg spawn-active.png
+convert -background none stop-active.svg stop-active.png

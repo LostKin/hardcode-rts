@@ -14,19 +14,6 @@ class RoomWidget: public OpenGLWidget
     Q_OBJECT
 
 public:
-    struct UnitTextureTeam {
-        QSharedPointer<QOpenGLTexture> standing;
-        QSharedPointer<QOpenGLTexture> walking1;
-        QSharedPointer<QOpenGLTexture> walking2;
-        QSharedPointer<QOpenGLTexture> shooting1;
-        QSharedPointer<QOpenGLTexture> shooting2;
-    };
-    struct UnitTextureSet {
-        UnitTextureTeam red;
-        UnitTextureTeam blue;
-    };
-
-public:
     RoomWidget (QWidget* parent = nullptr);
     virtual ~RoomWidget ();
     void awaitTeamSelection (Unit::Team team);
@@ -51,7 +38,7 @@ private slots:
     void spectateRequestedHandler ();
     void readinessRequestedHandler ();
     void cancelJoinTeamRequestedHandler ();
-    void quitRequestedHandler ();   
+    void quitRequestedHandler ();
 
 public slots:
     void readinessHandler ();
@@ -95,13 +82,16 @@ private:
     QRectF toMapCoords (const QRectF& rect) const;
     QPointF toScreenCoords (const QPointF& point) const;
     bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const;
+    bool getActionButtonUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
     void centerViewportAtSelected ();
     void drawHUD ();
+    void drawSelectionBar (const QRect& rect, size_t selected_count, bool contaminator_selected, const Unit* last_selected_unit);
     void drawUnit (const Unit& unit);
     void drawUnitHPBar (const Unit& unit);
     void drawMissile (const Missile& missile);
     void drawExplosion (const Explosion& explosion);
     void drawUnitPathToTarget (const Unit& unit);
+    void drawActionButton (const QRect& rect, bool pressed, QOpenGLTexture* texture);
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
     void groupEvent (quint64 group_num);
@@ -111,6 +101,18 @@ private slots:
     void playSound (SoundEvent event);
 
 private:
+    struct UnitTextureTeam {
+        QSharedPointer<QOpenGLTexture> standing;
+        QSharedPointer<QOpenGLTexture> walking1;
+        QSharedPointer<QOpenGLTexture> walking2;
+        QSharedPointer<QOpenGLTexture> shooting1;
+        QSharedPointer<QOpenGLTexture> shooting2;
+    };
+    struct UnitTextureSet {
+        UnitTextureTeam red;
+        UnitTextureTeam blue;
+    };
+
     enum class State {
         TeamSelection,
         TeamSelectionRequested,
@@ -129,6 +131,19 @@ private:
         Cancel,
         Quit,
     };
+
+    enum class ActionButtonId {
+        None,
+        Move,
+        Stop,
+        Hold,
+        Attack,
+        Pestilence,
+        Spawn,
+    };
+
+private:
+    static ActionButtonId getActionButtonFromGrid (int row, int col);
 
 private:
     QFont font;
@@ -187,15 +202,43 @@ private:
                 QSharedPointer<QOpenGLTexture> splash;
             } pestilence_splash;
         } effects;
+        struct {
+            struct {
+                QSharedPointer<QOpenGLTexture> move;
+                QSharedPointer<QOpenGLTexture> stop;
+                QSharedPointer<QOpenGLTexture> hold;
+                QSharedPointer<QOpenGLTexture> attack;
+                QSharedPointer<QOpenGLTexture> pestilence;
+                QSharedPointer<QOpenGLTexture> spawn;
+            } basic;
+            struct {
+                QSharedPointer<QOpenGLTexture> move;
+                QSharedPointer<QOpenGLTexture> stop;
+                QSharedPointer<QOpenGLTexture> hold;
+                QSharedPointer<QOpenGLTexture> attack;
+                QSharedPointer<QOpenGLTexture> pestilence;
+                QSharedPointer<QOpenGLTexture> spawn;
+            } active;
+        } actions;
     } textures;
 
     int w = 1;
     int h = 1;
+    struct {
+        int margin = 1;
+        int stroke_width = 1;
+        QSize action_button_size = {1, 1};
+        QSize minimap_panel_size = {1, 1};
+        QRect action_panel_rect = {0, 0, 1, 1};
+        QSize selection_panel_size = {1, 1};
+    } hud;
     QRect arena_viewport = {0, 0, 1, 1};
     QPointF arena_viewport_center = {0, 0};
     State state = State::TeamSelection;
     ButtonId pressed_button = ButtonId::None;
     QPoint cursor_position = {-1, -1};
+    ActionButtonId pressed_action_button = ActionButtonId::None;
+    ActionButtonId current_action_button = ActionButtonId::None;
     Unit::Team team;
     QElapsedTimer match_countdown_start;
     QSharedPointer<QOpenGLTexture> cursor;
