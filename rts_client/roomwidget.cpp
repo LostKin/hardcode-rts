@@ -767,34 +767,35 @@ void RoomWidget::matchMousePressEvent (QMouseEvent *event)
 }
 void RoomWidget::matchMouseReleaseEvent (QMouseEvent *event)
 {
-    int action_row, action_col;
-    if (getActionButtonUnderCursor (cursor_position, action_row, action_col)) {
-        switch (event->button ()) {
-        case Qt::LeftButton: {
-            if (current_action_button == ActionButtonId::None &&
-                pressed_action_button != ActionButtonId::None &&
-                pressed_action_button == getActionButtonFromGrid (action_row, action_col)) {
-                // TODO: Stateful actions
-            }
-        } break;
-        default: {
-        }
+    if (selection_start.has_value ()) {
+        QPointF p1 = toMapCoords (*selection_start);
+        QPointF p2 = toMapCoords (cursor_position);
+        if (match_state->fuzzyMatchPoints (p1, p2)) {
+            match_state->trySelect (team, p1, shift_pressed);
+        } else {
+            match_state->trySelect (team, {qMin (p1.x (), p2.x ()), qMin (p1.y (), p2.y ()), qAbs (p1.x () - p2.x ()), qAbs (p1.y () - p2.y ())}, shift_pressed);
         }
     } else {
-        switch (event->button ()) {
-        case Qt::LeftButton: {
-            if (selection_start.has_value ()) {
-                QPointF p1 = toMapCoords (*selection_start);
-                QPointF p2 = toMapCoords (cursor_position);
-                if (match_state->fuzzyMatchPoints (p1, p2)) {
-                    match_state->trySelect (team, p1, shift_pressed);
-                } else {
-                    match_state->trySelect (team, {qMin (p1.x (), p2.x ()), qMin (p1.y (), p2.y ()), qAbs (p1.x () - p2.x ()), qAbs (p1.y () - p2.y ())}, shift_pressed);
+        int action_row, action_col;
+        if (getActionButtonUnderCursor (cursor_position, action_row, action_col)) {
+            switch (event->button ()) {
+            case Qt::LeftButton: {
+                if (current_action_button == ActionButtonId::None &&
+                    pressed_action_button != ActionButtonId::None &&
+                    pressed_action_button == getActionButtonFromGrid (action_row, action_col)) {
+                    // TODO: Stateful actions
                 }
+            } break;
+            default: {
             }
-        } break;
-        default: {
-        }
+            }
+        } else {
+            switch (event->button ()) {
+            case Qt::LeftButton: {
+            } break;
+            default: {
+            }
+            }
         }
     }
     if (event->button () == Qt::LeftButton) {
