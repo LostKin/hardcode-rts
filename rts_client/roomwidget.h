@@ -83,10 +83,13 @@ private:
     QPointF toScreenCoords (const QPointF& point) const;
     bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const;
     bool getActionButtonUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
+    bool getSelectionPanelUnitUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
     void centerViewportAtSelected ();
     void drawHUD ();
-    void drawSelectionBar (const QRect& rect, size_t selected_count, bool contaminator_selected, const Unit* last_selected_unit);
+    void drawSelectionPanel (const QRect& rect, size_t selected_count, bool contaminator_selected, const Unit* last_selected_unit);
     void drawUnit (const Unit& unit);
+    void drawIcon (const Unit& unit, int x, int y, int w, int h, bool framed = false);
+    void drawTabs (int x, int y, int w, int h);
     void drawUnitHPBar (const Unit& unit);
     void drawMissile (const Missile& missile);
     void drawExplosion (const Explosion& explosion);
@@ -95,6 +98,7 @@ private:
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
     void groupEvent (quint64 group_num);
+    QVector<QPair<quint32, const Unit*>> buildOrderedSelection ();
 
 private slots:
     void tick ();
@@ -186,6 +190,15 @@ private:
             UnitTextureSet contaminator;
         } units;
         struct {
+            QSharedPointer<QOpenGLTexture> seal;
+            QSharedPointer<QOpenGLTexture> crusader;
+            QSharedPointer<QOpenGLTexture> goon;
+            QSharedPointer<QOpenGLTexture> beetle;
+            QSharedPointer<QOpenGLTexture> contaminator;
+            QSharedPointer<QOpenGLTexture> frame;
+            QSharedPointer<QOpenGLTexture> tabs;
+        } unit_icons;
+        struct {
             struct {
                 QSharedPointer<QOpenGLTexture> explosion1;
                 QSharedPointer<QOpenGLTexture> explosion2;
@@ -230,7 +243,9 @@ private:
         QSize action_button_size = {1, 1};
         QSize minimap_panel_size = {1, 1};
         QRect action_panel_rect = {0, 0, 1, 1};
-        QSize selection_panel_size = {1, 1};
+        QRect selection_panel_rect = {0, 0, 1, 1};
+        int selection_panel_icon_rib = 1;
+        QPoint selection_panel_icon_grid_pos = {0, 0};
     } hud;
     QRect arena_viewport = {0, 0, 1, 1};
     QPointF arena_viewport_center = {0, 0};

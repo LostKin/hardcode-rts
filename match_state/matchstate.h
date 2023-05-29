@@ -52,7 +52,9 @@ public:
     void trySelect (Unit::Team team, const QRectF& rect, bool add);
     void trySelectByType (Unit::Team team, const QPointF& point, const QRectF& viewport, bool add);
     void selectAll (Unit::Team team);
-    void select(quint32 unit_id, bool add); // DELETE
+    void select (quint32 unit_id, bool add);
+    void trimSelection (Unit::Type type, bool remove);
+    void deselect (quint32 unit_id);
     void setAction(quint32 unit_id, MoveAction action);
     std::optional<QPointF> selectionCenter () const;
     void attackEnemy (Unit::Team attacker_team, const QPointF& point);

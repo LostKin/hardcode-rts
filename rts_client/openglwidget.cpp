@@ -243,13 +243,9 @@ void OpenGLWidget::drawColoredTextured (GLenum mode, const GLfloat* vertex_posit
 
     colored_textured_program.program->bind ();
     colored_textured_program.program->setUniformValue (colored_textured_program.matrix_uniform_idx, ortho_matrix);
-    if (texture->target () == QOpenGLTexture::Target2DArray) {
-        colored_textured_program.program->setUniformValue (colored_textured_program.texture_mode_rect_uniform_idx, 1.0f);
-        colored_textured_program.program->setUniformValue (colored_textured_program.texture_2d_rect_uniform_idx, 0);
-    } else {
-        colored_textured_program.program->setUniformValue (colored_textured_program.texture_mode_rect_uniform_idx, 0.0f);
-        colored_textured_program.program->setUniformValue (colored_textured_program.texture_2d_uniform_idx, 0);
-    }
+    colored_textured_program.program->setUniformValue (colored_textured_program.texture_2d_rect_uniform_idx, 0);
+    colored_textured_program.program->setUniformValue (colored_textured_program.texture_2d_uniform_idx, 0);
+    colored_textured_program.program->setUniformValue (colored_textured_program.texture_mode_rect_uniform_idx, (texture->target () == QOpenGLTexture::TargetRectangle) ? 1.0f : 0.0f);
 
     texture->bind (0);
 

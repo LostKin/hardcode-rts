@@ -141,18 +141,41 @@ void MatchState::setAction(quint32 unit_id, MoveAction action) {
     iter->action = action;
 }
 
-void MatchState::select(quint32 unit_id, bool add) {
+void MatchState::select (quint32 unit_id, bool add) {
     if (!add) {
         clearSelection();
     }
     QHash<quint32, Unit>::iterator it = units.find(unit_id);
-    Unit& unit = it.value ();
-    if (unit.team == Unit::Team::Red) {
-        qDebug() << "Red";
-    } else {
-        qDebug() << "Blue";
+    if (it != units.end()) {
+        Unit& unit = it.value ();
+        unit.selected = true;
     }
-    unit.selected = true; 
+}
+
+void MatchState::trimSelection (Unit::Type type, bool remove)
+{
+    if (remove) {
+        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it.value ();
+            if (unit.type == type)
+                unit.selected = false;
+        }
+    } else {
+        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it.value ();
+            if (unit.type != type)
+                unit.selected = false;
+        }
+    }
+}
+
+void MatchState::deselect (quint32 unit_id)
+{
+    QHash<quint32, Unit>::iterator it = units.find(unit_id);
+    if (it != units.end()) {
+        Unit& unit = it.value ();
+        unit.selected = false;
+    }
 }
 
 void MatchState::trySelect (Unit::Team team, const QRectF& rect, bool add)

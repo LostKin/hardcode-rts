@@ -15,6 +15,8 @@
 
         <file>images/icons/user.png</file>
         <file>images/icons/delete.png</file>
+        <file>images/icons/frame.png</file>
+        <file>images/icons/tabs.png</file>
 
         <file>images/cursors/crosshair.png</file>
 
@@ -99,6 +101,12 @@
 	<file>images/units/beetle/blue/walking2.png</file>
 	<file>images/units/beetle/blue/walking1.png</file>
 	<file>images/units/beetle/blue/standing.png</file>
+
+	<file>images/units/seal/icon.png</file>
+	<file>images/units/crusader/icon.png</file>
+	<file>images/units/goon/icon.png</file>
+	<file>images/units/beetle/icon.png</file>
+	<file>images/units/contaminator/icon.png</file>
 
 	<file>images/effects/explosion/explosion1.png</file>
 	<file>images/effects/explosion/explosion2.png</file>
