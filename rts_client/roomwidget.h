@@ -86,7 +86,7 @@ private:
     bool getSelectionPanelUnitUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
     void centerViewportAtSelected ();
     void drawHUD ();
-    void drawSelectionPanel (const QRect& rect, size_t selected_count, bool contaminator_selected, const Unit* last_selected_unit);
+    void drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit);
     void drawUnit (const Unit& unit);
     void drawIcon (const Unit& unit, int x, int y, int w, int h, bool framed = false);
     void drawTabs (int x, int y, int w, int h);

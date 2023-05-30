@@ -1265,7 +1265,7 @@ void RoomWidget::drawHUD ()
         }
     }
 
-    drawSelectionPanel (hud.selection_panel_rect, selected_count, contaminator_selected, last_selected_unit);
+    drawSelectionPanel (hud.selection_panel_rect, selected_count, last_selected_unit);
 
     {
         int area_w = hud.action_panel_rect.width ();
@@ -1305,7 +1305,7 @@ void RoomWidget::drawHUD ()
         }
     }
 }
-void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, bool contaminator_selected, const Unit* last_selected_unit)
+void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit)
 {
     if (selected_count == 1) {
         const Unit& unit = *last_selected_unit;
@@ -1896,27 +1896,26 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
     QPointF center = QRectF (rect).center ();
     QPointF top_left = {rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5)};
     QPointF top_right = {rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5)};
-    QPointF bottom_center = {rect.x () + rect.width ()*0.5, rect.y () + rect.height ()*(1 - outer_factor*0.5)};
     QPointF bottom_left = {rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5)};
     QPointF bottom_right = {rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5)};
 
     QVector<GLfloat> vertices;
     const GLfloat colors[] = {
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
-        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
     };
 
     qreal angle = M_PI*remaining;
@@ -1928,14 +1927,14 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
             qreal scale = rect.height ()*(1 - outer_factor)*0.5;
             off_x *= -scale/off_y;
             off_y = -scale;
-            vertices.append ({center.x (), center.y (),
-                              center.x () + off_x, center.y () + off_y,
-                              center.x () - off_x, center.y () + off_y});
+            vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
+                              GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
+                              GLfloat (center.x () - off_x), GLfloat (center.y () + off_y)});
             break;
         } else {
-            vertices.append ({center.x (), center.y (),
-                              top_right.x (), top_right.y (),
-                              top_left.x (), top_left.y ()});
+            vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
+                              GLfloat (top_right.x ()), GLfloat (top_right.y ()),
+                              GLfloat (top_left.x ()), GLfloat (top_left.y ())});
         }
 
         if (angle < M_PI*0.75) {
@@ -1945,20 +1944,20 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
             off_y *= -scale/off_x;
             off_x = -scale;
 
-            vertices.append ({top_left.x (), top_left.y (),
-                              center.x (), center.y (),
-                              center.x () + off_x, center.y () + off_y,
-                              top_right.x (), top_right.y (),
-                              center.x (), center.y (),
-                              center.x () - off_x, center.y () + off_y});
+            vertices.append ({GLfloat (top_left.x ()), GLfloat (top_left.y ()),
+                              GLfloat (center.x ()), GLfloat (center.y ()),
+                              GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
+                              GLfloat (top_right.x ()), GLfloat (top_right.y ()),
+                              GLfloat (center.x ()), GLfloat (center.y ()),
+                              GLfloat (center.x () - off_x), GLfloat (center.y () + off_y)});
             break;
         } else {
-            vertices.append ({top_left.x (), top_left.y (),
-                              center.x (), center.y (),
-                              bottom_left.x (), bottom_left.y (),
-                              top_right.x (), top_right.y (),
-                              center.x (), center.y (),
-                              bottom_right.x (), bottom_right.y ()});
+            vertices.append ({GLfloat (top_left.x ()), GLfloat (top_left.y ()),
+                              GLfloat (center.x ()), GLfloat (center.y ()),
+                              GLfloat (bottom_left.x ()), GLfloat (bottom_left.y ()),
+                              GLfloat (top_right.x ()), GLfloat (top_right.y ()),
+                              GLfloat (center.x ()), GLfloat (center.y ()),
+                              GLfloat (bottom_right.x ()), GLfloat (bottom_right.y ())});
         }
 
         {
@@ -1968,12 +1967,12 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
             off_x *= scale/off_y;
             off_y = scale;
 
-            vertices.append ({center.x (), center.y (),
-                              bottom_left.x (), bottom_left.y (),
-                              center.x () + off_x, center.y () + off_y,
-                              center.x (), center.y (),
-                              bottom_right.x (), bottom_right.y (),
-                              center.x () - off_x, center.y () + off_y});
+            vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
+                              GLfloat (bottom_left.x ()), GLfloat (bottom_left.y ()),
+                              GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
+                              GLfloat (center.x ()), GLfloat (center.y ()),
+                              GLfloat (bottom_right.x ()), GLfloat (bottom_right.y ()),
+                              GLfloat (center.x () - off_x), GLfloat (center.y () + off_y)});
         }
     } while (0);
 
