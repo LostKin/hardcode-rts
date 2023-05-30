@@ -155,7 +155,6 @@ void Application::joinRoomCallback (quint32 room_id)
 
 void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF position)
 {
-    qDebug() << "Create unit callback";
     if (!session_token.has_value ())
         return;
 
@@ -177,7 +176,6 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
 
 void Application::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target)
 {
-    qDebug() << "Create unit action callback";
     if (!session_token.has_value ())
         return;
 
@@ -200,8 +198,6 @@ void Application::unitActionCallback (quint32 id, ActionType type, std::variant<
     } break;
 
     }
-
-    qDebug() << "creating unit action request";
 
     std::string message;
     request_oneof.SerializeToString (&message);

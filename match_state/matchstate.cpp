@@ -21,6 +21,12 @@ static inline qreal vectorSize (const QPointF& v)
 {
     return std::hypot (v.x (), v.y ());
 }
+static inline void vectorResize (QPointF& v, qreal new_size)
+{
+    qreal old_size = std::hypot (v.x (), v.y ());
+    if (old_size > 0.000000001)
+        v *= new_size/old_size;
+}
 static inline qreal unitDistance (const Unit& a, const Unit& b)
 {
     return vectorSize (a.position - b.position);
@@ -56,6 +62,10 @@ static bool intersectRectangleCircle (const QRectF& rect, const QPointF& center,
             return true;
         }
     }
+}
+static bool pointInsideCircle (const QPointF& point, const QPointF& center, qreal radius)
+{
+    return vectorSize (point - center) <= radius;
 }
 static bool orientationsFuzzyMatch (qreal a, qreal b)
 {
@@ -254,7 +264,7 @@ void MatchState::attackEnemy (Unit::Team attacker_team, const QPointF& point)
     }
     startAction (target.has_value () ? AttackAction (*target) : AttackAction (point));
 }
-void MatchState::cast (CastAction::Type cast_type, Unit::Team attacker_team, const QPointF& point)
+void MatchState::cast (CastAction::Type cast_type, Unit::Team /* attacker_team */, const QPointF& point)
 {
     startAction (CastAction (cast_type, point));
 }
@@ -302,20 +312,65 @@ void MatchState::autoAction (Unit::Team attacker_team, const QPointF& point)
         //emit unitActionRequested ();
     }
 }
+void MatchState::redTeamUserTick (RedTeamUserData& /* user_data */)
+{
+}
+void MatchState::blueTeamUserTick (BlueTeamUserData& user_data)
+{
+    QVector<const Missile*> new_missiles;
+    for (QHash<quint32, Missile>::iterator it = missiles.begin (); it != missiles.end (); ++it) {
+        if (!user_data.old_missiles.contains (it.key ())) {
+            if (it->sender_team == Unit::Team::Red)
+                new_missiles.append (&*it);
+            user_data.old_missiles.insert (it.key ());
+        }
+    }
+
+    {
+        QSet<quint32>::iterator it = user_data.old_missiles.begin ();
+        while (it != user_data.old_missiles.end()) {
+            if (!missiles.contains (*it))
+                it = user_data.old_missiles.erase (it);
+            else
+                ++it;
+        }
+    }
+
+    const AttackDescription& pestilence_splash_attack = MatchState::effectAttackDescription (AttackDescription::Type::PestilenceSplash);
+    const AttackDescription& rocket_explosion_attack = MatchState::effectAttackDescription (AttackDescription::Type::GoonRocketExplosion);
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = *it;
+        for (const Missile* missile: new_missiles) {
+            if (missile->type == Missile::Type::Pestilence) {
+                qreal radius = pestilence_splash_attack.range + unitRadius (unit.type);
+                if (pointInsideCircle (unit.position, missile->target_position, radius)) {
+                    QPointF displacement = unit.position - missile->target_position;
+                    vectorResize (displacement, radius*1.05);
+                    unit.action = MoveAction (missile->target_position + displacement);
+                    break;
+                }
+            } else if (missile->type == Missile::Type::Rocket) {
+                qreal radius = rocket_explosion_attack.range + unitRadius (unit.type);
+                if (pointInsideCircle (unit.position, missile->target_position, radius) &&
+                    (!missile->target_unit.has_value () || missile->target_unit.value () != it.key ())) {
+                    QPointF displacement = unit.position - missile->target_position;
+                    vectorResize (displacement, radius*1.05);
+                    unit.action = MoveAction (missile->target_position + displacement);
+                    break;
+                }
+            }
+        }
+    }
+}
 void MatchState::tick ()
 {
+    redTeamUserTick (red_team_user_data);
+    blueTeamUserTick (blue_team_user_data);
+
     constexpr uint64_t dt_nsec = 20'000'000;
     constexpr qreal dt = 0.020;
 
     clock_ns += dt_nsec;
-
-#if 0
-    space_art.unit[]:contrained (#self <= 8) units = find_units_at (center, 8);
-    for (index (units) i = 0 asc 200) {
-    }
-    QVector<Unit> units = findUnitsAtCircle (center, radius, max_count);
-    QVector<Unit> units = findUnitsAtCircleByType (center, radius, type_id, max_count);
-#endif
 
     // TODO: Implement current and new positions for actions
 
@@ -628,7 +683,6 @@ void MatchState::startAction (const MoveAction& action)
         Unit& unit = it.value ();
         if (unit.selected) {
             unit.action = action;
-            qDebug() << "assigned action to unit" << it.key();
             QPointF target;
             if (std::holds_alternative<quint32> (action.target)) {
                 quint32 target_unit_id = std::get<quint32> (action.target);
@@ -677,7 +731,6 @@ void MatchState::LoadState(const QVector<QPair<quint32, Unit> >& other, const QV
     for (quint32 i = 0; i < other.size(); i++) {
         if (unitsRef().find(other.at(i).first) == unitsRef().end()) {
             addUnit(other.at(i).first, other.at(i).second.type, other.at(i).second.team, other.at(i).second.position, other.at(i).second.orientation);
-            qDebug() << "created a new unit";
         } else {
             QHash<quint32, Unit>::iterator to_change = units.find(other.at(i).first);
             to_change.value().position = other.at(i).second.position;
@@ -711,7 +764,6 @@ void MatchState::startAction (const CastAction& action)
                 }
                 break;
             }
-            qDebug() << "Unit action started";
             //emit unitActionRequested ();
         }
     }

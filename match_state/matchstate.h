@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QPair>
+#include <QSet>
 #include <QVector>
 #include <random>
 #include <optional>
@@ -86,6 +87,15 @@ signals:
     void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
 private:
+    struct RedTeamUserData
+    {
+    };
+    struct BlueTeamUserData
+    {
+        QSet<quint32> old_missiles;
+    };
+
+private:
     void clearSelection ();
     void rotateUnit (Unit& unit, qreal dt, qreal dest_orientation);
     bool checkUnitInsideSelection (const Unit& unit, const QPointF& point) const;
@@ -110,6 +120,8 @@ private:
     void dealDamage (Unit& unit, qint64 damage);
     Unit* findUnitAt (Unit::Team team, const QPointF& point);
     quint32 getRandomNumber ();
+    void redTeamUserTick (RedTeamUserData& user_data);
+    void blueTeamUserTick (BlueTeamUserData& user_data);
 
 private:
     const bool is_client;
@@ -118,6 +130,8 @@ private:
     QHash<quint32, Unit> units;
     QHash<quint32, Missile> missiles;
     QHash<quint32, Explosion> explosions;
+    RedTeamUserData red_team_user_data;
+    BlueTeamUserData blue_team_user_data;
     quint32 next_id = 0;
     std::mt19937 random_generator;
 };

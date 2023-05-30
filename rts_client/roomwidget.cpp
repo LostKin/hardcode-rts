@@ -1296,8 +1296,9 @@ void RoomWidget::drawHUD ()
                 drawActionButton (spawn_button_rect, pressed_action_button == ActionButtonId::Spawn,
                                   (active_actions & (1 << quint64 (ActionButtonId::Spawn))) ? textures.actions.active.spawn.get () : textures.actions.basic.spawn.get ());
                 if (cast_cooldown_left_ticks) {
-                    const AttackDescription& attack_description = match_state->effectAttackDescription (AttackDescription::Type::PestilenceMissile);
-                    qreal remaining = qreal (cast_cooldown_left_ticks)/attack_description.cooldown_ticks;
+                    qreal max_cooldown_ticks = qMax (match_state->effectAttackDescription (AttackDescription::Type::PestilenceMissile).cooldown_ticks,
+                                                     match_state->effectAttackDescription (AttackDescription::Type::SpawnBeetle).cooldown_ticks);
+                    qreal remaining = qreal (cast_cooldown_left_ticks)/max_cooldown_ticks;
                     drawActionButtonShade (pestilence_button_rect, pressed_action_button == ActionButtonId::Pestilence, remaining);
                     drawActionButtonShade (spawn_button_rect, pressed_action_button == ActionButtonId::Spawn, remaining);
                 }
