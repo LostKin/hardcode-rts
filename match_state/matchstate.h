@@ -126,7 +126,7 @@ private:
 private:
     const bool is_client;
     quint64 clock_ns = 0;
-    QRectF area = {-64, -32, 128, 64};
+    QRectF area = {-64, -48, 128, 96};
     QHash<quint32, Unit> units;
     QHash<quint32, Missile> missiles;
     QHash<quint32, Explosion> explosions;

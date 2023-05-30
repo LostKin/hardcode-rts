@@ -39,11 +39,13 @@ protected:
     void drawColoredTextured (GLenum mode, const GLfloat* vertex_positions, const GLfloat* colors, const GLfloat* texture_coords, GLsizei index_count, const GLuint* indices, QOpenGLTexture* texture);
     void drawTextured (GLenum mode, GLsizei vertex_count, const GLfloat* vertex_positions, const GLfloat* texture_coords, QOpenGLTexture* texture);
     void drawTextured (GLenum mode, const GLfloat* vertex_positions, const GLfloat* texture_coords, GLsizei index_count, const GLuint* indices, QOpenGLTexture* texture);
-    void drawRectangle (int x, int y, QOpenGLTexture* texture);
-    void drawRectangle (int x, int y, int w, int h, QOpenGLTexture* texture);
     void drawRectangle (int x, int y, int w, int h, const QColor& color);
+    void fillRectangle (int x, int y, QOpenGLTexture* texture);
+    void fillRectangle (int x, int y, int w, int h, QOpenGLTexture* texture);
     void fillRectangle (int x, int y, int w, int h, const QColor& color);
+    void fillRectangle (qreal x, qreal y, qreal w, qreal h, const QColor& color);
     void fillRectangle (const QRect& rect, const QColor& color);
+    void fillRectangle (const QRectF& rect, const QColor& color);
     void drawCircle (qreal x, qreal y, qreal radius, const QColor& color);
 
 private:

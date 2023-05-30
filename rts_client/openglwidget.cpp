@@ -326,7 +326,30 @@ void OpenGLWidget::drawTextured (GLenum mode, const GLfloat* vertex_positions, c
 
     glDisable (GL_BLEND);
 }
-void OpenGLWidget::drawRectangle (int x, int y, QOpenGLTexture* texture)
+void OpenGLWidget::drawRectangle (int x, int y, int w, int h, const QColor& color)
+{
+    const GLfloat vertices[] = {
+        GLfloat (x + 0.5), GLfloat (y + 0.5),
+        GLfloat (x + 0.5 + w), GLfloat (y + 0.5),
+        GLfloat (x + 0.5 + w), GLfloat (y + 0.5 + h),
+        GLfloat (x + 0.5), GLfloat (y + 0.5 + h),
+    };
+
+    GLfloat r = color.redF ();
+    GLfloat g = color.greenF ();
+    GLfloat b = color.blueF ();
+    GLfloat a = color.alphaF ();
+
+    const GLfloat colors[] = {
+        r, g, b, a,
+        r, g, b, a,
+        r, g, b, a,
+        r, g, b, a,
+    };
+
+    drawColored (GL_LINE_LOOP, 4, vertices, colors);
+}
+void OpenGLWidget::fillRectangle (int x, int y, QOpenGLTexture* texture)
 {
     int w = texture->width ();
     int h = texture->height ();
@@ -351,7 +374,7 @@ void OpenGLWidget::drawRectangle (int x, int y, QOpenGLTexture* texture)
 
     drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
 }
-void OpenGLWidget::drawRectangle (int x, int y, int w, int h, QOpenGLTexture* texture)
+void OpenGLWidget::fillRectangle (int x, int y, int w, int h, QOpenGLTexture* texture)
 {
     const GLfloat vertices[] = {
         GLfloat (x), GLfloat (y),
@@ -373,29 +396,6 @@ void OpenGLWidget::drawRectangle (int x, int y, int w, int h, QOpenGLTexture* te
     };
 
     drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
-}
-void OpenGLWidget::drawRectangle (int x, int y, int w, int h, const QColor& color)
-{
-    const GLfloat vertices[] = {
-        GLfloat (x + 0.5), GLfloat (y + 0.5),
-        GLfloat (x + 0.5 + w), GLfloat (y + 0.5),
-        GLfloat (x + 0.5 + w), GLfloat (y + 0.5 + h),
-        GLfloat (x + 0.5), GLfloat (y + 0.5 + h),
-    };
-
-    GLfloat r = color.redF ();
-    GLfloat g = color.greenF ();
-    GLfloat b = color.blueF ();
-    GLfloat a = color.alphaF ();
-
-    const GLfloat colors[] = {
-        r, g, b, a,
-        r, g, b, a,
-        r, g, b, a,
-        r, g, b, a,
-    };
-
-    drawColored (GL_LINE_LOOP, 4, vertices, colors);
 }
 void OpenGLWidget::fillRectangle (int x, int y, int w, int h, const QColor& color)
 {
@@ -420,7 +420,34 @@ void OpenGLWidget::fillRectangle (int x, int y, int w, int h, const QColor& colo
 
     drawColored (GL_TRIANGLE_STRIP, 4, vertices, colors);
 }
+void OpenGLWidget::fillRectangle (qreal x, qreal y, qreal w, qreal h, const QColor& color)
+{
+    const GLfloat vertices[] = {
+        GLfloat (x), GLfloat (y),
+        GLfloat (x + w), GLfloat (y),
+        GLfloat (x), GLfloat (y + h),
+        GLfloat (x + w), GLfloat (y + h),
+    };
+
+    GLfloat r = color.redF ();
+    GLfloat g = color.greenF ();
+    GLfloat b = color.blueF ();
+    GLfloat a = color.alphaF ();
+
+    const GLfloat colors[] = {
+        r, g, b, a,
+        r, g, b, a,
+        r, g, b, a,
+        r, g, b, a,
+    };
+
+    drawColored (GL_TRIANGLE_STRIP, 4, vertices, colors);
+}
 void OpenGLWidget::fillRectangle (const QRect& rect, const QColor& color)
+{
+    fillRectangle (rect.x (), rect.y (), rect.width (), rect.height (), color);
+}
+void OpenGLWidget::fillRectangle (const QRectF& rect, const QColor& color)
 {
     fillRectangle (rect.x (), rect.y (), rect.width (), rect.height (), color);
 }

@@ -84,8 +84,12 @@ private:
     bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const;
     bool getActionButtonUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
     bool getSelectionPanelUnitUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
+    bool getMinimapPositionUnderCursor (const QPoint& cursor_pos, QPointF& area_pos) const;
+    bool cursorIsAboveMajorMap (const QPoint& cursor_pos) const;
+    void centerViewportAt (const QPointF& point);
     void centerViewportAtSelected ();
     void drawHUD ();
+    void drawMinimap ();
     void drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit);
     void drawUnit (const Unit& unit);
     void drawIcon (const Unit& unit, int x, int y, int w, int h, bool framed = false);
@@ -243,11 +247,12 @@ private:
         int margin = 1;
         int stroke_width = 1;
         QSize action_button_size = {1, 1};
-        QSize minimap_panel_size = {1, 1};
+        QRect minimap_panel_rect = {0, 0, 1, 1};
         QRect action_panel_rect = {0, 0, 1, 1};
         QRect selection_panel_rect = {0, 0, 1, 1};
         int selection_panel_icon_rib = 1;
         QPoint selection_panel_icon_grid_pos = {0, 0};
+        QRectF minimap_screen_area = {0, 0, 1, 1};
     } hud;
     QRect arena_viewport = {0, 0, 1, 1};
     QPointF arena_viewport_center = {0, 0};
@@ -256,6 +261,7 @@ private:
     QPoint cursor_position = {-1, -1};
     ActionButtonId pressed_action_button = ActionButtonId::None;
     ActionButtonId current_action_button = ActionButtonId::None;
+    bool minimap_viewport_selection_pressed = false;
     Unit::Team team;
     QElapsedTimer match_countdown_start;
     QSharedPointer<QOpenGLTexture> cursor;
