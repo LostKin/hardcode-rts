@@ -95,6 +95,7 @@ private:
     void drawExplosion (const Explosion& explosion);
     void drawUnitPathToTarget (const Unit& unit);
     void drawActionButton (const QRect& rect, bool pressed, QOpenGLTexture* texture);
+    void drawActionButtonShade (const QRect& rect, bool pressed, qreal remaining);
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
     void groupEvent (quint64 group_num);

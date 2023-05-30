@@ -762,10 +762,6 @@ void RoomWidget::matchMouseMoveEvent (QMouseEvent* /* event */)
 }
 void RoomWidget::matchMousePressEvent (QMouseEvent *event)
 {
-    Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
-    ctrl_pressed = modifiers & Qt::ControlModifier;
-    shift_pressed = modifiers & Qt::ShiftModifier;
-    alt_pressed = modifiers & Qt::AltModifier;
     int row, col;
     if (getActionButtonUnderCursor (cursor_position, row, col)) {
         switch (event->button ()) {
@@ -932,14 +928,14 @@ void RoomWidget::drawMatchStarted ()
             GLfloat (center.x () + scale*area.left ()), GLfloat (center.y () + scale*area.bottom ()),
         };
 
-        const GLfloat texture_coords[] = {
+        static const GLfloat texture_coords[] = {
             0, 0,
             1, 0,
             1, 1,
             0, 1,
         };
 
-        const GLuint indices[] = {
+        static const GLuint indices[] = {
             0, 1, 2,
             0, 2, 3,
         };
@@ -1100,10 +1096,10 @@ void RoomWidget::centerViewportAtSelected ()
 }
 void RoomWidget::drawHUD ()
 {
-    QColor stroke_color (0, 0, 0);
-    QColor margin_color (0x2f, 0x90, 0x92);
-    QColor panel_color (0x21, 0x2f, 0x3a);
-    QColor panel_inner_color (0, 0xaa, 0xaa);
+    static const QColor stroke_color (0, 0, 0);
+    static const QColor margin_color (0x2f, 0x90, 0x92);
+    static const QColor panel_color (0x21, 0x2f, 0x3a);
+    static const QColor panel_inner_color (0, 0xaa, 0xaa);
 
     int margin = hud.margin;
 
@@ -1235,6 +1231,7 @@ void RoomWidget::drawHUD ()
 
     size_t selected_count = 0;
     bool contaminator_selected = false;
+    qint64 cast_cooldown_left_ticks = 0x7fffffffffffffffLL;
     quint64 active_actions = 0;
     const Unit* last_selected_unit = nullptr;
     const QHash<quint32, Unit>& units = match_state->unitsRef ();
@@ -1259,8 +1256,10 @@ void RoomWidget::drawHUD ()
                 active_actions |= 1 << quint64 (ActionButtonId::Stop);
             }
 
-            if (it->type == Unit::Type::Contaminator)
+            if (it->type == Unit::Type::Contaminator) {
                 contaminator_selected = true;
+                cast_cooldown_left_ticks = qMin (cast_cooldown_left_ticks, it->cast_cooldown_left_ticks);
+            }
             ++selected_count;
             last_selected_unit = &*it;
         }
@@ -1288,13 +1287,20 @@ void RoomWidget::drawHUD ()
                               (active_actions & (1 << quint64 (ActionButtonId::Attack))) ? textures.actions.active.attack.get () : textures.actions.basic.attack.get ());
 
             if (contaminator_selected) {
-                drawActionButton ({w - area_w - margin, h - area_h - margin + hud.action_button_size.height ()*2, hud.action_button_size.width (), hud.action_button_size.height ()},
-                                  pressed_action_button == ActionButtonId::Pestilence,
+                QRect pestilence_button_rect = {w - area_w - margin, h - area_h - margin + hud.action_button_size.height ()*2,
+                                                hud.action_button_size.width (), hud.action_button_size.height ()};
+                QRect spawn_button_rect = {w - area_w - margin + hud.action_button_size.width (), h - area_h - margin + hud.action_button_size.height ()*2,
+                                           hud.action_button_size.width (), hud.action_button_size.height ()};
+                drawActionButton (pestilence_button_rect, pressed_action_button == ActionButtonId::Pestilence,
                                   (active_actions & (1 << quint64 (ActionButtonId::Pestilence))) ? textures.actions.active.pestilence.get () : textures.actions.basic.pestilence.get ());
-                drawActionButton ({w - area_w - margin + hud.action_button_size.width (), h - area_h - margin + hud.action_button_size.height ()*2,
-                                   hud.action_button_size.width (), hud.action_button_size.height ()},
-                                  pressed_action_button == ActionButtonId::Spawn,
+                drawActionButton (spawn_button_rect, pressed_action_button == ActionButtonId::Spawn,
                                   (active_actions & (1 << quint64 (ActionButtonId::Spawn))) ? textures.actions.active.spawn.get () : textures.actions.basic.spawn.get ());
+                if (cast_cooldown_left_ticks) {
+                    const AttackDescription& attack_description = match_state->effectAttackDescription (AttackDescription::Type::PestilenceMissile);
+                    qreal remaining = qreal (cast_cooldown_left_ticks)/attack_description.cooldown_ticks;
+                    drawActionButtonShade (pestilence_button_rect, pressed_action_button == ActionButtonId::Pestilence, remaining);
+                    drawActionButtonShade (spawn_button_rect, pressed_action_button == ActionButtonId::Spawn, remaining);
+                }
             }
         }
     }
@@ -1413,14 +1419,14 @@ void RoomWidget::drawUnit (const Unit& unit)
         GLfloat (center.x () + scale*a4_cos), GLfloat (center.y () + scale*a4_sin),
     };
 
-    const GLfloat texture_coords[] = {
+    static const GLfloat texture_coords[] = {
         0, 1,
         1, 1,
         1, 0,
         0, 0,
     };
 
-    const GLuint indices[] = {
+    static const GLuint indices[] = {
         0, 1, 2,
         0, 2, 3,
     };
@@ -1443,7 +1449,7 @@ void RoomWidget::drawTabs (int x, int y, int w, int h)
         0, 2, 3,
     };
 
-    const GLfloat texture_coords[] = {
+    static const GLfloat texture_coords[] = {
         0.25, 0.25,
         0.75, 0.25,
         0.75, 0.75,
@@ -1623,14 +1629,14 @@ void RoomWidget::drawMissile (const Missile& missile)
         GLfloat (center.x () + scale*a4_cos), GLfloat (center.y () + scale*a4_sin),
     };
 
-    const GLfloat texture_coords[] = {
+    static const GLfloat texture_coords[] = {
         0, 1,
         1, 1,
         1, 0,
         0, 0,
     };
 
-    const GLuint indices[] = {
+    static const GLuint indices[] = {
         0, 1, 2,
         0, 2, 3,
     };
@@ -1766,10 +1772,10 @@ void RoomWidget::drawUnitPathToTarget (const Unit& unit)
 }
 void RoomWidget::drawActionButton (const QRect& rect, bool pressed, QOpenGLTexture* texture)
 {
-    QColor bright (0x50, 0x0f, 0x94);
-    QColor light (0xa8, 0x72, 0xe0);
-    QColor dark (0x31, 0x1e, 0x44);
-    QColor gray (0x5b, 0x46, 0x72);
+    static const QColor bright (0x50, 0x0f, 0x94);
+    static const QColor light (0xa8, 0x72, 0xe0);
+    static const QColor dark (0x31, 0x1e, 0x44);
+    static const QColor gray (0x5b, 0x46, 0x72);
 
     qreal outer_factor = pressed ? 0.2 : 0.1;
     qreal inner_factor = pressed ? (1.0/3.0) : 0.25;
@@ -1839,7 +1845,7 @@ void RoomWidget::drawActionButton (const QRect& rect, bool pressed, QOpenGLTextu
             GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
         };
 
-        const GLuint indices[] = {
+        static const GLuint indices[] = {
             0, 1, 3,
             0, 3, 2,
             4, 5, 7,
@@ -1863,20 +1869,115 @@ void RoomWidget::drawActionButton (const QRect& rect, bool pressed, QOpenGLTextu
             GLfloat (i4.x ()), GLfloat (i4.y ()),
         };
 
-        const GLfloat texture_coords[] = {
+        static const GLfloat texture_coords[] = {
             0, 0,
             1, 0,
             0, 1,
             1, 1,
         };
 
-        const GLuint indices[] = {
+        static const GLuint indices[] = {
             0, 1, 3,
             0, 3, 2,
         };
 
         drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
     }
+}
+void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal remaining)
+{
+    if (remaining <= 0.0)
+        return;
+
+    static const QColor color (0, 0, 0, 0xcc);
+
+    qreal outer_factor = pressed ? 0.2 : 0.1;
+
+    QPointF center = QRectF (rect).center ();
+    QPointF top_left = {rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5)};
+    QPointF top_right = {rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5)};
+    QPointF bottom_center = {rect.x () + rect.width ()*0.5, rect.y () + rect.height ()*(1 - outer_factor*0.5)};
+    QPointF bottom_left = {rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5)};
+    QPointF bottom_right = {rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5)};
+
+    QVector<GLfloat> vertices;
+    const GLfloat colors[] = {
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+        color.redF (), color.greenF (), color.blueF (), color.alphaF (),
+    };
+
+    qreal angle = M_PI*remaining;
+
+    do {
+        if (angle < M_PI*0.25) {
+            qreal off_x = -qSin (angle);
+            qreal off_y = -qCos (angle);
+            qreal scale = rect.height ()*(1 - outer_factor)*0.5;
+            off_x *= -scale/off_y;
+            off_y = -scale;
+            vertices.append ({center.x (), center.y (),
+                              center.x () + off_x, center.y () + off_y,
+                              center.x () - off_x, center.y () + off_y});
+            break;
+        } else {
+            vertices.append ({center.x (), center.y (),
+                              top_right.x (), top_right.y (),
+                              top_left.x (), top_left.y ()});
+        }
+
+        if (angle < M_PI*0.75) {
+            qreal off_x = -qSin (angle);
+            qreal off_y = -qCos (angle);
+            qreal scale = rect.height ()*(1 - outer_factor)*0.5;
+            off_y *= -scale/off_x;
+            off_x = -scale;
+
+            vertices.append ({top_left.x (), top_left.y (),
+                              center.x (), center.y (),
+                              center.x () + off_x, center.y () + off_y,
+                              top_right.x (), top_right.y (),
+                              center.x (), center.y (),
+                              center.x () - off_x, center.y () + off_y});
+            break;
+        } else {
+            vertices.append ({top_left.x (), top_left.y (),
+                              center.x (), center.y (),
+                              bottom_left.x (), bottom_left.y (),
+                              top_right.x (), top_right.y (),
+                              center.x (), center.y (),
+                              bottom_right.x (), bottom_right.y ()});
+        }
+
+        {
+            qreal off_x = -qSin (angle);
+            qreal off_y = -qCos (angle);
+            qreal scale = rect.height ()*(1 - outer_factor)*0.5;
+            off_x *= scale/off_y;
+            off_y = scale;
+
+            vertices.append ({center.x (), center.y (),
+                              bottom_left.x (), bottom_left.y (),
+                              center.x () + off_x, center.y () + off_y,
+                              center.x (), center.y (),
+                              bottom_right.x (), bottom_right.y (),
+                              center.x () - off_x, center.y () + off_y});
+        }
+    } while (0);
+
+    drawColored (GL_TRIANGLES, vertices.size ()/2, vertices.data (), colors);
 }
 void RoomWidget::groupEvent (quint64 group_num)
 {
