@@ -340,23 +340,25 @@ void MatchState::blueTeamUserTick (BlueTeamUserData& user_data)
     const AttackDescription& rocket_explosion_attack = MatchState::effectAttackDescription (AttackDescription::Type::GoonRocketExplosion);
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = *it;
-        for (const Missile* missile: new_missiles) {
-            if (missile->type == Missile::Type::Pestilence) {
-                qreal radius = pestilence_splash_attack.range + unitRadius (unit.type);
-                if (pointInsideCircle (unit.position, missile->target_position, radius)) {
-                    QPointF displacement = unit.position - missile->target_position;
-                    vectorResize (displacement, radius*1.05);
-                    unit.action = MoveAction (missile->target_position + displacement);
-                    break;
-                }
-            } else if (missile->type == Missile::Type::Rocket) {
-                qreal radius = rocket_explosion_attack.range + unitRadius (unit.type);
-                if (pointInsideCircle (unit.position, missile->target_position, radius) &&
-                    (!missile->target_unit.has_value () || missile->target_unit.value () != it.key ())) {
-                    QPointF displacement = unit.position - missile->target_position;
-                    vectorResize (displacement, radius*1.05);
-                    unit.action = MoveAction (missile->target_position + displacement);
-                    break;
+        if (unit.team == Unit::Team::Blue) {
+            for (const Missile* missile: new_missiles) {
+                if (missile->type == Missile::Type::Pestilence) {
+                    qreal radius = pestilence_splash_attack.range + unitRadius (unit.type);
+                    if (pointInsideCircle (unit.position, missile->target_position, radius)) {
+                        QPointF displacement = unit.position - missile->target_position;
+                        vectorResize (displacement, radius*1.05);
+                        unit.action = MoveAction (missile->target_position + displacement);
+                        break;
+                    }
+                } else if (missile->type == Missile::Type::Rocket) {
+                    qreal radius = rocket_explosion_attack.range + unitRadius (unit.type);
+                    if (pointInsideCircle (unit.position, missile->target_position, radius) &&
+                        (!missile->target_unit.has_value () || missile->target_unit.value () != it.key ())) {
+                        QPointF displacement = unit.position - missile->target_position;
+                        vectorResize (displacement, radius*1.05);
+                        unit.action = MoveAction (missile->target_position + displacement);
+                        break;
+                    }
                 }
             }
         }

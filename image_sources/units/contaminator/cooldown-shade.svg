@@ -2,7 +2,8 @@
 <svg width="256" height="256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <style rel="stylesheet" type="text/css">
 .shade {
-    fill: #000000aa;
+    fill: #000000;
+    fill-opacity: 0.65;
     stroke: none;
 }
 .unit-colored {
@@ -108,10 +109,5 @@ Z
 	</g>
     </defs>
 
-    <use xlink:href="#standing" />
-    <!-- <use xlink:href="#walking1" /> -->
-    <!-- <use xlink:href="#walking2" /> -->
-    <!-- <use xlink:href="#attacking1" /> -->
-    <!-- <use xlink:href="#attacking2" /> -->
-    <!-- <use xlink:href="#cooldown-shade" /> -->
+    <use xlink:href="#cooldown-shade" />
 </svg>

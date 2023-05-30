@@ -396,6 +396,8 @@ void RoomWidget::loadTextures ()
         textures.units.contaminator.blue.walking2 = loadTexture2D (":/images/units/contaminator/blue/walking2.png", true);
         textures.units.contaminator.blue.shooting1 = loadTexture2D (":/images/units/contaminator/blue/attacking1.png", true);
         textures.units.contaminator.blue.shooting2 = loadTexture2D (":/images/units/contaminator/blue/attacking2.png", true);
+
+        textures.units.contaminator_cooldown_shade = loadTexture2D (":/images/units/contaminator/cooldown-shade.png", true);
     }
     {
         textures.effects.explosion.explosion1 = loadTexture2D (":/images/effects/explosion/explosion1.png", true);
@@ -1433,6 +1435,101 @@ void RoomWidget::drawUnit (const Unit& unit)
     };
 
     drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
+    if (unit.type == Unit::Type::Contaminator && unit.cast_cooldown_left_ticks) {
+        qreal max_cooldown_ticks = qMax (match_state->effectAttackDescription (AttackDescription::Type::PestilenceMissile).cooldown_ticks,
+                                         match_state->effectAttackDescription (AttackDescription::Type::SpawnBeetle).cooldown_ticks);
+        qreal remaining = qreal (unit.cast_cooldown_left_ticks)/max_cooldown_ticks;
+
+        qreal scale = viewport_scale*sprite_scale*match_state->unitDiameter (unit.type)*MAP_TO_SCREEN_FACTOR;
+
+        QVector<GLfloat> vertices;
+        QVector<GLfloat> texture_coords;
+
+        QPointF top_left = {center.x () - scale, center.y () - scale};
+        QPointF top_right = {center.x () + scale, center.y () - scale};
+        QPointF bottom_left = {center.x () - scale, center.y () + scale};
+        QPointF bottom_right = {center.x () + scale, center.y () + scale};
+
+        qreal angle = M_PI*remaining;
+
+        do {
+            if (angle < M_PI*0.25) {
+                qreal off_x = -scale*qTan (angle);
+                qreal off_y = -scale;
+                qreal toff_x = -0.5*qTan (angle);
+                qreal toff_y = -0.5;
+                vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
+                                  GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
+                                  GLfloat (center.x () - off_x), GLfloat (center.y () + off_y)});
+                texture_coords.append ({GLfloat (0.5), GLfloat (0.5),
+                                        GLfloat (0.5 + toff_x), GLfloat (0.5 + toff_y),
+                                        GLfloat (0.5 - toff_x), GLfloat (0.5 + toff_y)});
+                break;
+            } else {
+                vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
+                                  GLfloat (top_right.x ()), GLfloat (top_right.y ()),
+                                  GLfloat (top_left.x ()), GLfloat (top_left.y ())});
+                texture_coords.append ({0.5, 0.5,
+                                        1, 0,
+                                        0, 0});
+            }
+
+            if (angle < M_PI*0.75) {
+                qreal off_x = -scale;
+                qreal off_y = -scale/qTan (angle);
+                qreal toff_x = -0.5;
+                qreal toff_y = -0.5/qTan (angle);
+                vertices.append ({GLfloat (top_left.x ()), GLfloat (top_left.y ()),
+                                  GLfloat (center.x ()), GLfloat (center.y ()),
+                                  GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
+                                  GLfloat (top_right.x ()), GLfloat (top_right.y ()),
+                                  GLfloat (center.x ()), GLfloat (center.y ()),
+                                  GLfloat (center.x () - off_x), GLfloat (center.y () + off_y)});
+                texture_coords.append ({GLfloat (0), GLfloat (0),
+                                        GLfloat (0.5), GLfloat (0.5),
+                                        GLfloat (0.5 + toff_x), GLfloat (0.5 + toff_y),
+                                        GLfloat (1), GLfloat (0),
+                                        GLfloat (0.5), GLfloat (0.5),
+                                        GLfloat (0.5 - toff_x), GLfloat (0.5 + toff_y)});
+                break;
+            } else {
+                vertices.append ({GLfloat (top_left.x ()), GLfloat (top_left.y ()),
+                                  GLfloat (center.x ()), GLfloat (center.y ()),
+                                  GLfloat (bottom_left.x ()), GLfloat (bottom_left.y ()),
+                                  GLfloat (top_right.x ()), GLfloat (top_right.y ()),
+                                  GLfloat (center.x ()), GLfloat (center.y ()),
+                                  GLfloat (bottom_right.x ()), GLfloat (bottom_right.y ())});
+                texture_coords.append ({0, 0,
+                                        0.5, 0.5,
+                                        0, 1,
+                                        1, 0,
+                                        0.5, 0.5,
+                                        1, 1});
+            }
+
+            {
+                qreal off_x = scale*qTan (angle);
+                qreal off_y = scale;
+                qreal toff_x = 0.5*qTan (angle);
+                qreal toff_y = 0.5;
+                vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
+                                  GLfloat (bottom_left.x ()), GLfloat (bottom_left.y ()),
+                                  GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
+                                  GLfloat (center.x ()), GLfloat (center.y ()),
+                                  GLfloat (bottom_right.x ()), GLfloat (bottom_right.y ()),
+                                  GLfloat (center.x () - off_x), GLfloat (center.y () + off_y)});
+                texture_coords.append ({GLfloat (0.5), GLfloat (0.5),
+                                        GLfloat (0), GLfloat (1),
+                                        GLfloat (0.5 + toff_x), GLfloat (0.5 + toff_y),
+                                        GLfloat (0.5), GLfloat (0.5),
+                                        GLfloat (1), GLfloat (1),
+                                        GLfloat (0.5 - toff_x), GLfloat (0.5 + toff_y)});
+            }
+        } while (0);
+
+        drawTextured (GL_TRIANGLES, vertices.size ()/2, vertices.data (), texture_coords.data (), textures.units.contaminator_cooldown_shade.get ());
+    }
+
     if (unit.selected)
         drawCircle (center.x (), center.y (), scale*0.25, {0, 255, 0});
 }
@@ -1923,11 +2020,9 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
 
     do {
         if (angle < M_PI*0.25) {
-            qreal off_x = -qSin (angle);
-            qreal off_y = -qCos (angle);
             qreal scale = rect.height ()*(1 - outer_factor)*0.5;
-            off_x *= -scale/off_y;
-            off_y = -scale;
+            qreal off_x = -scale*qTan (angle);
+            qreal off_y = -scale;
             vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
                               GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
                               GLfloat (center.x () - off_x), GLfloat (center.y () + off_y)});
@@ -1939,12 +2034,9 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
         }
 
         if (angle < M_PI*0.75) {
-            qreal off_x = -qSin (angle);
-            qreal off_y = -qCos (angle);
             qreal scale = rect.height ()*(1 - outer_factor)*0.5;
-            off_y *= -scale/off_x;
-            off_x = -scale;
-
+            qreal off_x = -scale;
+            qreal off_y = -scale/qTan (angle);
             vertices.append ({GLfloat (top_left.x ()), GLfloat (top_left.y ()),
                               GLfloat (center.x ()), GLfloat (center.y ()),
                               GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
@@ -1962,12 +2054,9 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
         }
 
         {
-            qreal off_x = -qSin (angle);
-            qreal off_y = -qCos (angle);
             qreal scale = rect.height ()*(1 - outer_factor)*0.5;
-            off_x *= scale/off_y;
-            off_y = scale;
-
+            qreal off_x = scale*qTan (angle);
+            qreal off_y = scale;
             vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
                               GLfloat (bottom_left.x ()), GLfloat (bottom_left.y ()),
                               GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),

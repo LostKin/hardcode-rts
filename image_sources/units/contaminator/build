@@ -4,3 +4,4 @@ convert -background none -rotate 90 walking2.svg walking2.png
 convert -background none -rotate 90 attacking1.svg attacking1.png
 convert -background none -rotate 90 attacking2.svg attacking2.png
 convert -background none -rotate 90 icon.svg icon.png
+convert -background none -rotate 90 cooldown-shade.svg cooldown-shade.png

@@ -189,6 +189,7 @@ private:
             UnitTextureSet goon;
             UnitTextureSet beetle;
             UnitTextureSet contaminator;
+            QSharedPointer<QOpenGLTexture> contaminator_cooldown_shade;
         } units;
         struct {
             QSharedPointer<QOpenGLTexture> seal;

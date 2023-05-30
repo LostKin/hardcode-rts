@@ -107,6 +107,7 @@
 	<file>images/units/goon/icon.png</file>
 	<file>images/units/beetle/icon.png</file>
 	<file>images/units/contaminator/icon.png</file>
+	<file>images/units/contaminator/cooldown-shade.png</file>
 
 	<file>images/effects/explosion/explosion1.png</file>
 	<file>images/effects/explosion/explosion2.png</file>
