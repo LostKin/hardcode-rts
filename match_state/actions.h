@@ -4,6 +4,15 @@
 #include <QPointF>
 
 
+struct StopAction
+{
+    StopAction ()
+    {
+    }
+
+    std::optional<quint32> current_target;
+};
+
 struct MoveAction
 {
     MoveAction (const QPointF& target_position)
@@ -30,6 +39,7 @@ struct AttackAction
     }
 
     std::variant<QPointF, quint32> target;
+    std::optional<quint32> current_target;
 };
 
 struct CastAction

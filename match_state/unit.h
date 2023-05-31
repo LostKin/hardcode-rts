@@ -34,7 +34,7 @@ public:
     QPointF position;
     qreal orientation = 0.0;
     bool selected = false;
-    std::variant<std::monostate, AttackAction, MoveAction, CastAction> action;
+    std::variant<StopAction, AttackAction, MoveAction, CastAction> action;
     qint64 hp = 0;
     qint64 attack_remaining_ticks = 0;
     qint64 cast_cooldown_left_ticks = 0;

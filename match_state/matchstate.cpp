@@ -151,7 +151,7 @@ void MatchState::trySelect (Unit::Team team, const QPointF& point, bool add)
     }
 }
 
-void MatchState::setAction(quint32 unit_id, std::variant<std::monostate, AttackAction, MoveAction, CastAction> action) {
+void MatchState::setAction(quint32 unit_id, const std::variant<StopAction, AttackAction, MoveAction, CastAction>& action) {
     QHash<quint32, Unit>::iterator iter = units.find(unit_id);
     if (iter == units.end()) {
         return;
@@ -293,7 +293,7 @@ void MatchState::stop ()
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
         if (unit.selected)
-            unit.action = std::monostate ();
+            unit.action = StopAction ();
     }
 }
 void MatchState::autoAction (Unit::Team attacker_team, const QPointF& point)
@@ -525,6 +525,7 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         AttackDescription ret;
         ret.type = AttackDescription::Type::SealShot;
         ret.range = 5.0;
+        ret.trigger_range = 7.0;
         ret.damage = 10;
         ret.duration_ticks = 20;
         ret;
@@ -533,6 +534,7 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         AttackDescription ret;
         ret.type = AttackDescription::Type::CrusaderChop;
         ret.range = 0.1;
+        ret.trigger_range = 4.0;
         ret.damage = 16;
         ret.duration_ticks = 40;
         ret;
@@ -541,6 +543,7 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         AttackDescription ret;
         ret.type = AttackDescription::Type::GoonRocket;
         ret.range = 8.0;
+        ret.trigger_range = 9.0;
         ret.damage = 12;
         ret.missile_velocity = 16.0;
         ret.duration_ticks = 60;
@@ -550,6 +553,7 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         AttackDescription ret;
         ret.type = AttackDescription::Type::BeetleSlice;
         ret.range = 0.1;
+        ret.trigger_range = 3.0;
         ret.damage = 8;
         ret.duration_ticks = 40;
         ret;
@@ -867,26 +871,62 @@ void MatchState::applyActions (qreal dt)
                     Unit& target_unit = *target_unit_it;
                     applyMovement (unit, target_unit.position, dt, false);
                 } else {
-                    unit.action = std::monostate ();
+                    unit.action = StopAction ();
                 }
             }
         } else if (std::holds_alternative<AttackAction> (unit.action)) {
             if (unit.attack_remaining_ticks > 0)
                 --unit.attack_remaining_ticks;
-            const std::variant<QPointF, quint32>& target = std::get<AttackAction> (unit.action).target;
-            if (std::holds_alternative<quint32> (target)) {
+            AttackAction& attack_action = std::get<AttackAction> (unit.action);
+            const std::variant<QPointF, quint32>& target = attack_action.target;
+            if (std::holds_alternative<QPointF> (target)) {
+                std::optional<quint32> closest_target = attack_action.current_target;
+                if (!closest_target.has_value ())
+                    closest_target = findClosestTarget (unit);
+                if (closest_target.has_value ()) {
+                    attack_action.current_target = closest_target;
+                    quint32 target_unit_id = attack_action.current_target.value ();
+                    QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                    if (target_unit_it != units.end ()) {
+                        Unit& target_unit = *target_unit_it;
+                        applyAttack (unit, target_unit_id, target_unit, dt);
+                    } else {
+                        attack_action.current_target.reset ();
+                    }
+                } else {
+                    applyMovement (unit, std::get<QPointF> (target), dt, true);
+                }
+            } else if (std::holds_alternative<quint32> (target)) {
                 quint32 target_unit_id = std::get<quint32> (target);
                 QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
                 if (target_unit_it != units.end ()) {
                     Unit& target_unit = *target_unit_it;
                     applyAttack (unit, target_unit_id, target_unit, dt);
                 } else {
-                    unit.action = std::monostate ();
+                    unit.action = StopAction ();
                 }
             }
         } else if (std::holds_alternative<CastAction> (unit.action)) {
             const CastAction& cast_action = std::get<CastAction> (unit.action);
             applyCast (unit, cast_action.type, cast_action.target, dt);
+        } else if (std::holds_alternative<StopAction> (unit.action)) {
+            if (unit.attack_remaining_ticks > 0)
+                --unit.attack_remaining_ticks;
+            StopAction& stop_action = std::get<StopAction> (unit.action);
+            std::optional<quint32> closest_target = stop_action.current_target;
+            if (!closest_target.has_value ())
+                closest_target = findClosestTarget (unit);
+            if (closest_target.has_value ()) {
+                stop_action.current_target = closest_target;
+                quint32 target_unit_id = stop_action.current_target.value ();
+                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                if (target_unit_it != units.end ()) {
+                    Unit& target_unit = *target_unit_it;
+                    applyAttack (unit, target_unit_id, target_unit, dt);
+                } else {
+                    stop_action.current_target.reset ();
+                }
+            }
         } else if (unit.attack_remaining_ticks > 0) {
             --unit.attack_remaining_ticks;
         }
@@ -980,7 +1020,7 @@ void MatchState::applyMovement (Unit& unit, const QPointF& target_position, qrea
     if (displacement_length <= path_length) {
         unit.position = target_position;
         if (clear_action_on_completion)
-            unit.action = std::monostate ();
+            unit.action = StopAction ();
     } else {
         unit.position += displacement*(path_length/displacement_length);
     }
@@ -1067,14 +1107,14 @@ void MatchState::applyCast (Unit& unit, CastAction::Type cast_type, const QPoint
         switch (cast_type) {
         case CastAction::Type::Pestilence:
             emitMissile (Missile::Type::Pestilence, unit, target);
-            unit.action = std::monostate ();
+            unit.action = StopAction ();
             unit.cast_cooldown_left_ticks = attack_description.cooldown_ticks;
             emit soundEventEmitted (SoundEvent::PestilenceMissileStart);
             break;
         case CastAction::Type::SpawnBeetle:
             //createUnit (Unit::Type::Beetle, unit.team, target, unit.orientation);
             emit unitCreateRequested(unit.team, Unit::Type::Beetle, target);
-            unit.action = std::monostate ();
+            unit.action = StopAction ();
             unit.cast_cooldown_left_ticks = attack_description.cooldown_ticks;
             emit soundEventEmitted (SoundEvent::SpawnBeetle);
             break;
@@ -1175,4 +1215,19 @@ Unit* MatchState::findUnitAt (Unit::Team team, const QPointF& point)
             return &unit;
     }
     return nullptr;
+}
+std::optional<quint32> MatchState::findClosestTarget (const Unit& unit)
+{
+    std::optional<quint32> closest_target = {};
+    qreal radius = unitRadius (unit.type);
+    qreal trigger_range = unitPrimaryAttackDescription (unit.type).trigger_range;
+    qreal minimal_range = 1000000000.0;
+    for (QHash<quint32, Unit>::iterator target_it = units.begin (); target_it != units.end (); ++target_it) {
+        if (target_it->team != unit.team &&
+            unitDistance (unit, *target_it) <= qMin (radius + unitRadius (target_it->type) + trigger_range, minimal_range)) {
+            minimal_range = unitDistance (unit, *target_it);
+            closest_target = target_it.key ();
+        }
+    }
+    return closest_target;
 }

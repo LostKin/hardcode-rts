@@ -57,7 +57,7 @@ public:
     void select (quint32 unit_id, bool add);
     void trimSelection (Unit::Type type, bool remove);
     void deselect (quint32 unit_id);
-    void setAction(quint32 unit_id, std::variant<std::monostate, AttackAction, MoveAction, CastAction> action);
+    void setAction(quint32 unit_id, const std::variant<StopAction, AttackAction, MoveAction, CastAction>& action);
     std::optional<QPointF> selectionCenter () const;
     void attackEnemy (Unit::Team attacker_team, const QPointF& point);
     void cast (CastAction::Type cast_type, Unit::Team attacker_team, const QPointF& point);
@@ -122,6 +122,7 @@ private:
     void dealDamage (Unit& unit, qint64 damage);
     void killUnits ();
     Unit* findUnitAt (Unit::Team team, const QPointF& point);
+    std::optional<quint32> findClosestTarget (const Unit& unit);
     quint32 getRandomNumber ();
     void redTeamUserTick (RedTeamUserData& user_data);
     void blueTeamUserTick (BlueTeamUserData& user_data);

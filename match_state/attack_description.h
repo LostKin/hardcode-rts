@@ -19,6 +19,7 @@ struct AttackDescription
 
     Type type = Type::Unknown;
     qreal range = 0.0;
+    qreal trigger_range = 0.0;
     qreal missile_velocity = 0.0;
     qint64 damage = 0;
     qint64 duration_ticks = 0;
