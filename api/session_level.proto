@@ -101,7 +101,7 @@ message ReadyRequest {
     SessionToken session_token = 2;
 }
 
-message ActionTargetUnit {
+message TargetUnit {
     uint32 id = 1;
 }
 message ActionTargetPosition {
@@ -111,14 +111,14 @@ message ActionTargetPosition {
 message AttackAction {
     oneof target {
         ActionTargetPosition position = 1;
-        ActionTargetUnit unit = 2;
+        TargetUnit unit = 2;
     }
 }
 
 message MoveAction {
     oneof target {
         ActionTargetPosition position = 1;
-        ActionTargetUnit unit = 2;
+        TargetUnit unit = 2;
     }
 }
 
@@ -257,7 +257,8 @@ message Missile {
     MissileType type = 3;
     Team team = 4;
     Vector2D position = 5;
-    Vector2D target = 6;
+    Vector2D target_position = 6;
+    TargetUnit target_unit = 7;
 }
 
 message Explosion {

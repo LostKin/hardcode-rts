@@ -1056,7 +1056,7 @@ void RoomWidget::playSound (SoundEvent event)
     const QStringList& sound_files = *sound_it;
     if (!sound_files.size ())
         return;
-    QSound::play (sound_files[random_generator ()%sound_files.size ()]);
+    //QSound::play (sound_files[random_generator ()%sound_files.size ()]);
 }
 void RoomWidget::frameUpdate (qreal dt)
 {

@@ -116,10 +116,14 @@ void Room::tick () {
             missile_for_blue->mutable_position()->set_x(m_iter->position.x());
             missile_for_blue->mutable_position()->set_y(m_iter->position.y());
 
-            missile_for_blue->mutable_target()->set_x(m_iter->target_position.x());
-            missile_for_blue->mutable_target()->set_y(m_iter->target_position.y());
-            missile_for_red->mutable_target()->set_x(m_iter->target_position.x());
-            missile_for_red->mutable_target()->set_y(m_iter->target_position.y());
+            if (m_iter->target_unit) {
+                missile_for_blue->mutable_target_unit()->set_id(*(m_iter->target_unit));
+                missile_for_red->mutable_target_unit()->set_id(*(m_iter->target_unit));
+            }
+            missile_for_blue->mutable_target_position()->set_x(m_iter->target_position.x());
+            missile_for_blue->mutable_target_position()->set_y(m_iter->target_position.y());
+            missile_for_red->mutable_target_position()->set_x(m_iter->target_position.x());
+            missile_for_red->mutable_target_position()->set_y(m_iter->target_position.y());
 
             missile_for_red->mutable_position()->set_x(m_iter->position.x());
             missile_for_red->mutable_position()->set_y(m_iter->position.y());

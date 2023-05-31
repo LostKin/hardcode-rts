@@ -614,7 +614,11 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
             return false;
         }
 
-        missiles.push_back ({r_missile.id(), {type, team, QPointF (r_missile.position ().x (), r_missile.position ().y ()), 0, QPointF (r_missile.target ().x (), r_missile.target ().y ())}});
+        missiles.push_back ({r_missile.id(), {type, team, QPointF (r_missile.position ().x (), r_missile.position ().y ()), 0, QPointF(r_missile.target_position ().x (), r_missile.target_position ().y ())}});
+
+        if (r_missile.has_target_unit ()) {
+            missiles.rbegin()->second.target_unit = r_missile.target_unit().id();
+        }
     }
     return true;
 }
