@@ -16,7 +16,7 @@ Application::Application (int& argc, char** argv)
     : QCoreApplication (argc, argv)
 {
     next_session_token = std::mt19937_64 (time (nullptr)) () & 0x7fffffffffffffffULL;
-    network_thread.reset (new NetworkThread ("127.0.0.1", 1331, this));
+    network_thread.reset (new NetworkThread ("0.0.0.0", 1331, this));
     //room_thread.reset(new RoomThread(this));
     connect (&*network_thread, &NetworkThread::datagramReceived, this, &Application::sessionDatagramHandler);
      //room.network_thread = new NetworkThread ("127.0.0.1", 1332, this);

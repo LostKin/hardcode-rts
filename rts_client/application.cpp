@@ -30,7 +30,7 @@ Application::Application (int& argc, char** argv)
     QFontDatabase::addApplicationFont (":/fonts/NotCourierSans.otf");
 
     // TODO: Implement proper dialog switches and uncomment: setQuitOnLastWindowClosed (false);
-    network_thread.reset (new NetworkThread ("127.0.0.1", 1331, this));
+    network_thread.reset (new NetworkThread ("188.32.216.227", 1331, this));
     connect (&*network_thread, &NetworkThread::datagramReceived, this, &Application::sessionDatagramHandler);
 }
 Application::~Application ()
@@ -162,9 +162,27 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
     RTS::UnitCreateRequest* request = request_oneof.mutable_unit_create ();
     request->mutable_session_token ()->set_value (session_token.value ());
     request->mutable_request_token ()->set_value (request_token++);
-    request->mutable_position ()->set_x(50);
-    request->mutable_position ()->set_y(50);
-    request->set_unit_type(RTS::UnitType::SEAL);
+    request->mutable_position ()->set_x(position.x());
+    request->mutable_position ()->set_y(position.y());
+    RTS::UnitType unit_type = RTS::UnitType::CRUSADER;
+    switch (type) {
+        case Unit::Type::Crusader: {
+            unit_type = RTS::UnitType::CRUSADER;
+        } break;
+        case Unit::Type::Seal: {
+            unit_type = RTS::UnitType::SEAL;
+        } break;
+        case Unit::Type::Goon: {
+            unit_type = RTS::UnitType::GOON;
+        } break;
+        case Unit::Type::Beetle: {
+            unit_type = RTS::UnitType::BEETLE;
+        } break;
+        case Unit::Type::Contaminator: {
+            unit_type = RTS::UnitType::CONTAMINATOR;
+        } break;
+    }
+    request->set_unit_type(unit_type);
     request->set_id(10);
 
 
@@ -174,8 +192,11 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
 
-void Application::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target)
+
+void Application::unitActionCallback (quint32 id, const std::variant<MoveAction, AttackAction, CastAction>& action)
+//void Application::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target)
 {
+    //qDebug() << "Create unit action callback";
     if (!session_token.has_value ())
         return;
 
@@ -185,19 +206,42 @@ void Application::unitActionCallback (quint32 id, ActionType type, std::variant<
     request->mutable_session_token ()->set_value (session_token.value ());
     request->mutable_request_token ()->set_value (request_token++);
     request->set_unit_id(id);
-    RTS::UnitAction* action = request->mutable_action();
-    switch (type) {
-    case ActionType::Movement: {
-        RTS::MoveAction* move = action->mutable_move();
-        if (target.index() == 0) {
-            move->mutable_position()->mutable_position()->set_x(std::get<QPointF>(target).x());
-            move->mutable_position()->mutable_position()->set_y(std::get<QPointF>(target).y());
+    RTS::UnitAction* unit_action = request->mutable_action();
+    if (std::holds_alternative<MoveAction>(action)) {
+        MoveAction move_action = std::get<MoveAction>(action);
+        RTS::MoveAction* move = unit_action->mutable_move();
+        if (move_action.target.index() == 0) {
+            move->mutable_position()->mutable_position()->set_x(std::get<QPointF>(move_action.target).x());
+            move->mutable_position()->mutable_position()->set_y(std::get<QPointF>(move_action.target).y());
         } else {
-            move->mutable_unit()->set_id(std::get<quint32>(target));
+            move->mutable_unit()->set_id(std::get<quint32>(move_action.target));
         }
-    } break;
-
+    } else if (std::holds_alternative<AttackAction>(action)) {
+        AttackAction attack_action = std::get<AttackAction>(action);
+        RTS::AttackAction* attack = unit_action->mutable_attack();
+        if (attack_action.target.index() == 0) {
+            attack->mutable_position()->mutable_position()->set_x(std::get<QPointF>(attack_action.target).x());
+            attack->mutable_position()->mutable_position()->set_y(std::get<QPointF>(attack_action.target).y());
+        } else {
+            attack->mutable_unit()->set_id(std::get<quint32>(attack_action.target));
+        }
+    } else if (std::holds_alternative<CastAction>(action)) {
+        qDebug() << "Creating cast item";
+        CastAction cast_action = std::get<CastAction>(action);
+        RTS::CastAction* cast = unit_action->mutable_cast();
+        cast->mutable_position()->mutable_position()->set_x(cast_action.target.x());
+        cast->mutable_position()->mutable_position()->set_y(cast_action.target.y());
+        switch (cast_action.type) {
+        case (CastAction::Type::Pestilence): {
+            cast->set_type(RTS::CastType::PESTILENCE);
+        } break;
+        case (CastAction::Type::SpawnBeetle): {
+            cast->set_type(RTS::CastType::SPAWN_BEETLE);
+        } break;
+        }
     }
+
+    //qDebug() << "creating unit action request";
 
     std::string message;
     request_oneof.SerializeToString (&message);
@@ -274,11 +318,12 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     } break;
     case RTS::Response::MessageCase::kMatchState: {
         QVector<QPair<quint32, Unit> > units;
+        QVector<QPair<quint32, Missile> > missiles;
         QVector<QPair<quint32, quint32> > to_delete;
         const RTS::MatchState& response = response_oneof.match_state ();
         for (size_t i = 0; i < response.units_size(); i++) {
             RTS::Unit r_unit = response.units(i);
-            Unit::Team team;
+            Unit::Team team = Unit::Team::Red;
             Unit::Type type;
             if (r_unit.team() == RTS::Team::RED) {
                 team = Unit::Team::Red;
@@ -286,6 +331,9 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
             if (r_unit.team() == RTS::Team::BLUE) {
                 team = Unit::Team::Blue;
             }
+
+            type = Unit::Type::Crusader;
+
             switch (r_unit.type()) {
             case RTS::UnitType::CRUSADER: {
                 type = Unit::Type::Crusader;
@@ -293,19 +341,57 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
             case RTS::UnitType::SEAL: {
                 type = Unit::Type::Seal;
             } break;
+            case RTS::UnitType::GOON: {
+                type = Unit::Type::Goon;
+            } break;
+            case RTS::UnitType::BEETLE: {
+                type = Unit::Type::Beetle;
+            } break;
+            case RTS::UnitType::CONTAMINATOR: {
+                type = Unit::Type::Contaminator;
+            } break;
             }
             //Unit test = Unit(type, team, quint32(0), QPointF (r_unit.position_x(), r_unit.position_y()), (qreal)r_unit.rotation());
             if (r_unit.has_client_id()) {
-                to_delete.push_back(QPair<quint32, quint32>(r_unit.client_id().id(), r_unit.id()));
+                units.push_back(QPair<quint32, Unit>(quint32(r_unit.client_id().id()), Unit(type, 
+                                                                                0, 
+                                                                                team, 
+                                                                                QPointF (r_unit.position().x(), r_unit.position().y()), 
+                                                                                (qreal)r_unit.orientation())));
+            } else {
+                units.push_back(QPair<quint32, Unit>(quint32(r_unit.id()), Unit(type, 
+                                                                                0, 
+                                                                                team, 
+                                                                                QPointF (r_unit.position().x(), r_unit.position().y()), 
+                                                                                (qreal)r_unit.orientation())));
             }
-            units.push_back(QPair<quint32, Unit>(quint32(r_unit.id()), Unit(type, 
-                                                                            0, 
-                                                                            team, 
-                                                                            QPointF (r_unit.position().x(), r_unit.position().y()), 
-                                                                            (qreal)r_unit.orientation())));
+            units[units.size() - 1].second.hp = r_unit.health();
             //match_state->createUnit (type, team, QPointF (r_unit.position_x(), r_unit.position_y()), r_unit.rotation());
         }
-        emit updateMatchState(units, to_delete);
+        for (size_t i = 0; i < response.missiles_size(); i++) {
+            RTS::Missile r_missile = response.missiles(i);
+            Unit::Team team;
+            Missile::Type type;
+            if (r_missile.team() == RTS::Team::RED) {
+                team = Unit::Team::Red;
+            } 
+            if (r_missile.team() == RTS::Team::BLUE) {
+                team = Unit::Team::Blue;
+            }
+            switch (r_missile.type()) {
+            case RTS::MissileType::MISSILE_ROCKET:
+            {
+                type = Missile::Type::Rocket;
+            } break;
+            case RTS::MissileType::MISSILE_PESTILENCE:
+            {
+                type = Missile::Type::Pestilence;
+            } break;
+            }
+            missiles.push_back(QPair<quint32, Missile>(quint32(r_missile.id()), 
+                                                        {type, team, QPointF (r_missile.position().x(), r_missile.position().y()), 0, QPointF(r_missile.target().x(), r_missile.target().y())}));
+        }
+        emit updateMatchState(units, missiles);
     } break;
     default: {
         qDebug () << "Response -> UNKNOWN:" << response_oneof.message_case ();

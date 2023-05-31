@@ -34,7 +34,12 @@ enum Team {
 enum UnitType {
     CRUSADER = 0;
     SEAL = 1;
+    GOON = 2;
+    BEETLE = 3;
+    CONTAMINATOR = 4;
 }
+
+
 
 message Error {
     int32 code = 1;
@@ -117,10 +122,22 @@ message MoveAction {
     }
 }
 
+enum CastType {
+    UNKNOWN = 0;
+    PESTILENCE = 1;
+    SPAWN_BEETLE = 2;
+}
+
+message CastAction {
+    ActionTargetPosition position = 1;
+    CastType type = 2;
+}
+
 message UnitAction {
     oneof action{
         AttackAction attack = 1;
         MoveAction move = 2;
+        CastAction cast = 3;
     }
 }
 
@@ -230,8 +247,26 @@ message Unit {
     uint32 health = 7;
 }
 
+enum MissileType {
+    MISSILE_ROCKET = 0;
+    MISSILE_PESTILENCE = 1;
+}
+
+message Missile {
+    uint32 id = 2;
+    MissileType type = 3;
+    Team team = 4;
+    Vector2D position = 5;
+    Vector2D target = 6;
+}
+
+message Explosion {
+
+}
+
 message MatchState {
     repeated Unit units = 1;
+    repeated Missile missiles = 2;
 }
 
 message Request {

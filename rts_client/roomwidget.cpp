@@ -114,8 +114,13 @@ RoomWidget::~RoomWidget ()
 {
 }
 
-void RoomWidget::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target) {
-    emit unitActionRequested (id, type, target);
+void RoomWidget::unitActionCallback (quint32 id, const std::variant<MoveAction, AttackAction, CastAction>& action) {
+//void RoomWidget::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target) {
+    emit unitActionRequested (id, action);
+}
+
+void RoomWidget::unitCreateCallback (Unit::Team team, Unit::Type type, QPointF position) {
+    emit createUnitRequested(team, type, position);
 }
 
 void RoomWidget::joinRedTeamRequestedHandler () {
@@ -184,6 +189,7 @@ void RoomWidget::startMatch (Unit::Team team)
     pressed_button = ButtonId::None;
     match_state = QSharedPointer<MatchState> (new MatchState(true));
     connect(&*match_state, &MatchState::unitActionRequested, this, &RoomWidget::unitActionCallback);
+    connect(&*match_state, &MatchState::unitCreateRequested, this, &RoomWidget::unitCreateCallback);
     connect (&*match_state, SIGNAL (soundEventEmitted (SoundEvent)), this, SLOT (playSound (SoundEvent)));
     /*{
         match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-15, -7), 0);
@@ -222,8 +228,8 @@ void RoomWidget::startMatch (Unit::Team team)
     last_frame.restart ();
     state = State::MatchStarted;
 }
-void RoomWidget::loadMatchState (QVector<QPair<quint32, Unit> > units, const QVector<QPair<quint32, quint32> >& to_delete) {
-    match_state->LoadState(units, to_delete);
+void RoomWidget::loadMatchState (QVector<QPair<quint32, Unit> > units, QVector<QPair<quint32, Missile> > missiles) {
+    match_state->LoadState(units, missiles);
     return;
 }
 quint64 RoomWidget::moveAnimationPeriodNS (Unit::Type type)
@@ -771,10 +777,27 @@ void RoomWidget::matchKeyPressEvent (QKeyEvent *event)
     case Qt::Key_ParenRight:
         groupEvent (10);
         break;
+    case Qt::Key_F3:
+    {
+        emit createUnitRequested(this->team, Unit::Type::Seal, toMapCoords (cursor_position));
+    } break;
+    case Qt::Key_F4:
+    {
+        emit createUnitRequested(this->team, Unit::Type::Goon, toMapCoords (cursor_position));
+    } break;
+    case Qt::Key_F5:
+    {
+        emit createUnitRequested(this->team, Unit::Type::Contaminator, toMapCoords (cursor_position));
+    } break;
+    case Qt::Key_F6:
+    {
+        emit createUnitRequested(this->team, Unit::Type::Crusader, toMapCoords (cursor_position));
+    } break;
     case Qt::Key_F1:
         match_state->selectAll (team);
         break;
     }
+
 }
 void RoomWidget::matchKeyReleaseEvent (QKeyEvent *event)
 {

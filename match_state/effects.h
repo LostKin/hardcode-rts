@@ -22,6 +22,9 @@ struct Missile
         QPointF direction = target_position - position;
         orientation = qAtan2 (direction.y (), direction.x ());
     }
+    Missile() {
+        
+    }
 
     Missile::Type type;
     Unit::Team sender_team;
