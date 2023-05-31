@@ -372,8 +372,14 @@ void MatchState::blueTeamUserTick (BlueTeamUserData& user_data)
         }
     }
 }
+
+quint32 MatchState::get_tick_no () {
+    return tick_no;
+}
+
 void MatchState::tick ()
 {
+    tick_no += 1;
     redTeamUserTick (red_team_user_data);
     blueTeamUserTick (blue_team_user_data);
 

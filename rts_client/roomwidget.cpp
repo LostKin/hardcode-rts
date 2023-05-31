@@ -777,19 +777,19 @@ void RoomWidget::matchKeyPressEvent (QKeyEvent *event)
     case Qt::Key_ParenRight:
         groupEvent (10);
         break;
-    case Qt::Key_F3:
+    case Qt::Key_F4:
     {
         emit createUnitRequested(this->team, Unit::Type::Seal, toMapCoords (cursor_position));
     } break;
-    case Qt::Key_F4:
+    case Qt::Key_F5:
     {
         emit createUnitRequested(this->team, Unit::Type::Goon, toMapCoords (cursor_position));
     } break;
-    case Qt::Key_F5:
+    case Qt::Key_F6:
     {
         emit createUnitRequested(this->team, Unit::Type::Contaminator, toMapCoords (cursor_position));
     } break;
-    case Qt::Key_F6:
+    case Qt::Key_F3:
     {
         emit createUnitRequested(this->team, Unit::Type::Crusader, toMapCoords (cursor_position));
     } break;

@@ -12,6 +12,20 @@ class QNetworkDatagram;
 //class MatchState;
 //class Unit;
 
+class MatchStateCollector
+{
+public:
+    MatchStateCollector (const RTS::MatchState& initial_fragment);
+    bool addFragment (const RTS::MatchState& fragment);
+    bool valid () const;
+    bool filled () const;
+    const QVector<QSharedPointer<RTS::MatchState>>& fragments () const;
+
+private:
+    QVector<QSharedPointer<RTS::MatchState>> fragments_;
+    quint32 filled_fragment_count;
+};
+
 class Application: public QApplication
 {
     Q_OBJECT
@@ -33,6 +47,7 @@ private:
     void showRoom (bool single_mode = false);
     void setCurrentWindow (QWidget* new_window);
     void startSingleMode (RoomWidget* room_widget);
+    bool parseMatchStateFragment (const RTS::MatchState& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message);
 
 private slots:
     void quitCallback ();
@@ -62,4 +77,6 @@ private:
     QString login;
     std::optional<quint64> session_token;
     quint64 request_token = 0;
+    QHash<quint32, QSharedPointer<MatchStateCollector>> match_state_collectors;
+    quint32 last_tick = 0;
 };

@@ -5,7 +5,44 @@
 #include "matchstate.h"
 
 #include <QDebug>
+#include <QDateTime>
 #include <QFontDatabase>
+#include <QMessageBox>
+
+
+MatchStateCollector::MatchStateCollector (const RTS::MatchState& initial_fragment)
+{
+    if (initial_fragment.fragment_count () > 0 && initial_fragment.fragment_count () <= 1024 && initial_fragment.fragment_no () < initial_fragment.fragment_count ()) {
+        fragments_.resize (initial_fragment.fragment_count ());
+        fragments_[initial_fragment.fragment_no ()] = QSharedPointer<RTS::MatchState> (new RTS::MatchState (initial_fragment));
+        filled_fragment_count = 1;
+   } else {
+        filled_fragment_count = 0;
+    }
+}
+bool MatchStateCollector::addFragment (const RTS::MatchState& fragment)
+{
+    if (fragment.fragment_no () >= quint32 (fragments_.size ())) {
+        return false;
+    }
+    if (!fragments_[fragment.fragment_no ()]) {
+        fragments_[fragment.fragment_no ()] = QSharedPointer<RTS::MatchState> (new RTS::MatchState (fragment));
+        ++filled_fragment_count;
+    }
+    return true;
+}
+bool MatchStateCollector::valid () const
+{
+    return fragments_.size () > 0;
+}
+bool MatchStateCollector::filled () const
+{
+    return filled_fragment_count == quint32 (fragments_.size ());
+}
+const QVector<QSharedPointer<RTS::MatchState>>& MatchStateCollector::fragments () const
+{
+    return fragments_;
+}
 
 
 Application::Application (int& argc, char** argv)
@@ -226,7 +263,6 @@ void Application::unitActionCallback (quint32 id, const std::variant<MoveAction,
             attack->mutable_unit()->set_id(std::get<quint32>(attack_action.target));
         }
     } else if (std::holds_alternative<CastAction>(action)) {
-        qDebug() << "Creating cast item";
         CastAction cast_action = std::get<CastAction>(action);
         RTS::CastAction* cast = unit_action->mutable_cast();
         cast->mutable_position()->mutable_position()->set_x(cast_action.target.x());
@@ -238,6 +274,9 @@ void Application::unitActionCallback (quint32 id, const std::variant<MoveAction,
         case (CastAction::Type::SpawnBeetle): {
             cast->set_type(RTS::CastType::SPAWN_BEETLE);
         } break;
+        default: {
+            return;
+        }
         }
     }
 
@@ -313,85 +352,59 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         emit startCountdown ();
     } break;
     case RTS::Response::MessageCase::kMatchStart: {
-        qDebug() << "Ready respose caught";
+        //qDebug() << "Ready respose caught";
         emit startMatch ();
     } break;
     case RTS::Response::MessageCase::kMatchState: {
-        QVector<QPair<quint32, Unit> > units;
-        QVector<QPair<quint32, Missile> > missiles;
-        QVector<QPair<quint32, quint32> > to_delete;
         const RTS::MatchState& response = response_oneof.match_state ();
-        for (size_t i = 0; i < response.units_size(); i++) {
-            RTS::Unit r_unit = response.units(i);
-            Unit::Team team = Unit::Team::Red;
-            Unit::Type type;
-            if (r_unit.team() == RTS::Team::RED) {
-                team = Unit::Team::Red;
-            } 
-            if (r_unit.team() == RTS::Team::BLUE) {
-                team = Unit::Team::Blue;
+        if (response.fragment_count() == 1) {
+            QVector<QPair<quint32, Unit>> units;
+            QVector<QPair<quint32, Missile>> missiles;
+            QString error_message;
+            if (!parseMatchStateFragment (response, units, missiles, error_message)) {
+                QMessageBox::critical (nullptr, "Malformed message from server", error_message);
+                return;
             }
-
-            type = Unit::Type::Crusader;
-
-            switch (r_unit.type()) {
-            case RTS::UnitType::CRUSADER: {
-                type = Unit::Type::Crusader;
-            } break;
-            case RTS::UnitType::SEAL: {
-                type = Unit::Type::Seal;
-            } break;
-            case RTS::UnitType::GOON: {
-                type = Unit::Type::Goon;
-            } break;
-            case RTS::UnitType::BEETLE: {
-                type = Unit::Type::Beetle;
-            } break;
-            case RTS::UnitType::CONTAMINATOR: {
-                type = Unit::Type::Contaminator;
-            } break;
-            }
-            //Unit test = Unit(type, team, quint32(0), QPointF (r_unit.position_x(), r_unit.position_y()), (qreal)r_unit.rotation());
-            if (r_unit.has_client_id()) {
-                units.push_back(QPair<quint32, Unit>(quint32(r_unit.client_id().id()), Unit(type, 
-                                                                                0, 
-                                                                                team, 
-                                                                                QPointF (r_unit.position().x(), r_unit.position().y()), 
-                                                                                (qreal)r_unit.orientation())));
+            emit updateMatchState (units, missiles);
+            last_tick = response.tick ();
+        } else if (response.tick () > last_tick) {
+            QHash<quint32, QSharedPointer<MatchStateCollector>>::iterator it = match_state_collectors.find (response.tick ());
+            if (it == match_state_collectors.end ()) {
+                QSharedPointer<MatchStateCollector> match_state_collector = QSharedPointer<MatchStateCollector> (new MatchStateCollector (response));
+                if (!match_state_collector->valid ()) {
+                    QMessageBox::critical (nullptr, "Malformed message from server", "Invalid 'MatchState' from server: invalid fragment info");
+                    return;
+                }
+                match_state_collectors[response.tick ()] = match_state_collector;
             } else {
-                units.push_back(QPair<quint32, Unit>(quint32(r_unit.id()), Unit(type, 
-                                                                                0, 
-                                                                                team, 
-                                                                                QPointF (r_unit.position().x(), r_unit.position().y()), 
-                                                                                (qreal)r_unit.orientation())));
+                if (!(*it)->addFragment (response)) {
+                    QMessageBox::critical (nullptr, "Malformed message from server", "Invalid 'MatchState' from server: invalid fragment info");
+                    return;
+                }
+                if ((*it)->filled ()) {
+                    QVector<QPair<quint32, Unit>> units;
+                    QVector<QPair<quint32, Missile>> missiles;
+                    const QVector<QSharedPointer<RTS::MatchState>>& fragments = (*it)->fragments ();
+                    for (const QSharedPointer<RTS::MatchState>& fragment: fragments) {
+                        QString error_message;
+                        if (!parseMatchStateFragment (*fragment, units, missiles, error_message)) {
+                            QMessageBox::critical (nullptr, "Malformed message from server", error_message);
+                            return;
+                        }
+                    }
+                    emit updateMatchState (units, missiles);
+                }
             }
-            units[units.size() - 1].second.hp = r_unit.health();
-            //match_state->createUnit (type, team, QPointF (r_unit.position_x(), r_unit.position_y()), r_unit.rotation());
         }
-        for (size_t i = 0; i < response.missiles_size(); i++) {
-            RTS::Missile r_missile = response.missiles(i);
-            Unit::Team team;
-            Missile::Type type;
-            if (r_missile.team() == RTS::Team::RED) {
-                team = Unit::Team::Red;
-            } 
-            if (r_missile.team() == RTS::Team::BLUE) {
-                team = Unit::Team::Blue;
+        {
+            QHash<quint32, QSharedPointer<MatchStateCollector>>::iterator it = match_state_collectors.begin ();
+            while (it != match_state_collectors.end ()) {
+                if (it.key () <= last_tick)
+                    it = match_state_collectors.erase (it);
+                else
+                    ++it;
             }
-            switch (r_missile.type()) {
-            case RTS::MissileType::MISSILE_ROCKET:
-            {
-                type = Missile::Type::Rocket;
-            } break;
-            case RTS::MissileType::MISSILE_PESTILENCE:
-            {
-                type = Missile::Type::Pestilence;
-            } break;
-            }
-            missiles.push_back(QPair<quint32, Missile>(quint32(r_missile.id()), 
-                                                        {type, team, QPointF (r_missile.position().x(), r_missile.position().y()), 0, QPointF(r_missile.target().x(), r_missile.target().y())}));
         }
-        emit updateMatchState(units, missiles);
     } break;
     default: {
         qDebug () << "Response -> UNKNOWN:" << response_oneof.message_case ();
@@ -518,6 +531,92 @@ void Application::startSingleMode (RoomWidget* room_widget)
     for (int off = -4; off <= 4; ++off)
         units.push_back ({unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Blue, {off*2.0/3.0, 7}, 0}});
     emit updateMatchState (units, {});
+}
+bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message)
+{
+    for (int i = 0; i < response.units_size (); i++) {
+        const RTS::Unit& r_unit = response.units (i);
+        Unit::Team team;
+        switch (r_unit.team ()) {
+        case RTS::Team::RED:
+            team = Unit::Team::Red;
+            break;
+        case RTS::Team::BLUE:
+            team = Unit::Team::Blue;
+            break;
+        default:
+            error_message = "Invalid 'MatchState' from server: invalid unit team";
+            return false;
+        }
+
+        Unit::Type type;
+        switch (r_unit.type ()) {
+        case RTS::UnitType::CRUSADER:
+            type = Unit::Type::Crusader;
+            break;
+        case RTS::UnitType::SEAL:
+            type = Unit::Type::Seal;
+            break;
+        case RTS::UnitType::GOON:
+            type = Unit::Type::Goon;
+            break;
+        case RTS::UnitType::BEETLE:
+            type = Unit::Type::Beetle;
+            break;
+        case RTS::UnitType::CONTAMINATOR:
+            type = Unit::Type::Contaminator;
+            break;
+        default:
+            error_message = "Invalid 'MatchState' from server: invalid unit type";
+            return false;
+        }
+
+        if (!r_unit.has_position()) {
+            error_message = "Invalid 'MatchState' from server: missing position";
+            return false;
+        }
+
+        quint32 id = r_unit.has_client_id () ? r_unit.client_id ().id () : r_unit.id ();
+        units.push_back ({id, {type, 0, team, QPointF (r_unit.position ().x (), r_unit.position ().y ()), r_unit.orientation ()}});
+        units.last ().second.hp = r_unit.health ();
+    }
+    for (int i = 0; i < response.missiles_size (); i++) {
+        const RTS::Missile& r_missile = response.missiles(i);
+
+        Unit::Team team;
+        switch (r_missile.team ()) {
+        case RTS::Team::RED:
+            team = Unit::Team::Red;
+            break;
+        case RTS::Team::BLUE:
+            team = Unit::Team::Blue;
+            break;
+        default:
+            error_message = "Invalid 'MatchState' from server: invalid missile sender team";
+            return false;
+        }
+
+        Missile::Type type;
+        switch (r_missile.type ()) {
+        case RTS::MissileType::MISSILE_ROCKET:
+            type = Missile::Type::Rocket;
+            break;
+        case RTS::MissileType::MISSILE_PESTILENCE:
+            type = Missile::Type::Pestilence;
+            break;
+        default:
+            error_message = "Invalid 'MatchState' from server: invalid missile type";
+            return false;
+        }
+
+        if (!r_missile.has_position ()) {
+            error_message = "Invalid 'MatchState' from server: missing missile position";
+            return false;
+        }
+
+        missiles.push_back ({r_missile.id(), {type, team, QPointF (r_missile.position ().x (), r_missile.position ().y ()), 0, QPointF (r_missile.target ().x (), r_missile.target ().y ())}});
+    }
+    return true;
 }
 void Application::setCurrentWindow (QWidget* new_window)
 {

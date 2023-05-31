@@ -27,6 +27,7 @@ private:
     //QVector<std::optional<Session*> > teams;
     void setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code);
     void init_matchstate();
+    int sampling = 0;
 
 public:
     Room (QObject *parent = nullptr);

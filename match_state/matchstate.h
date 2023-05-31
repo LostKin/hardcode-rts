@@ -82,6 +82,7 @@ public:
     void addSelectionToGroup (quint64 group);
     void moveSelectionToGroup (quint64 group, bool add);
     bool fuzzyMatchPoints (const QPointF& p1, const QPointF& p2) const;
+    quint32 get_tick_no ();
 
 signals:
     void soundEventEmitted (SoundEvent event);
@@ -138,4 +139,5 @@ private:
     BlueTeamUserData blue_team_user_data;
     quint32 next_id = 0;
     std::mt19937 random_generator;
+    quint32 tick_no = 0;
 };

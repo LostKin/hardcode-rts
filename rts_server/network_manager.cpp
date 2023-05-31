@@ -37,7 +37,11 @@ void NetworkManager::recieveDatagrams ()
     emit datagramsReady ();
 }
 void NetworkManager::sendDatagramHandler (const QNetworkDatagram& datagram)
-{
+{   
     //qDebug() << datagram.data() << datagram.destinationAddress();
-    socket.writeDatagram (datagram);
+    int return_code = socket.writeDatagram (datagram);
+    //qDebug() << return_code << socket.error() << socket.errorString();
+    if (return_code != datagram.data().size()) {
+        qDebug() << "Datagram size desync" << socket.errorString();
+    }
 }

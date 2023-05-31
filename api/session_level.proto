@@ -142,7 +142,7 @@ message UnitAction {
 }
 
 message ClientId {
-    uint32 id = 1; // Задаётся клиентом (Старший бит == 1)                                                                                                                                                                
+    fixed32 id = 1; // Задаётся клиентом (Старший бит == 1)                                                                                                                                                                
 }
 
 message UnitCreateRequest {
@@ -265,8 +265,11 @@ message Explosion {
 }
 
 message MatchState {
-    repeated Unit units = 1;
-    repeated Missile missiles = 2;
+    uint32 tick = 1;
+    uint32 fragment_count = 2;
+    uint32 fragment_no = 3;
+    repeated Unit units = 4;
+    repeated Missile missiles = 5;
 }
 
 message Request {
