@@ -1008,17 +1008,6 @@ void RoomWidget::drawMatchStarted ()
         drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, textures.ground.get ());
     }
 
-    {
-        QPointF top_left = toScreenCoords (area.topLeft ());
-        QPointF bottom_right = toScreenCoords (area.bottomRight ());
-        QPointF size = bottom_right - top_left;
-        drawRectangle (
-            top_left.x (), top_left.y (),
-            size.x (), size.y (),
-            QColor (0, 0, 255, 255)
-        );
-    }
-
     const QHash<quint32, Unit>& units = match_state->unitsRef ();
     const QHash<quint32, Missile>& missiles = match_state->missilesRef ();
     const QHash<quint32, Explosion>& explosions = match_state->explosionsRef ();
