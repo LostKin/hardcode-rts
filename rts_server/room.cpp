@@ -124,6 +124,11 @@ void Room::tick () {
                 unit_for_red->mutable_current_action()->mutable_cast()->set_type(type);
                 unit_for_blue->mutable_current_action()->mutable_cast()->set_type(type);
             }
+            unit_for_red->set_attack_remaining_ticks(u_iter->attack_remaining_ticks);
+            unit_for_red->set_cooldown(u_iter->cast_cooldown_left_ticks);
+             unit_for_blue->set_attack_remaining_ticks(u_iter->attack_remaining_ticks);
+            unit_for_blue->set_cooldown(u_iter->cast_cooldown_left_ticks);
+
             unit_for_red->mutable_position()->set_x(u_iter->position.x());
             unit_for_red->mutable_position()->set_y(u_iter->position.y());
             unit_for_red->set_health(u_iter->hp);

@@ -744,12 +744,16 @@ void MatchState::LoadState(const QVector<QPair<quint32, Unit>>& other, QVector<Q
     }
     for (quint32 i = 0; i < other.size(); i++) {
         if (unitsRef().find(other.at(i).first) == unitsRef().end()) {
-            Unit unit = addUnit(other.at(i).first, other.at(i).second.type, other.at(i).second.team, other.at(i).second.position, other.at(i).second.orientation);
+            Unit& unit = addUnit(other.at(i).first, other.at(i).second.type, other.at(i).second.team, other.at(i).second.position, other.at(i).second.orientation);
+            unit.action = other.at(i).second.action;
         } else {
             QHash<quint32, Unit>::iterator to_change = units.find(other.at(i).first);
             to_change.value().position = other.at(i).second.position;
             to_change.value().orientation = other.at(i).second.orientation;
             to_change.value().hp = other.at(i).second.hp;
+            to_change.value().action = other.at(i).second.action;
+            to_change.value().attack_remaining_ticks = other.at(i).second.attack_remaining_ticks;
+            to_change.value().cast_cooldown_left_ticks = other.at(i).second.cast_cooldown_left_ticks;
         }
     }
 
@@ -757,12 +761,16 @@ void MatchState::LoadState(const QVector<QPair<quint32, Unit>>& other, QVector<Q
 
     for (quint32 i = 0; i < other_missiles.size(); i++) {
         if (missilesRef().find(other_missiles.at(i).first) == missilesRef().end()) {
-            //addMissile(other_missiles.at(i).first, other_missiles.at(i).second.type, other_missiles.at(i).second.sender_team, other_missiles.at(i).second.position, other_missiles.at(i).second.orientation);
+            Missile& missile = addMissile(other_missiles.at(i).first, other_missiles.at(i).second.type, other_missiles.at(i).second.sender_team, other_missiles.at(i).second.position, other_missiles.at(i).second.orientation);
+            missile.target_position = other_missiles.at(i).second.target_position;
+            missile.target_unit = other_missiles.at(i).second.target_unit;
             //qDebug() << "created a new missile";
         } else {
             QHash<quint32, Missile>::iterator to_change = missiles.find(other_missiles.at(i).first);
             to_change.value().position = other_missiles.at(i).second.position;
             to_change.value().orientation = other_missiles.at(i).second.orientation;
+            to_change.value().target_position = other_missiles.at(i).second.target_position;
+            to_change.value().target_unit = other_missiles.at(i).second.target_unit;
         }
     }
 
@@ -786,19 +794,21 @@ void MatchState::startAction (const CastAction& action)
                 switch (action.type) {
                 case CastAction::Type::Pestilence:
                     unit.action = action;
+                    emit unitActionRequested (it.key(), action);
                     break;
                 case CastAction::Type::SpawnBeetle:
                     unit.action = action;
+                    emit unitActionRequested (it.key(), action);
                     break;
                 default:
                     break;
                 }
                 break;
             }
-            emit unitActionRequested (it.key(), action);
         }
     }
 }
+
 void MatchState::emitMissile (Missile::Type missile_type, const Unit& unit, quint32 target_unit_id, const Unit& target_unit)
 {
     missiles.insert (next_id++, {missile_type, unit.team, unit.position, target_unit_id, target_unit.position});

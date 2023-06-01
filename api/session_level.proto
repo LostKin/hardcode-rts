@@ -251,6 +251,8 @@ message Unit {
     double orientation = 6;
     uint32 health = 7;
     UnitAction current_action = 8;
+    uint32 attack_remaining_ticks = 9;
+    uint32 cooldown = 10;
 }
 
 enum MissileType {

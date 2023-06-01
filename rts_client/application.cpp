@@ -263,6 +263,7 @@ void Application::unitActionCallback (quint32 id, const std::variant<MoveAction,
             attack->mutable_unit()->set_id(std::get<quint32>(attack_action.target));
         }
     } else if (std::holds_alternative<CastAction>(action)) {
+        // qDebug() << "Requesting a cast action";
         CastAction cast_action = std::get<CastAction>(action);
         RTS::CastAction* cast = unit_action->mutable_cast();
         cast->mutable_position()->mutable_position()->set_x(cast_action.target.x());
@@ -592,7 +593,7 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
         {
             MoveAction move (QPointF(0, 0));
             if (r_unit.current_action ().move ().target_case () == RTS::MoveAction::kPosition) {
-                move.target = QPointF(r_unit.current_action ().move ().position ().position ().x (), r_unit.current_action ().move ().position ().position ().x ());
+                move.target = QPointF(r_unit.current_action ().move ().position ().position ().x (), r_unit.current_action ().move ().position ().position ().y ());
             } else {
                 move.target = (quint32)r_unit.current_action ().move ().unit ().id();
             }
@@ -602,7 +603,7 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
         {
             AttackAction attack (QPointF (0, 0));
             if (r_unit.current_action ().attack ().target_case () == RTS::AttackAction::kPosition) {
-                attack.target = QPointF(r_unit.current_action ().attack ().position ().position ().x (), r_unit.current_action ().attack ().position ().position ().x ());
+                attack.target = QPointF(r_unit.current_action ().attack ().position ().position ().x (), r_unit.current_action ().attack ().position ().position ().y ());
             } else {
                 attack.target = (quint32)r_unit.current_action ().attack ().unit ().id();
             }
@@ -611,7 +612,7 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
         case RTS::UnitAction::kCast:
         {
             CastAction cast (CastAction::Type::Unknown, QPointF (0, 0));
-            cast.target = QPointF(r_unit.current_action ().cast ().position ().position ().x (), r_unit.current_action ().cast ().position ().position ().x ());
+            cast.target = QPointF(r_unit.current_action ().cast ().position ().position ().x (), r_unit.current_action ().cast ().position ().position ().y ());
             switch (r_unit.current_action() .cast ().type ()) {
             case RTS::CastType::PESTILENCE:
             {
@@ -625,6 +626,8 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
             units.last ().second.action = cast;
         } break;
         }
+        units.last().second.attack_remaining_ticks = r_unit.attack_remaining_ticks();
+        units.last().second.cast_cooldown_left_ticks = r_unit.cooldown();
 
         
     }
