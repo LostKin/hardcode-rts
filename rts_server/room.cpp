@@ -25,7 +25,7 @@ void Room::tick () {
         responses_for_blue.push_back(RTS::Response());
         RTS::MatchState* response_for_red = responses_for_red.rbegin()->mutable_match_state ();
         RTS::MatchState* response_for_blue = responses_for_blue.rbegin()->mutable_match_state ();
-        for (int i = 0; i < 32; i++) {
+        for (int i = 0; i < 16; i++) {
             if (u_iter == match_state->unitsRef().cend()) {
                 break;
             }
@@ -150,7 +150,7 @@ void Room::tick () {
         responses_for_blue.push_back(RTS::Response());
         RTS::MatchState* response_for_red = responses_for_red.rbegin()->mutable_match_state ();
         RTS::MatchState* response_for_blue = responses_for_blue.rbegin()->mutable_match_state ();
-        for (int i = 0; i < 32; i++) {
+        for (int i = 0; i < 16; i++) {
             if (m_iter == match_state->missilesRef().cend()) {
                 break;
             }
@@ -171,7 +171,7 @@ void Room::tick () {
             missile_for_blue->mutable_position()->set_x(m_iter->position.x());
             missile_for_blue->mutable_position()->set_y(m_iter->position.y());
 
-            if (m_iter->target_unit) {
+            if (m_iter->target_unit.has_value ()) {
                 missile_for_blue->mutable_target_unit()->set_id(*(m_iter->target_unit));
                 missile_for_red->mutable_target_unit()->set_id(*(m_iter->target_unit));
             }

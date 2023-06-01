@@ -759,18 +759,34 @@ void MatchState::LoadState(const QVector<QPair<quint32, Unit>>& other, QVector<Q
 
     //qDebug() << unitsRef().size();
 
+    QSet<quint32> m_to_keep;
+    for (quint32 i = 0; i < other_missiles.size(); i++) {
+        m_to_keep.insert(other_missiles.at(i).first);
+    }
+    auto m_it = missiles.begin ();
+    while (m_it != missiles.end ()) {
+        if (m_to_keep.find (m_it.key ()) == m_to_keep.end ())
+            m_it = missiles.erase (m_it);
+        else
+            ++m_it;
+    }
+
     for (quint32 i = 0; i < other_missiles.size(); i++) {
         if (missilesRef().find(other_missiles.at(i).first) == missilesRef().end()) {
             Missile& missile = addMissile(other_missiles.at(i).first, other_missiles.at(i).second.type, other_missiles.at(i).second.sender_team, other_missiles.at(i).second.position, other_missiles.at(i).second.orientation);
             missile.target_position = other_missiles.at(i).second.target_position;
-            missile.target_unit = other_missiles.at(i).second.target_unit;
+            if (other_missiles.at(i).second.target_unit.has_value()) {
+                missile.target_unit = other_missiles.at(i).second.target_unit;
+            }
             //qDebug() << "created a new missile";
         } else {
             QHash<quint32, Missile>::iterator to_change = missiles.find(other_missiles.at(i).first);
             to_change.value().position = other_missiles.at(i).second.position;
             to_change.value().orientation = other_missiles.at(i).second.orientation;
             to_change.value().target_position = other_missiles.at(i).second.target_position;
-            to_change.value().target_unit = other_missiles.at(i).second.target_unit;
+            if (other_missiles.at(i).second.target_unit.has_value()) {
+                to_change.value().target_unit = other_missiles.at(i).second.target_unit;
+            }
         }
     }
 
