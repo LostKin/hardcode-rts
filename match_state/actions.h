@@ -10,7 +10,7 @@ struct StopAction
     {
     }
 
-    std::optional<quint32> current_target;
+    std::optional<quint32> current_target = {};
 };
 
 struct MoveAction
@@ -39,7 +39,7 @@ struct AttackAction
     }
 
     std::variant<QPointF, quint32> target;
-    std::optional<quint32> current_target;
+    std::optional<quint32> current_target = {};
 };
 
 struct CastAction

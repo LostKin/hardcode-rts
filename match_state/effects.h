@@ -29,7 +29,7 @@ struct Missile
     Missile::Type type;
     Unit::Team sender_team;
     QPointF position;
-    std::optional<quint32> target_unit;
+    std::optional<quint32> target_unit = {};
     QPointF target_position;
     qreal orientation;
 };

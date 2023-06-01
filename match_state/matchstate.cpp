@@ -776,6 +776,7 @@ void MatchState::LoadState(const QVector<QPair<quint32, Unit>>& other, QVector<Q
             Missile& missile = addMissile(other_missiles.at(i).first, other_missiles.at(i).second.type, other_missiles.at(i).second.sender_team, other_missiles.at(i).second.position, other_missiles.at(i).second.orientation);
             missile.target_position = other_missiles.at(i).second.target_position;
             if (other_missiles.at(i).second.target_unit.has_value()) {
+                //qDebug() << "MatchState Missile has target unit";
                 missile.target_unit = other_missiles.at(i).second.target_unit;
             }
             //qDebug() << "created a new missile";
@@ -785,6 +786,7 @@ void MatchState::LoadState(const QVector<QPair<quint32, Unit>>& other, QVector<Q
             to_change.value().orientation = other_missiles.at(i).second.orientation;
             to_change.value().target_position = other_missiles.at(i).second.target_position;
             if (other_missiles.at(i).second.target_unit.has_value()) {
+                //qDebug() << "MatchState Missile has target unit";
                 to_change.value().target_unit = other_missiles.at(i).second.target_unit;
             }
         }

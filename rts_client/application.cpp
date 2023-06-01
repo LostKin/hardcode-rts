@@ -668,8 +668,10 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
         missiles.push_back ({r_missile.id(), {type, team, QPointF (r_missile.position ().x (), r_missile.position ().y ()), 0, QPointF(r_missile.target_position ().x (), r_missile.target_position ().y ())}});
 
         if (r_missile.has_target_unit ()) {
-            qDebug() << "Missile has target unit";
-            missiles.rbegin()->second.target_unit = r_missile.target_unit().id();
+            //qDebug() << "Application Missile has target unit";
+            missiles.last().second.target_unit = r_missile.target_unit().id();
+        } else {
+            missiles.last().second.target_unit.reset ();
         }
     }
     return true;
