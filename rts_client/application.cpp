@@ -230,7 +230,7 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
 }
 
 
-void Application::unitActionCallback (quint32 id, const std::variant<MoveAction, AttackAction, CastAction>& action)
+void Application::unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action)
 //void Application::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target)
 {
     //qDebug() << "Create unit action callback";
@@ -278,6 +278,12 @@ void Application::unitActionCallback (quint32 id, const std::variant<MoveAction,
         default: {
             return;
         }
+        }
+    } else if (std::holds_alternative<StopAction>(action)) {
+        StopAction stop_action = std::get<StopAction> (action);
+        RTS::StopAction* stop = unit_action->mutable_stop ();
+        if (stop_action.current_target.has_value() ) {
+            stop->mutable_target ()->set_id (stop_action.current_target.value());
         }
     }
 

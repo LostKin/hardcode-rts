@@ -87,7 +87,7 @@ public:
 signals:
     void soundEventEmitted (SoundEvent event);
     //void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
-    void unitActionRequested (quint32 id, const std::variant<MoveAction, AttackAction, CastAction>& action);
+    void unitActionRequested (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
     void unitCreateRequested (Unit::Team team, Unit::Type type, const QPointF& position);
 private:
     struct RedTeamUserData

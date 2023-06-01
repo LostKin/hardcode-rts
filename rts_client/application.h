@@ -64,7 +64,7 @@ private slots:
     void createUnitCallback (Unit::Team team, Unit::Type type, QPointF positon);
     //void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
-    void unitActionCallback (quint32 id, const std::variant<MoveAction, AttackAction, CastAction>& action);
+    void unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
 
 
 private:

@@ -294,6 +294,8 @@ void MatchState::stop ()
         Unit& unit = it.value ();
         if (unit.selected)
             unit.action = StopAction ();
+            emit unitActionRequested (it.key(), StopAction());
+            
     }
 }
 void MatchState::autoAction (Unit::Team attacker_team, const QPointF& point)
@@ -965,6 +967,7 @@ void MatchState::applyActions (qreal dt)
                     stop_action.current_target.reset ();
                 }
             }
+            //emit unitActionRequested (it.key(), stop_action);
         } else if (unit.attack_remaining_ticks > 0) {
             --unit.attack_remaining_ticks;
         }

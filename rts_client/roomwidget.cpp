@@ -114,7 +114,7 @@ RoomWidget::~RoomWidget ()
 {
 }
 
-void RoomWidget::unitActionCallback (quint32 id, const std::variant<MoveAction, AttackAction, CastAction>& action) {
+void RoomWidget::unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action) {
 //void RoomWidget::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target) {
     emit unitActionRequested (id, action);
 }

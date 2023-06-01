@@ -417,6 +417,15 @@ void Room::receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer
             CastAction cast = CastAction(type, QPointF(action.cast().position().position().x(), action.cast().position().position().y()));
             match_state->setAction(request.unit_id(), cast);
         } break;
+        case RTS::UnitAction::ActionCase::kStop: {
+            StopAction stop = StopAction();
+            if (action.stop ().has_target ()) {
+                stop.current_target = action.stop ().target ().id ();
+            } else {
+                stop.current_target.reset ();
+            }
+            match_state->setAction(request.unit_id(), stop);
+        } break;
         }
         //match_state->select(request.unit_id(), false);
         //match_state->move (QPointF(request.action().move().position().position().x(), request.action().move().position().position().y()));
