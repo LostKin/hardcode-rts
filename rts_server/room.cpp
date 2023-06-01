@@ -74,6 +74,56 @@ void Room::tick () {
                 unit_for_blue->set_type(RTS::UnitType::CONTAMINATOR);
             } break;
             }
+            if (std::holds_alternative<StopAction> (u_iter->action)) {
+                if (std::get<StopAction>(u_iter->action).current_target.has_value()) {
+                    unit_for_red->mutable_current_action()->mutable_stop()->mutable_target()->set_id(std::get<StopAction>(u_iter->action).current_target.value());
+                    unit_for_blue->mutable_current_action()->mutable_stop()->mutable_target()->set_id(std::get<StopAction>(u_iter->action).current_target.value());
+                } else {
+                    unit_for_red->mutable_current_action()->mutable_stop();
+                    unit_for_blue->mutable_current_action()->mutable_stop();
+                }
+            } else if (std::holds_alternative<MoveAction> (u_iter->action)) {
+                if (std::holds_alternative<QPointF>(std::get<MoveAction>(u_iter->action).target)) {
+                    QPointF position = std::get<QPointF>(std::get<MoveAction>(u_iter->action).target);
+                    unit_for_red->mutable_current_action()->mutable_move()->mutable_position()->mutable_position()->set_x(position.x ());
+                    unit_for_red->mutable_current_action()->mutable_move()->mutable_position()->mutable_position()->set_y(position.y ());
+                    unit_for_blue->mutable_current_action()->mutable_move()->mutable_position()->mutable_position()->set_x(position.x ());
+                    unit_for_blue->mutable_current_action()->mutable_move()->mutable_position()->mutable_position()->set_y(position.y ());
+                } else {
+                    quint32 id = std::get<quint32>(std::get<MoveAction>(u_iter->action).target);
+                    unit_for_red->mutable_current_action()->mutable_move()->mutable_unit()->set_id(id);
+                    unit_for_blue->mutable_current_action()->mutable_move()->mutable_unit()->set_id(id);
+                }
+            } else if (std::holds_alternative<AttackAction> (u_iter->action)) {
+                if (std::holds_alternative<QPointF> (std::get<AttackAction> (u_iter->action).target)) {
+                    QPointF position = std::get<QPointF> (std::get<AttackAction> (u_iter->action).target);
+                    unit_for_red->mutable_current_action()->mutable_attack()->mutable_position()->mutable_position()->set_x(position.x ());
+                    unit_for_red->mutable_current_action()->mutable_attack()->mutable_position()->mutable_position()->set_y(position.y ());
+                    unit_for_blue->mutable_current_action()->mutable_attack()->mutable_position()->mutable_position()->set_x(position.x ());
+                    unit_for_blue->mutable_current_action()->mutable_attack()->mutable_position()->mutable_position()->set_y(position.y ());
+                } else {
+                    quint32 id = std::get<quint32>(std::get<AttackAction>(u_iter->action).target);
+                    unit_for_red->mutable_current_action()->mutable_attack()->mutable_unit()->set_id(id);
+                    unit_for_blue->mutable_current_action()->mutable_attack()->mutable_unit()->set_id(id);
+                }
+            } else if (std::holds_alternative<CastAction> (u_iter->action)) {
+                RTS::CastType type;
+                switch (std::get<CastAction> (u_iter->action).type) {
+                case CastAction::Type::Pestilence: {
+                    type = RTS::CastType::PESTILENCE;
+                } break;
+                case CastAction::Type::SpawnBeetle: {
+                    type = RTS::CastType::SPAWN_BEETLE;
+                } break;
+                }
+                QPointF position = std::get<CastAction> (u_iter->action).target;
+                unit_for_red->mutable_current_action()->mutable_cast()->mutable_position()->mutable_position()->set_x(position.x ());
+                unit_for_red->mutable_current_action()->mutable_cast()->mutable_position()->mutable_position()->set_y(position.y ());
+                unit_for_blue->mutable_current_action()->mutable_cast()->mutable_position()->mutable_position()->set_x(position.x ());
+                unit_for_blue->mutable_current_action()->mutable_cast()->mutable_position()->mutable_position()->set_y(position.y ());
+                unit_for_red->mutable_current_action()->mutable_cast()->set_type(type);
+                unit_for_blue->mutable_current_action()->mutable_cast()->set_type(type);
+            }
             unit_for_red->mutable_position()->set_x(u_iter->position.x());
             unit_for_red->mutable_position()->set_y(u_iter->position.y());
             unit_for_red->set_health(u_iter->hp);
@@ -348,7 +398,6 @@ void Room::receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer
 
         } break;
         case RTS::UnitAction::ActionCase::kCast: {
-            qDebug() << "Casting something";
             CastAction::Type type;
             type = CastAction::Type::Unknown;
             switch (action.cast().type()) {

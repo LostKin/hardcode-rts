@@ -795,7 +795,7 @@ void MatchState::startAction (const CastAction& action)
                 }
                 break;
             }
-            //emit unitActionRequested ();
+            emit unitActionRequested (it.key(), action);
         }
     }
 }

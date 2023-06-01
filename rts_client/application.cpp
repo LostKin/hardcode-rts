@@ -575,10 +575,58 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
             error_message = "Invalid 'MatchState' from server: missing position";
             return false;
         }
-
+        
         quint32 id = r_unit.has_client_id () ? r_unit.client_id ().id () : r_unit.id ();
         units.push_back ({id, {type, 0, team, QPointF (r_unit.position ().x (), r_unit.position ().y ()), r_unit.orientation ()}});
         units.last ().second.hp = r_unit.health ();
+        switch (r_unit.current_action().action_case()) {
+        case RTS::UnitAction::kStop:
+        {
+            StopAction stop;
+            if (r_unit.current_action ().stop ().has_target ()) {
+                stop.current_target = r_unit.current_action ().stop ().target ().id ();
+            }
+            units.last ().second.action = stop;
+        } break;
+        case RTS::UnitAction::kMove:
+        {
+            MoveAction move (QPointF(0, 0));
+            if (r_unit.current_action ().move ().target_case () == RTS::MoveAction::kPosition) {
+                move.target = QPointF(r_unit.current_action ().move ().position ().position ().x (), r_unit.current_action ().move ().position ().position ().x ());
+            } else {
+                move.target = (quint32)r_unit.current_action ().move ().unit ().id();
+            }
+            units.last ().second.action = move;
+        } break;
+        case RTS::UnitAction::kAttack:
+        {
+            AttackAction attack (QPointF (0, 0));
+            if (r_unit.current_action ().attack ().target_case () == RTS::AttackAction::kPosition) {
+                attack.target = QPointF(r_unit.current_action ().attack ().position ().position ().x (), r_unit.current_action ().attack ().position ().position ().x ());
+            } else {
+                attack.target = (quint32)r_unit.current_action ().attack ().unit ().id();
+            }
+            units.last ().second.action = attack;
+        } break;
+        case RTS::UnitAction::kCast:
+        {
+            CastAction cast (CastAction::Type::Unknown, QPointF (0, 0));
+            cast.target = QPointF(r_unit.current_action ().cast ().position ().position ().x (), r_unit.current_action ().cast ().position ().position ().x ());
+            switch (r_unit.current_action() .cast ().type ()) {
+            case RTS::CastType::PESTILENCE:
+            {
+                cast.type = CastAction::Type::Pestilence;
+            } break;
+            case RTS::CastType::SPAWN_BEETLE:
+            {
+                cast.type = CastAction::Type::SpawnBeetle;
+            } break;
+            }
+            units.last ().second.action = cast;
+        } break;
+        }
+
+        
     }
     for (int i = 0; i < response.missiles_size (); i++) {
         const RTS::Missile& r_missile = response.missiles(i);

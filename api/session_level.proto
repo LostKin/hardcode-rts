@@ -133,11 +133,16 @@ message CastAction {
     CastType type = 2;
 }
 
+message StopAction {
+    TargetUnit target = 1;
+}
+
 message UnitAction {
     oneof action{
         AttackAction attack = 1;
         MoveAction move = 2;
         CastAction cast = 3;
+        StopAction stop = 4;
     }
 }
 
@@ -245,6 +250,7 @@ message Unit {
     Vector2D position = 5;
     double orientation = 6;
     uint32 health = 7;
+    UnitAction current_action = 8;
 }
 
 enum MissileType {
