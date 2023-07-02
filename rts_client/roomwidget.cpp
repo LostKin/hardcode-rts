@@ -9,7 +9,11 @@
 #include <QMouseEvent>
 #include <QDebug>
 #include <QPainter>
-#include <QSound>
+#if QT_VERSION >= 0x060000
+#  include <QSoundEffect>
+#else
+#  include <QSound>
+#endif
 #include <QGuiApplication>
 #include <math.h>
 #include <mutex>

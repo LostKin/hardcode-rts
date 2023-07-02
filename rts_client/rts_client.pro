@@ -1,4 +1,7 @@
 QT += core gui widgets network multimedia
+!lessThan (QT_MAJOR_VERSION, 6) {
+    QT += opengl openglwidgets
+}
 
 CONFIG += c++17
 CONFIG += qt

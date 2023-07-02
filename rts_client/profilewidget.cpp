@@ -12,7 +12,11 @@ ProfileWidget::ProfileWidget (const QString& login, QWidget* parent)
 {
     setWindowModality (Qt::WindowModal);
     QVBoxLayout* layout = new QVBoxLayout;
+#if QT_VERSION >= 0x060000
+    layout->setContentsMargins (0, 0, 0, 0);
+#else
     layout->setMargin (0);
+#endif
     {
         QFrame* frame = new QFrame (this);
         frame->setFrameStyle (QFrame::Panel | QFrame::Raised);
