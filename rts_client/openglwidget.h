@@ -6,7 +6,6 @@
 #include <QOpenGLWidget>
 #include <QOpenGLTexture>
 
-
 class OpenGLWidget: public QOpenGLWidget, protected QOpenGLFunctions
 {
 public:
@@ -49,8 +48,7 @@ protected:
     void drawCircle (qreal x, qreal y, qreal radius, const QColor& color);
 
 private:
-    struct ColoredProgram
-    {
+    struct ColoredProgram {
         QOpenGLShaderProgram* program;
 
         GLuint position_attr_idx;
@@ -58,8 +56,7 @@ private:
 
         GLuint matrix_uniform_idx;
     };
-    struct ColoredTexturedProgram
-    {
+    struct ColoredTexturedProgram {
         QOpenGLShaderProgram* program;
 
         GLuint position_attr_idx;
@@ -71,8 +68,7 @@ private:
         GLuint texture_2d_uniform_idx;
         GLuint texture_2d_rect_uniform_idx;
     };
-    struct TexturedProgram
-    {
+    struct TexturedProgram {
         QOpenGLShaderProgram* program;
 
         GLuint position_attr_idx;

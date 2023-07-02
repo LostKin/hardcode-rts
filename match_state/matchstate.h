@@ -17,7 +17,6 @@
 #include "unit.h"
 #include "effects.h"
 
-
 enum class SoundEvent {
     SealAttack,
     CrusaderAttack,
@@ -45,8 +44,8 @@ public:
     quint64 clockNS () const;
     const QRectF& areaRef () const;
     const QHash<quint32, Unit>& unitsRef () const;
-    Unit& addUnit(quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
-    Missile& addMissile(quint32 id, Missile::Type type, Unit::Team team, const QPointF& position, qreal direction); 
+    Unit& addUnit (quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
+    Missile& addMissile (quint32 id, Missile::Type type, Unit::Team team, const QPointF& position, qreal direction);
     const QHash<quint32, Missile>& missilesRef () const;
     const QHash<quint32, Explosion>& explosionsRef () const;
     QHash<quint32, Unit>::iterator createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
@@ -57,7 +56,7 @@ public:
     void select (quint32 unit_id, bool add);
     void trimSelection (Unit::Type type, bool remove);
     void deselect (quint32 unit_id);
-    void setAction(quint32 unit_id, const std::variant<StopAction, AttackAction, MoveAction, CastAction>& action);
+    void setAction (quint32 unit_id, const std::variant<StopAction, AttackAction, MoveAction, CastAction>& action);
     std::optional<QPointF> selectionCenter () const;
     void attackEnemy (Unit::Team attacker_team, const QPointF& point);
     void cast (CastAction::Type cast_type, Unit::Team attacker_team, const QPointF& point);
@@ -75,7 +74,7 @@ public:
     int unitMaxHP (Unit::Type type) const;
     const AttackDescription& unitPrimaryAttackDescription (Unit::Type type) const;
     quint64 animationPeriodNS (Unit::Type type) const;
-    void LoadState(const QVector<QPair<quint32, Unit>>& other, QVector<QPair<quint32, Missile>>& other_missiles);
+    void LoadState (const QVector<QPair<quint32, Unit>>& other, QVector<QPair<quint32, Missile>>& other_missiles);
     const AttackDescription& effectAttackDescription (AttackDescription::Type type) const;
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
@@ -86,15 +85,14 @@ public:
 
 signals:
     void soundEventEmitted (SoundEvent event);
-    //void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
+    // void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
     void unitActionRequested (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
     void unitCreateRequested (Unit::Team team, Unit::Type type, const QPointF& position);
+
 private:
-    struct RedTeamUserData
-    {
+    struct RedTeamUserData {
     };
-    struct BlueTeamUserData
-    {
+    struct BlueTeamUserData {
         QSet<quint32> old_missiles;
     };
 

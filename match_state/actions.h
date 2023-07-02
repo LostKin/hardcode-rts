@@ -3,9 +3,7 @@
 #include <variant>
 #include <QPointF>
 
-
-struct StopAction
-{
+struct StopAction {
     StopAction ()
     {
     }
@@ -13,8 +11,7 @@ struct StopAction
     std::optional<quint32> current_target = {};
 };
 
-struct MoveAction
-{
+struct MoveAction {
     MoveAction (const QPointF& target_position)
         : target (target_position)
     {
@@ -27,8 +24,7 @@ struct MoveAction
     std::variant<QPointF, quint32> target;
 };
 
-struct AttackAction
-{
+struct AttackAction {
     AttackAction (const QPointF& target_position)
         : target (target_position)
     {
@@ -42,8 +38,7 @@ struct AttackAction
     std::optional<quint32> current_target = {};
 };
 
-struct CastAction
-{
+struct CastAction {
     enum class Type {
         Unknown,
         Pestilence,
@@ -51,7 +46,8 @@ struct CastAction
     };
 
     CastAction (Type type, const QPointF& target_position)
-        : type (type), target (target_position)
+        : type (type)
+        , target (target_position)
     {
     }
 

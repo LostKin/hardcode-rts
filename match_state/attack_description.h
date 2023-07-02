@@ -2,9 +2,7 @@
 
 #include <QtGlobal>
 
-
-struct AttackDescription
-{
+struct AttackDescription {
     enum class Type {
         Unknown = 0,
         SealShot,

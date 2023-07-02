@@ -20,9 +20,6 @@ struct Session {
     bool ready = false;
 };
 
-
-
-
 class NetworkThread;
 class RoomThread;
 
@@ -53,12 +50,12 @@ private slots:
 
 private:
     QSharedPointer<NetworkThread> network_thread;
-    QMap<quint32, QSharedPointer<RoomThread> > room_list;
+    QMap<quint32, QSharedPointer<RoomThread>> room_list;
     QMap<QByteArray, QByteArray> user_passwords;
     quint64 next_session_token;
-    QMap<quint64, QSharedPointer<Session> > sessions;
+    QMap<quint64, QSharedPointer<Session>> sessions;
     QMap<QByteArray, quint64> login_session_tokens;
-    //Room room;
+    // Room room;
     QMap<quint32, QString> rooms;
 
     quint64 nextSessionToken ();
@@ -73,4 +70,3 @@ private:
     template <class Request>
     bool validateRequestToken (const QNetworkDatagram& client_datagram, const Request& request, quint64* request_token_ptr);
 };
-

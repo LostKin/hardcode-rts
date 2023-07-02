@@ -6,7 +6,6 @@
 #include <QVBoxLayout>
 #include <QDebug>
 
-
 ProfileWidget::ProfileWidget (const QString& login, QWidget* parent)
     : QDialog (parent, Qt::Popup)
 {

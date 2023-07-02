@@ -7,7 +7,6 @@
 #include <QSpinBox>
 #include <QDebug>
 
-
 AuthorizationWidget::AuthorizationWidget (QWidget* parent)
     : QWidget (parent)
 {

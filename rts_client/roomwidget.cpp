@@ -10,25 +10,22 @@
 #include <QDebug>
 #include <QPainter>
 #if QT_VERSION >= 0x060000
-#  include <QSoundEffect>
+#include <QSoundEffect>
 #else
-#  include <QSound>
+#include <QSound>
 #endif
 #include <QGuiApplication>
 #include <math.h>
 #include <mutex>
 
-
 static constexpr qreal SQRT_2 = 1.4142135623731;
 static constexpr qreal SQRT_1_2 = 0.70710678118655;
-static constexpr qreal PI_X_3_4 = 3.0/4.0*M_PI;
-static constexpr qreal PI_X_1_4 = 1.0/4.0*M_PI;
-
+static constexpr qreal PI_X_3_4 = 3.0 / 4.0 * M_PI;
+static constexpr qreal PI_X_1_4 = 1.0 / 4.0 * M_PI;
 
 static constexpr qreal POINTS_PER_VIEWPORT_VERTICALLY = 20.0; // At zoom x1.0
 #define POINTS_VIEWPORT_HEIGHT 20
-#define MAP_TO_SCREEN_FACTOR (arena_viewport.height ()/POINTS_PER_VIEWPORT_VERTICALLY)
-
+#define MAP_TO_SCREEN_FACTOR (arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY)
 
 static const QMap<SoundEvent, QStringList> sound_map = {
     {SoundEvent::SealAttack, {":/audio/units/seal/attack1.wav", ":/audio/units/seal/attack2.wav"}},
@@ -40,7 +37,6 @@ static const QMap<SoundEvent, QStringList> sound_map = {
     {SoundEvent::PestilenceMissileStart, {":/audio/units/contaminator/pestilence.wav"}},
     {SoundEvent::SpawnBeetle, {":/audio/units/contaminator/spawn-beetle.wav"}},
 };
-
 
 static const QString& unitTitle (Unit::Type type)
 {
@@ -94,11 +90,12 @@ static QColor getHPColor (qreal hp_ratio)
 }
 static QPointF operator* (const QPointF& a, const QPointF& b)
 {
-    return {a.x ()*b.x (), a.y ()*b.y ()};
+    return {a.x () * b.x (), a.y () * b.y ()};
 }
 
 RoomWidget::RoomWidget (QWidget* parent)
-    : OpenGLWidget (parent), font ("NotCourier", 16)
+    : OpenGLWidget (parent)
+    , font ("NotCourier", 16)
 {
     setAttribute (Qt::WA_KeyCompression, false);
     font.setStyleHint (QFont::TypeWriter);
@@ -107,56 +104,67 @@ RoomWidget::RoomWidget (QWidget* parent)
     setMouseTracking (true);
     setCursor (QCursor (Qt::BlankCursor));
     connect (&match_timer, SIGNAL (timeout ()), this, SLOT (tick ()));
-    connect(this, &RoomWidget::joinRedTeamRequested, this, &RoomWidget::joinRedTeamRequestedHandler);
-    connect(this, &RoomWidget::joinBlueTeamRequested, this, &RoomWidget::joinBlueTeamRequestedHandler);
-    connect(this, &RoomWidget::spectateRequested, this, &RoomWidget::spectateRequestedHandler);
-    connect(this, &RoomWidget::cancelJoinTeamRequested, this, &RoomWidget::cancelJoinTeamRequestedHandler);
-    connect(this, &RoomWidget::quitRequested, this, &RoomWidget::quitRequestedHandler);
-    connect(this, &RoomWidget::readinessRequested, this, &RoomWidget::readinessRequestedHandler);
+    connect (this, &RoomWidget::joinRedTeamRequested, this, &RoomWidget::joinRedTeamRequestedHandler);
+    connect (this, &RoomWidget::joinBlueTeamRequested, this, &RoomWidget::joinBlueTeamRequestedHandler);
+    connect (this, &RoomWidget::spectateRequested, this, &RoomWidget::spectateRequestedHandler);
+    connect (this, &RoomWidget::cancelJoinTeamRequested, this, &RoomWidget::cancelJoinTeamRequestedHandler);
+    connect (this, &RoomWidget::quitRequested, this, &RoomWidget::quitRequestedHandler);
+    connect (this, &RoomWidget::readinessRequested, this, &RoomWidget::readinessRequestedHandler);
 }
 RoomWidget::~RoomWidget ()
 {
 }
 
-void RoomWidget::unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action) {
-//void RoomWidget::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target) {
+void RoomWidget::unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action)
+{
+    // void RoomWidget::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target) {
     emit unitActionRequested (id, action);
 }
 
-void RoomWidget::unitCreateCallback (Unit::Team team, Unit::Type type, QPointF position) {
-    emit createUnitRequested(team, type, position);
+void RoomWidget::unitCreateCallback (Unit::Team team, Unit::Type type, QPointF position)
+{
+    emit createUnitRequested (team, type, position);
 }
 
-void RoomWidget::joinRedTeamRequestedHandler () {
+void RoomWidget::joinRedTeamRequestedHandler ()
+{
     awaitTeamSelection (Unit::Team::Red);
 }
-void RoomWidget::joinBlueTeamRequestedHandler () {
+void RoomWidget::joinBlueTeamRequestedHandler ()
+{
     awaitTeamSelection (Unit::Team::Blue);
 }
-void RoomWidget::spectateRequestedHandler () {
+void RoomWidget::spectateRequestedHandler ()
+{
     awaitTeamSelection (Unit::Team::Spectator);
 }
-void RoomWidget::cancelJoinTeamRequestedHandler () {
+void RoomWidget::cancelJoinTeamRequestedHandler ()
+{
     state = State::TeamSelection;
 }
-void RoomWidget::readinessRequestedHandler () {
+void RoomWidget::readinessRequestedHandler ()
+{
     ready (this->team);
 }
-void RoomWidget::readinessHandler () {
+void RoomWidget::readinessHandler ()
+{
     queryReadiness (this->team);
 }
-void RoomWidget::quitRequestedHandler () {
+void RoomWidget::quitRequestedHandler ()
+{
     return;
 }
 
-void RoomWidget::startCountDownHandler () {
+void RoomWidget::startCountDownHandler ()
+{
     awaitMatch (this->team);
 }
 
-void RoomWidget::startMatchHandler() {
+void RoomWidget::startMatchHandler ()
+{
     qDebug () << "Start match handler started";
     startMatch (this->team);
-    //emit createUnitRequested();
+    // emit createUnitRequested();
 }
 void RoomWidget::awaitTeamSelection (Unit::Team team)
 {
@@ -191,9 +199,9 @@ void RoomWidget::startMatch (Unit::Team team)
 {
     this->team = team;
     pressed_button = ButtonId::None;
-    match_state = QSharedPointer<MatchState> (new MatchState(true));
-    connect(&*match_state, &MatchState::unitActionRequested, this, &RoomWidget::unitActionCallback);
-    connect(&*match_state, &MatchState::unitCreateRequested, this, &RoomWidget::unitCreateCallback);
+    match_state = QSharedPointer<MatchState> (new MatchState (true));
+    connect (&*match_state, &MatchState::unitActionRequested, this, &RoomWidget::unitActionCallback);
+    connect (&*match_state, &MatchState::unitCreateRequested, this, &RoomWidget::unitCreateCallback);
     connect (&*match_state, SIGNAL (soundEventEmitted (SoundEvent)), this, SLOT (playSound (SoundEvent)));
     /*{
         match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-15, -7), 0);
@@ -214,17 +222,17 @@ void RoomWidget::startMatch (Unit::Team team)
         match_state->createUnit (Unit::Type::Goon, Unit::Team::Red, QPointF (10, 2), 0);
         match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-20, -8), 0);
     }*/
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-4, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-3, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-2, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-1, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (0, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (1, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (2, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (3, 5), 0);
-        // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (4, 5), 0);
-        // for (int off = -4; off <= 4; ++off)
-        //     match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (off*2.0/3.0, 7), 0);
+    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-4, 5), 0);
+    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-3, 5), 0);
+    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-2, 5), 0);
+    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-1, 5), 0);
+    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (0, 5), 0);
+    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (1, 5), 0);
+    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (2, 5), 0);
+    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (3, 5), 0);
+    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (4, 5), 0);
+    // for (int off = -4; off <= 4; ++off)
+    //     match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (off*2.0/3.0, 7), 0);
     viewport_scale_power = 0;
     viewport_scale = 1.0;
     viewport_center = {};
@@ -232,8 +240,9 @@ void RoomWidget::startMatch (Unit::Team team)
     last_frame.restart ();
     state = State::MatchStarted;
 }
-void RoomWidget::loadMatchState (QVector<QPair<quint32, Unit> > units, QVector<QPair<quint32, Missile> > missiles) {
-    match_state->LoadState(units, missiles);
+void RoomWidget::loadMatchState (QVector<QPair<quint32, Unit>> units, QVector<QPair<quint32, Missile>> missiles)
+{
+    match_state->LoadState (units, missiles);
     return;
 }
 quint64 RoomWidget::moveAnimationPeriodNS (Unit::Type type)
@@ -457,7 +466,7 @@ void RoomWidget::updateSize (int w, int h)
     this->h = h;
     arena_viewport = {0, 0, w, h - 220};
     arena_viewport_center = QRectF (arena_viewport).center ();
-    map_to_screen_factor = arena_viewport.height ()/POINTS_PER_VIEWPORT_VERTICALLY;
+    map_to_screen_factor = arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY;
 
     if (w >= 3656)
         hud.margin = 24;
@@ -466,42 +475,42 @@ void RoomWidget::updateSize (int w, int h)
     else
         hud.margin = 12;
     hud.stroke_width = (w >= 3656) ? 4 : 2;
-    hud.action_button_size = {int (h*0.064), int (h*0.064)};
+    hud.action_button_size = {int (h * 0.064), int (h * 0.064)};
     {
-        int area_w = h*0.30;
-        int area_h = h*0.24;
+        int area_w = h * 0.30;
+        int area_h = h * 0.24;
         hud.minimap_panel_rect = {hud.margin, h - area_h - hud.margin, area_w, area_h};
     }
     {
-        int area_w = hud.action_button_size.width ()*5;
-        int area_h = hud.action_button_size.height ()*3;
+        int area_w = hud.action_button_size.width () * 5;
+        int area_h = hud.action_button_size.height () * 3;
         hud.action_panel_rect = {w - area_w - hud.margin, h - area_h - hud.margin, area_w, area_h};
     }
     {
-        int area_w = w - hud.minimap_panel_rect.width () - hud.action_panel_rect.width () - hud.margin*4;
-        int area_h = h*0.18;
-        hud.selection_panel_rect = {hud.margin*2 + hud.minimap_panel_rect.width (), h - area_h - hud.margin, area_w, area_h};
+        int area_w = w - hud.minimap_panel_rect.width () - hud.action_panel_rect.width () - hud.margin * 4;
+        int area_h = h * 0.18;
+        hud.selection_panel_rect = {hud.margin * 2 + hud.minimap_panel_rect.width (), h - area_h - hud.margin, area_w, area_h};
 
-        int icon_rib1 = hud.selection_panel_rect.height ()*0.3;
-        int icon_rib2 = (hud.selection_panel_rect.width () - (hud.selection_panel_rect.height () - icon_rib1*3)/2*2)/10;
+        int icon_rib1 = hud.selection_panel_rect.height () * 0.3;
+        int icon_rib2 = (hud.selection_panel_rect.width () - (hud.selection_panel_rect.height () - icon_rib1 * 3) / 2 * 2) / 10;
         int icon_rib = qMin (icon_rib1, icon_rib2);
-        int hmargin = (hud.selection_panel_rect.width () - icon_rib*10)/2;
-        int vmargin = (hud.selection_panel_rect.height () - icon_rib*3)/2;
+        int hmargin = (hud.selection_panel_rect.width () - icon_rib * 10) / 2;
+        int vmargin = (hud.selection_panel_rect.height () - icon_rib * 3) / 2;
 
         hud.selection_panel_icon_rib = icon_rib;
         hud.selection_panel_icon_grid_pos = {hud.selection_panel_rect.x () + hmargin, hud.selection_panel_rect.y () + vmargin};
     }
     if (match_state) {
         const QRectF& area = match_state->areaRef ();
-        qreal aspect = area.width ()/area.height ();
+        qreal aspect = area.width () / area.height ();
         QPointF center = QRectF (hud.minimap_panel_rect).center ();
         QSizeF size = hud.minimap_panel_rect.size ();
-        if (size.width ()/size.height () < aspect) {
-            size.setHeight (size.height ()/aspect);
+        if (size.width () / size.height () < aspect) {
+            size.setHeight (size.height () / aspect);
         } else {
-            size.setWidth (size.width ()*aspect);
+            size.setWidth (size.width () * aspect);
         }
-        hud.minimap_screen_area = {center.x () - size.width ()*0.5, center.y () - size.height ()*0.5, size.width (), size.height ()};
+        hud.minimap_screen_area = {center.x () - size.width () * 0.5, center.y () - size.height () * 0.5, size.width (), size.height ()};
     } else {
         hud.minimap_screen_area = hud.minimap_panel_rect;
     }
@@ -534,9 +543,9 @@ void RoomWidget::draw ()
         break;
     }
 
-    fillRectangle (cursor_position.x () - cursor->width ()/2, cursor_position.y () - cursor->height ()/2, cursor.get ());
+    fillRectangle (cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get ());
 }
-void RoomWidget::keyPressEvent (QKeyEvent *event)
+void RoomWidget::keyPressEvent (QKeyEvent* event)
 {
     Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
     ctrl_pressed = modifiers & Qt::ControlModifier;
@@ -550,7 +559,7 @@ void RoomWidget::keyPressEvent (QKeyEvent *event)
     }
     }
 }
-void RoomWidget::keyReleaseEvent (QKeyEvent *event)
+void RoomWidget::keyReleaseEvent (QKeyEvent* event)
 {
     Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
     ctrl_pressed = modifiers & Qt::ControlModifier;
@@ -564,7 +573,7 @@ void RoomWidget::keyReleaseEvent (QKeyEvent *event)
     }
     }
 }
-void RoomWidget::mouseMoveEvent (QMouseEvent *event)
+void RoomWidget::mouseMoveEvent (QMouseEvent* event)
 {
     Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
     ctrl_pressed = modifiers & Qt::ControlModifier;
@@ -579,7 +588,7 @@ void RoomWidget::mouseMoveEvent (QMouseEvent *event)
     }
     }
 }
-void RoomWidget::mousePressEvent (QMouseEvent *event)
+void RoomWidget::mousePressEvent (QMouseEvent* event)
 {
     Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
     ctrl_pressed = modifiers & Qt::ControlModifier;
@@ -633,7 +642,7 @@ void RoomWidget::mousePressEvent (QMouseEvent *event)
     }
     }
 }
-void RoomWidget::mouseReleaseEvent (QMouseEvent *event)
+void RoomWidget::mouseReleaseEvent (QMouseEvent* event)
 {
     Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
     ctrl_pressed = modifiers & Qt::ControlModifier;
@@ -703,7 +712,7 @@ void RoomWidget::mouseReleaseEvent (QMouseEvent *event)
     }
     pressed_button = ButtonId::None;
 }
-void RoomWidget::wheelEvent (QWheelEvent *event)
+void RoomWidget::wheelEvent (QWheelEvent* event)
 {
     Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers ();
     ctrl_pressed = modifiers & Qt::ControlModifier;
@@ -717,7 +726,7 @@ void RoomWidget::wheelEvent (QWheelEvent *event)
     }
     }
 }
-void RoomWidget::matchKeyPressEvent (QKeyEvent *event)
+void RoomWidget::matchKeyPressEvent (QKeyEvent* event)
 {
     switch (event->key ()) {
     case Qt::Key_A:
@@ -781,29 +790,24 @@ void RoomWidget::matchKeyPressEvent (QKeyEvent *event)
     case Qt::Key_ParenRight:
         groupEvent (10);
         break;
-    case Qt::Key_F4:
-    {
-        emit createUnitRequested(this->team, Unit::Type::Seal, toMapCoords (cursor_position));
-    } break;
-    case Qt::Key_F5:
-    {
-        emit createUnitRequested(this->team, Unit::Type::Goon, toMapCoords (cursor_position));
-    } break;
-    case Qt::Key_F6:
-    {
-        emit createUnitRequested(this->team, Unit::Type::Contaminator, toMapCoords (cursor_position));
-    } break;
-    case Qt::Key_F3:
-    {
-        emit createUnitRequested(this->team, Unit::Type::Crusader, toMapCoords (cursor_position));
-    } break;
     case Qt::Key_F1:
         match_state->selectAll (team);
         break;
+    case Qt::Key_F3:
+        emit createUnitRequested (this->team, Unit::Type::Crusader, toMapCoords (cursor_position));
+        break;
+    case Qt::Key_F4:
+        emit createUnitRequested (this->team, Unit::Type::Seal, toMapCoords (cursor_position));
+        break;
+    case Qt::Key_F5:
+        emit createUnitRequested (this->team, Unit::Type::Goon, toMapCoords (cursor_position));
+        break;
+    case Qt::Key_F6:
+        emit createUnitRequested (this->team, Unit::Type::Contaminator, toMapCoords (cursor_position));
+        break;
     }
-
 }
-void RoomWidget::matchKeyReleaseEvent (QKeyEvent *event)
+void RoomWidget::matchKeyReleaseEvent (QKeyEvent* event)
 {
     switch (event->key ()) {
     }
@@ -816,7 +820,7 @@ void RoomWidget::matchMouseMoveEvent (QMouseEvent* /* event */)
             centerViewportAt (area_pos);
     }
 }
-void RoomWidget::matchMousePressEvent (QMouseEvent *event)
+void RoomWidget::matchMousePressEvent (QMouseEvent* event)
 {
     int row, col;
     QPointF area_pos;
@@ -833,7 +837,7 @@ void RoomWidget::matchMousePressEvent (QMouseEvent *event)
     } else if (getSelectionPanelUnitUnderCursor (cursor_position, row, col)) {
         QVector<QPair<quint32, const Unit*>> selection = buildOrderedSelection ();
         if (selection.size () > 1) {
-            int i = row*10 + col;
+            int i = row * 10 + col;
             if (i < selection.size ()) {
                 if (ctrl_pressed) {
                     if (shift_pressed)
@@ -877,7 +881,7 @@ void RoomWidget::matchMousePressEvent (QMouseEvent *event)
         }
     }
 }
-void RoomWidget::matchMouseReleaseEvent (QMouseEvent *event)
+void RoomWidget::matchMouseReleaseEvent (QMouseEvent* event)
 {
     if (selection_start.has_value ()) {
         QPointF p1 = toMapCoords (*selection_start);
@@ -916,7 +920,7 @@ void RoomWidget::matchMouseReleaseEvent (QMouseEvent *event)
         selection_start.reset ();
     }
 }
-void RoomWidget::matchWheelEvent (QWheelEvent *event)
+void RoomWidget::matchWheelEvent (QWheelEvent* event)
 {
     int dy = (event->angleDelta ().y () > 0) ? 1 : -1;
     viewport_scale_power += dy;
@@ -982,31 +986,43 @@ void RoomWidget::drawAwaitingMatch ()
 void RoomWidget::drawMatchStarted ()
 {
     if (last_frame.isValid ())
-        frameUpdate (last_frame.nsecsElapsed ()*0.000000001);
+        frameUpdate (last_frame.nsecsElapsed () * 0.000000001);
     last_frame.restart ();
 
     const QRectF& area = match_state->areaRef ();
 
     {
-        qreal scale = viewport_scale*MAP_TO_SCREEN_FACTOR;
+        qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
         QPointF center = arena_viewport_center - viewport_center;
         const GLfloat vertices[] = {
-            GLfloat (center.x () + scale*area.left ()), GLfloat (center.y () + scale*area.top ()),
-            GLfloat (center.x () + scale*area.right ()), GLfloat (center.y () + scale*area.top ()),
-            GLfloat (center.x () + scale*area.right ()), GLfloat (center.y () + scale*area.bottom ()),
-            GLfloat (center.x () + scale*area.left ()), GLfloat (center.y () + scale*area.bottom ()),
+            GLfloat (center.x () + scale * area.left ()),
+            GLfloat (center.y () + scale * area.top ()),
+            GLfloat (center.x () + scale * area.right ()),
+            GLfloat (center.y () + scale * area.top ()),
+            GLfloat (center.x () + scale * area.right ()),
+            GLfloat (center.y () + scale * area.bottom ()),
+            GLfloat (center.x () + scale * area.left ()),
+            GLfloat (center.y () + scale * area.bottom ()),
         };
 
         static const GLfloat texture_coords[] = {
-            0, 0,
-            1, 0,
-            1, 1,
-            0, 1,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            1,
         };
 
         static const GLuint indices[] = {
-            0, 1, 2,
-            0, 2, 3,
+            0,
+            1,
+            2,
+            0,
+            2,
+            3,
         };
 
         drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, textures.ground.get ());
@@ -1036,8 +1052,7 @@ void RoomWidget::drawMatchStarted ()
         drawRectangle (
             qMin (selection_start->x (), cursor_position.x ()), qMin (selection_start->y (), cursor_position.y ()),
             qAbs (selection_start->x () - cursor_position.x ()), qAbs (selection_start->y () - cursor_position.y ()),
-            QColor (0, 255, 0, 255)
-        );
+            QColor (0, 255, 0, 255));
     }
 
     drawHUD ();
@@ -1060,7 +1075,7 @@ void RoomWidget::playSound (SoundEvent event)
     const QStringList& sound_files = *sound_it;
     if (!sound_files.size ())
         return;
-    //QSound::play (sound_files[random_generator ()%sound_files.size ()]);
+    // QSound::play (sound_files[random_generator ()%sound_files.size ()]);
 }
 void RoomWidget::frameUpdate (qreal dt)
 {
@@ -1090,22 +1105,22 @@ void RoomWidget::matchFrameUpdate (qreal dt)
     qreal off = 4000.0;
     if (dx && dy)
         off *= SQRT_1_2;
-    viewport_center += QPointF (dx*off*dt, dy*off*dt);
+    viewport_center += QPointF (dx * off * dt, dy * off * dt);
     const QRectF& area = match_state->areaRef ();
-    qreal scale = viewport_scale*MAP_TO_SCREEN_FACTOR;
-    if (viewport_center.x () < area.left ()*scale)
-        viewport_center.setX (area.left ()*scale);
-    else if (viewport_center.x () > area.right ()*scale)
-        viewport_center.setX (area.right ()*scale);
-    if (viewport_center.y () < area.top ()*scale)
-        viewport_center.setY (area.top ()*scale);
-    else if (viewport_center.y () > area.bottom ()*scale)
-        viewport_center.setY (area.bottom ()*scale);
+    qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
+    if (viewport_center.x () < area.left () * scale)
+        viewport_center.setX (area.left () * scale);
+    else if (viewport_center.x () > area.right () * scale)
+        viewport_center.setX (area.right () * scale);
+    if (viewport_center.y () < area.top () * scale)
+        viewport_center.setY (area.top () * scale);
+    else if (viewport_center.y () > area.bottom () * scale)
+        viewport_center.setY (area.bottom () * scale);
 }
 QPointF RoomWidget::toMapCoords (const QPointF& point) const
 {
-    qreal scale = viewport_scale*MAP_TO_SCREEN_FACTOR;
-    return (viewport_center - arena_viewport_center + point)/scale;
+    qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
+    return (viewport_center - arena_viewport_center + point) / scale;
 }
 QRectF RoomWidget::toMapCoords (const QRectF& rect) const
 {
@@ -1113,16 +1128,15 @@ QRectF RoomWidget::toMapCoords (const QRectF& rect) const
 }
 QPointF RoomWidget::toScreenCoords (const QPointF& point) const
 {
-    qreal scale = viewport_scale*MAP_TO_SCREEN_FACTOR;
-    return arena_viewport_center - viewport_center + scale*point;
+    qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
+    return arena_viewport_center - viewport_center + scale * point;
 }
 bool RoomWidget::pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const
 {
-    return
-        point.x () >= button_pos.x () &&
-        point.x () < (button_pos.x () + texture->width ()) &&
-        point.y () >= button_pos.y () &&
-        point.y () < (button_pos.y () + texture->height ());
+    return point.x () >= button_pos.x () &&
+           point.x () < (button_pos.x () + texture->width ()) &&
+           point.y () >= button_pos.y () &&
+           point.y () < (button_pos.y () + texture->height ());
 }
 bool RoomWidget::getActionButtonUnderCursor (const QPoint& cursor_pos, int& row, int& col) const
 {
@@ -1151,14 +1165,14 @@ bool RoomWidget::getMinimapPositionUnderCursor (const QPoint& cursor_pos, QPoint
         cursor_pos.y () >= hud.minimap_screen_area.top () &&
         cursor_pos.y () <= hud.minimap_screen_area.bottom ()) {
         const QRectF& area = match_state->areaRef ();
-        area_pos = area.topLeft () + (cursor_pos - hud.minimap_screen_area.topLeft ())*QPointF (area.width ()/hud.minimap_screen_area.width (), area.height ()/hud.minimap_screen_area.height ());
+        area_pos = area.topLeft () + (cursor_pos - hud.minimap_screen_area.topLeft ()) * QPointF (area.width () / hud.minimap_screen_area.width (), area.height () / hud.minimap_screen_area.height ());
         return true;
     }
     return false;
 }
 bool RoomWidget::cursorIsAboveMajorMap (const QPoint& cursor_pos) const
 {
-    int margin_x2 = hud.margin*2;
+    int margin_x2 = hud.margin * 2;
     if (cursor_pos.x () < hud.minimap_panel_rect.width () + margin_x2)
         return cursor_pos.y () < (h - hud.minimap_panel_rect.height () - margin_x2);
     else if (cursor_pos.x () >= (w - hud.action_panel_rect.width () - margin_x2))
@@ -1168,8 +1182,8 @@ bool RoomWidget::cursorIsAboveMajorMap (const QPoint& cursor_pos) const
 }
 void RoomWidget::centerViewportAt (const QPointF& point)
 {
-    qreal scale = viewport_scale*MAP_TO_SCREEN_FACTOR;
-    viewport_center = point*scale;
+    qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
+    viewport_center = point * scale;
 }
 void RoomWidget::centerViewportAtSelected ()
 {
@@ -1187,118 +1201,278 @@ void RoomWidget::drawHUD ()
     int margin = hud.margin;
 
     {
-        int area_w = hud.minimap_panel_rect.width () + margin*2;
-        int area_h = hud.minimap_panel_rect.height () + margin*2;
+        int area_w = hud.minimap_panel_rect.width () + margin * 2;
+        int area_h = hud.minimap_panel_rect.height () + margin * 2;
         fillRectangle (0, h - area_h, area_w, area_h, margin_color);
     }
     {
-        int area_w = hud.action_panel_rect.width () + margin*2;
-        int area_h = hud.action_panel_rect.height () + margin*2;
+        int area_w = hud.action_panel_rect.width () + margin * 2;
+        int area_h = hud.action_panel_rect.height () + margin * 2;
         fillRectangle (w - area_w, h - area_h, area_w, area_h, margin_color);
     }
     {
-        fillRectangle (hud.minimap_panel_rect.width () + margin*2, h - hud.selection_panel_rect.height () - margin*2,
-                       w - hud.minimap_panel_rect.width () - hud.action_panel_rect.width () - margin*4, hud.selection_panel_rect.height () + margin*2,
+        fillRectangle (hud.minimap_panel_rect.width () + margin * 2, h - hud.selection_panel_rect.height () - margin * 2,
+                       w - hud.minimap_panel_rect.width () - hud.action_panel_rect.width () - margin * 4, hud.selection_panel_rect.height () + margin * 2,
                        margin_color);
     }
     fillRectangle (hud.minimap_panel_rect, panel_color);
     drawMinimap ();
     fillRectangle (hud.selection_panel_rect, panel_color);
     {
-        const qreal half_stroke_width = hud.stroke_width*0.5;
+        const qreal half_stroke_width = hud.stroke_width * 0.5;
 
         glLineWidth (hud.stroke_width);
 
         const GLfloat vertices[] = {
-            GLfloat (margin - half_stroke_width), GLfloat (h - hud.minimap_panel_rect.height () - margin),
-            GLfloat (margin + hud.minimap_panel_rect.width () + half_stroke_width), GLfloat (h - hud.minimap_panel_rect.height () - margin),
-            GLfloat (margin - half_stroke_width), GLfloat (h - margin),
-            GLfloat (margin + hud.minimap_panel_rect.width () + half_stroke_width), GLfloat (h - margin),
-            GLfloat (margin), GLfloat (h - hud.minimap_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (margin), GLfloat (h - margin - half_stroke_width),
-            GLfloat (margin + hud.minimap_panel_rect.width ()), GLfloat (h - hud.minimap_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (margin + hud.minimap_panel_rect.width ()), GLfloat (h - margin - half_stroke_width),
+            GLfloat (margin - half_stroke_width),
+            GLfloat (h - hud.minimap_panel_rect.height () - margin),
+            GLfloat (margin + hud.minimap_panel_rect.width () + half_stroke_width),
+            GLfloat (h - hud.minimap_panel_rect.height () - margin),
+            GLfloat (margin - half_stroke_width),
+            GLfloat (h - margin),
+            GLfloat (margin + hud.minimap_panel_rect.width () + half_stroke_width),
+            GLfloat (h - margin),
+            GLfloat (margin),
+            GLfloat (h - hud.minimap_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (margin),
+            GLfloat (h - margin - half_stroke_width),
+            GLfloat (margin + hud.minimap_panel_rect.width ()),
+            GLfloat (h - hud.minimap_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (margin + hud.minimap_panel_rect.width ()),
+            GLfloat (h - margin - half_stroke_width),
 
-            GLfloat (margin*2 + hud.minimap_panel_rect.width () - half_stroke_width), GLfloat (h - hud.selection_panel_rect.height () - margin),
-            GLfloat (margin*2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width () + half_stroke_width), GLfloat (h - hud.selection_panel_rect.height () - margin),
-            GLfloat (margin*2 + hud.minimap_panel_rect.width () - half_stroke_width), GLfloat (h - margin),
-            GLfloat (margin*2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width () + half_stroke_width), GLfloat (h - margin),
-            GLfloat (margin*2 + hud.minimap_panel_rect.width ()), GLfloat (h - hud.selection_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (margin*2 + hud.minimap_panel_rect.width ()), GLfloat (h - margin - half_stroke_width),
-            GLfloat (margin*2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width ()), GLfloat (h - hud.selection_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (margin*2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width ()), GLfloat (h - margin - half_stroke_width),
+            GLfloat (margin * 2 + hud.minimap_panel_rect.width () - half_stroke_width),
+            GLfloat (h - hud.selection_panel_rect.height () - margin),
+            GLfloat (margin * 2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width () + half_stroke_width),
+            GLfloat (h - hud.selection_panel_rect.height () - margin),
+            GLfloat (margin * 2 + hud.minimap_panel_rect.width () - half_stroke_width),
+            GLfloat (h - margin),
+            GLfloat (margin * 2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width () + half_stroke_width),
+            GLfloat (h - margin),
+            GLfloat (margin * 2 + hud.minimap_panel_rect.width ()),
+            GLfloat (h - hud.selection_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (margin * 2 + hud.minimap_panel_rect.width ()),
+            GLfloat (h - margin - half_stroke_width),
+            GLfloat (margin * 2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width ()),
+            GLfloat (h - hud.selection_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (margin * 2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width ()),
+            GLfloat (h - margin - half_stroke_width),
 
-            GLfloat (w - hud.action_panel_rect.width () - margin - half_stroke_width), GLfloat (h - hud.action_panel_rect.height () - margin),
-            GLfloat (w - margin + half_stroke_width), GLfloat (h - hud.action_panel_rect.height () - margin),
-            GLfloat (w - hud.action_panel_rect.width () - margin - half_stroke_width), GLfloat (h - margin),
-            GLfloat (w - margin + half_stroke_width), GLfloat (h - margin),
-            GLfloat (w - hud.action_panel_rect.width () - margin), GLfloat (h - hud.action_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (w - hud.action_panel_rect.width () - margin), GLfloat (h - margin - half_stroke_width),
-            GLfloat (w - margin), GLfloat (h - hud.action_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (w - margin), GLfloat (h - margin - half_stroke_width),
+            GLfloat (w - hud.action_panel_rect.width () - margin - half_stroke_width),
+            GLfloat (h - hud.action_panel_rect.height () - margin),
+            GLfloat (w - margin + half_stroke_width),
+            GLfloat (h - hud.action_panel_rect.height () - margin),
+            GLfloat (w - hud.action_panel_rect.width () - margin - half_stroke_width),
+            GLfloat (h - margin),
+            GLfloat (w - margin + half_stroke_width),
+            GLfloat (h - margin),
+            GLfloat (w - hud.action_panel_rect.width () - margin),
+            GLfloat (h - hud.action_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (w - hud.action_panel_rect.width () - margin),
+            GLfloat (h - margin - half_stroke_width),
+            GLfloat (w - margin),
+            GLfloat (h - hud.action_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (w - margin),
+            GLfloat (h - margin - half_stroke_width),
 
-            GLfloat (0), GLfloat (h - hud.minimap_panel_rect.height () - margin*2),
-            GLfloat (hud.minimap_panel_rect.width () + margin*2 + half_stroke_width), GLfloat (h - hud.minimap_panel_rect.height () - margin*2),
-            GLfloat (hud.minimap_panel_rect.width () + margin*2), GLfloat (h - hud.minimap_panel_rect.height () - margin*2 + half_stroke_width),
-            GLfloat (hud.minimap_panel_rect.width () + margin*2), GLfloat (h - hud.selection_panel_rect.height () - margin*2 - half_stroke_width),
-            GLfloat (hud.minimap_panel_rect.width () + margin*2 - half_stroke_width), GLfloat (h - hud.selection_panel_rect.height () - margin*2),
-            GLfloat (w - hud.action_panel_rect.width () - margin*2 + half_stroke_width), GLfloat (h - hud.selection_panel_rect.height () - margin*2),
-            GLfloat (w - hud.action_panel_rect.width () - margin*2), GLfloat (h - hud.selection_panel_rect.height () - margin*2 - half_stroke_width),
-            GLfloat (w - hud.action_panel_rect.width () - margin*2), GLfloat (h - hud.action_panel_rect.height () - margin*2 + half_stroke_width),
-            GLfloat (w - hud.action_panel_rect.width () - margin*2 - half_stroke_width), GLfloat (h - hud.action_panel_rect.height () - margin*2),
-            GLfloat (w), GLfloat (h - hud.action_panel_rect.height () - margin*2),
-            GLfloat (w), GLfloat (h - hud.action_panel_rect.height () - margin*2 + half_stroke_width),
-            GLfloat (w), GLfloat (h - half_stroke_width),
-            GLfloat (w), GLfloat (h),
-            GLfloat (0), GLfloat (h),
-            GLfloat (0), GLfloat (h - half_stroke_width),
-            GLfloat (0), GLfloat (h - hud.minimap_panel_rect.height () - margin*2 + half_stroke_width),
+            GLfloat (0),
+            GLfloat (h - hud.minimap_panel_rect.height () - margin * 2),
+            GLfloat (hud.minimap_panel_rect.width () + margin * 2 + half_stroke_width),
+            GLfloat (h - hud.minimap_panel_rect.height () - margin * 2),
+            GLfloat (hud.minimap_panel_rect.width () + margin * 2),
+            GLfloat (h - hud.minimap_panel_rect.height () - margin * 2 + half_stroke_width),
+            GLfloat (hud.minimap_panel_rect.width () + margin * 2),
+            GLfloat (h - hud.selection_panel_rect.height () - margin * 2 - half_stroke_width),
+            GLfloat (hud.minimap_panel_rect.width () + margin * 2 - half_stroke_width),
+            GLfloat (h - hud.selection_panel_rect.height () - margin * 2),
+            GLfloat (w - hud.action_panel_rect.width () - margin * 2 + half_stroke_width),
+            GLfloat (h - hud.selection_panel_rect.height () - margin * 2),
+            GLfloat (w - hud.action_panel_rect.width () - margin * 2),
+            GLfloat (h - hud.selection_panel_rect.height () - margin * 2 - half_stroke_width),
+            GLfloat (w - hud.action_panel_rect.width () - margin * 2),
+            GLfloat (h - hud.action_panel_rect.height () - margin * 2 + half_stroke_width),
+            GLfloat (w - hud.action_panel_rect.width () - margin * 2 - half_stroke_width),
+            GLfloat (h - hud.action_panel_rect.height () - margin * 2),
+            GLfloat (w),
+            GLfloat (h - hud.action_panel_rect.height () - margin * 2),
+            GLfloat (w),
+            GLfloat (h - hud.action_panel_rect.height () - margin * 2 + half_stroke_width),
+            GLfloat (w),
+            GLfloat (h - half_stroke_width),
+            GLfloat (w),
+            GLfloat (h),
+            GLfloat (0),
+            GLfloat (h),
+            GLfloat (0),
+            GLfloat (h - half_stroke_width),
+            GLfloat (0),
+            GLfloat (h - hud.minimap_panel_rect.height () - margin * 2 + half_stroke_width),
         };
 
         const GLfloat colors[] = {
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
 
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
 
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
 
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
-            GLfloat (stroke_color.redF ()), GLfloat (stroke_color.greenF ()), GLfloat (stroke_color.blueF ()), GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
+            GLfloat (stroke_color.redF ()),
+            GLfloat (stroke_color.greenF ()),
+            GLfloat (stroke_color.blueF ()),
+            GLfloat (1),
         };
 
         drawColored (GL_LINES, 40, vertices, colors);
@@ -1356,17 +1530,17 @@ void RoomWidget::drawHUD ()
             drawActionButton ({w - area_w - margin + hud.action_button_size.width (), h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
                               pressed_action_button == ActionButtonId::Stop,
                               (active_actions & (1 << quint64 (ActionButtonId::Stop))) ? textures.actions.active.stop.get () : textures.actions.basic.stop.get ());
-            drawActionButton ({w - area_w - margin + hud.action_button_size.width ()*2, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
+            drawActionButton ({w - area_w - margin + hud.action_button_size.width () * 2, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
                               pressed_action_button == ActionButtonId::Hold,
                               (active_actions & (1 << quint64 (ActionButtonId::Hold))) ? textures.actions.active.hold.get () : textures.actions.basic.hold.get ());
-            drawActionButton ({w - area_w - margin + hud.action_button_size.width ()*4, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
+            drawActionButton ({w - area_w - margin + hud.action_button_size.width () * 4, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
                               pressed_action_button == ActionButtonId::Attack,
                               (active_actions & (1 << quint64 (ActionButtonId::Attack))) ? textures.actions.active.attack.get () : textures.actions.basic.attack.get ());
 
             if (contaminator_selected) {
-                QRect pestilence_button_rect = {w - area_w - margin, h - area_h - margin + hud.action_button_size.height ()*2,
+                QRect pestilence_button_rect = {w - area_w - margin, h - area_h - margin + hud.action_button_size.height () * 2,
                                                 hud.action_button_size.width (), hud.action_button_size.height ()};
-                QRect spawn_button_rect = {w - area_w - margin + hud.action_button_size.width (), h - area_h - margin + hud.action_button_size.height ()*2,
+                QRect spawn_button_rect = {w - area_w - margin + hud.action_button_size.width (), h - area_h - margin + hud.action_button_size.height () * 2,
                                            hud.action_button_size.width (), hud.action_button_size.height ()};
                 drawActionButton (pestilence_button_rect, pressed_action_button == ActionButtonId::Pestilence,
                                   (active_actions & (1 << quint64 (ActionButtonId::Pestilence))) ? textures.actions.active.pestilence.get () : textures.actions.basic.pestilence.get ());
@@ -1375,7 +1549,7 @@ void RoomWidget::drawHUD ()
                 if (cast_cooldown_left_ticks) {
                     qreal max_cooldown_ticks = qMax (match_state->effectAttackDescription (AttackDescription::Type::PestilenceMissile).cooldown_ticks,
                                                      match_state->effectAttackDescription (AttackDescription::Type::SpawnBeetle).cooldown_ticks);
-                    qreal remaining = qreal (cast_cooldown_left_ticks)/max_cooldown_ticks;
+                    qreal remaining = qreal (cast_cooldown_left_ticks) / max_cooldown_ticks;
                     drawActionButtonShade (pestilence_button_rect, pressed_action_button == ActionButtonId::Pestilence, remaining);
                     drawActionButtonShade (spawn_button_rect, pressed_action_button == ActionButtonId::Spawn, remaining);
                 }
@@ -1386,12 +1560,12 @@ void RoomWidget::drawHUD ()
 void RoomWidget::drawMinimap ()
 {
     const QRectF& area = match_state->areaRef ();
-    QPointF area_to_minimap_scale = {hud.minimap_screen_area.width ()/area.width (), hud.minimap_screen_area.height ()/area.height ()};
+    QPointF area_to_minimap_scale = {hud.minimap_screen_area.width () / area.width (), hud.minimap_screen_area.height () / area.height ()};
     fillRectangle (hud.minimap_screen_area, QColor ());
     const QHash<quint32, Unit>& units = match_state->unitsRef ();
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
         const Unit& unit = *it;
-        QPointF pos = hud.minimap_screen_area.topLeft () + (unit.position - area.topLeft ())*area_to_minimap_scale;
+        QPointF pos = hud.minimap_screen_area.topLeft () + (unit.position - area.topLeft ()) * area_to_minimap_scale;
         QColor color = (team == unit.team) ? QColor (0, 0xff, 0) : QColor (0xff, 0, 0);
         if (unit.type == Unit::Type::Contaminator)
             fillRectangle (pos.x () - 1.5, pos.y () - 1.5, 3.0, 3.0, color);
@@ -1399,12 +1573,12 @@ void RoomWidget::drawMinimap ()
             fillRectangle (pos.x () - 1.0, pos.y () - 1.0, 2.0, 2.0, color);
     }
     QColor color (0xdf, 0xdf, 0xff);
-    qreal scale = viewport_scale*MAP_TO_SCREEN_FACTOR;
-    QPointF viewport_center_minimap = (viewport_center/scale - area.topLeft ())*area_to_minimap_scale + hud.minimap_screen_area.topLeft ();
-    QPointF s = QPointF (arena_viewport.width (), arena_viewport.height ())/scale*area_to_minimap_scale;
+    qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
+    QPointF viewport_center_minimap = (viewport_center / scale - area.topLeft ()) * area_to_minimap_scale + hud.minimap_screen_area.topLeft ();
+    QPointF s = QPointF (arena_viewport.width (), arena_viewport.height ()) / scale * area_to_minimap_scale;
     glScissor (hud.minimap_screen_area.x (), h - (hud.minimap_screen_area.y () + hud.minimap_screen_area.height ()), hud.minimap_screen_area.width (), hud.minimap_screen_area.height ());
     glEnable (GL_SCISSOR_TEST);
-    drawRectangle (viewport_center_minimap.x () - s.x ()*0.5, viewport_center_minimap.y () - s.y ()*0.5, s.x (), s.y (), color);
+    drawRectangle (viewport_center_minimap.x () - s.x () * 0.5, viewport_center_minimap.y () - s.y () * 0.5, s.x (), s.y (), color);
     glDisable (GL_SCISSOR_TEST);
 }
 void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit)
@@ -1414,21 +1588,23 @@ void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, c
         const AttackDescription& primary_attack_description = match_state->unitPrimaryAttackDescription (unit.type);
 
         {
-            int margin = rect.height ()*0.2;
-            int icon_rib = rect.height () - margin*2;
+            int margin = rect.height () * 0.2;
+            int icon_rib = rect.height () - margin * 2;
             drawIcon (unit, rect.x () + margin, rect.y () + margin, icon_rib, icon_rib);
         }
 
         {
-            int margin = rect.height ()*0.05;
+            int margin = rect.height () * 0.05;
             QPainter p (this);
             p.setFont (font);
             p.setPen (QColor (0xdf, 0xdf, 0xff));
             p.drawText (rect.marginsRemoved ({margin, margin, margin, margin}), Qt::AlignHCenter,
                         unitTitle (unit.type) + "\n"
-                        "\n"
-                        "HP: " + QString::number (unit.hp) + "/" + QString::number (match_state->unitMaxHP (unit.type)) + "\n"
-                        "Attack: class = " + unitAttackClassName (primary_attack_description.type) + "; range = " + QString::number (primary_attack_description.range));
+                                                "\n"
+                                                "HP: " +
+                            QString::number (unit.hp) + "/" + QString::number (match_state->unitMaxHP (unit.type)) + "\n"
+                                                                                                                     "Attack: class = " +
+                            unitAttackClassName (primary_attack_description.type) + "; range = " + QString::number (primary_attack_description.range));
         }
     } else if (selected_count) {
         int icon_rib = hud.selection_panel_icon_rib;
@@ -1440,9 +1616,9 @@ void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, c
 
         for (size_t i = 0; i < size_t (qMin (selection.size (), 30)); ++i) {
             const Unit* unit = selection[i].second;
-            size_t row = i/10;
-            size_t col = i%10;
-            drawIcon (*unit, hud.selection_panel_icon_grid_pos.x () + icon_rib*col, hud.selection_panel_icon_grid_pos.y () + icon_rib*row, icon_rib, icon_rib, true);
+            size_t row = i / 10;
+            size_t col = i % 10;
+            drawIcon (*unit, hud.selection_panel_icon_grid_pos.x () + icon_rib * col, hud.selection_panel_icon_grid_pos.y () + icon_rib * row, icon_rib, icon_rib, true);
         }
     }
 }
@@ -1472,7 +1648,8 @@ void RoomWidget::drawUnit (const Unit& unit)
         texture_set = &textures.units.contaminator;
     } break;
     default: {
-    } return;
+    }
+        return;
     }
 
     UnitTextureTeam* texture_team;
@@ -1491,13 +1668,13 @@ void RoomWidget::drawUnit (const Unit& unit)
     if (unit.attack_remaining_ticks) {
         quint64 clock_ns = match_state->clockNS ();
         quint64 period = attackAnimationPeriodNS (unit.type);
-        quint64 phase = (clock_ns + unit.phase_offset)%period;
-        texture = (phase < period/2) ? texture_team->shooting1.get () : texture_team->shooting2.get ();
+        quint64 phase = (clock_ns + unit.phase_offset) % period;
+        texture = (phase < period / 2) ? texture_team->shooting1.get () : texture_team->shooting2.get ();
     } else if (std::holds_alternative<MoveAction> (unit.action) || std::holds_alternative<AttackAction> (unit.action)) {
         quint64 clock_ns = match_state->clockNS ();
         quint64 period = moveAnimationPeriodNS (unit.type);
-        quint64 phase = (clock_ns + unit.phase_offset)%period;
-        texture = (phase < period/2) ? texture_team->walking1.get () : texture_team->walking2.get ();
+        quint64 phase = (clock_ns + unit.phase_offset) % period;
+        texture = (phase < period / 2) ? texture_team->walking1.get () : texture_team->walking2.get ();
     } else {
         texture = texture_team->standing.get ();
     }
@@ -1512,34 +1689,46 @@ void RoomWidget::drawUnit (const Unit& unit)
     sincos (unit.orientation + PI_X_1_4, &a2_sin, &a2_cos);
     sincos (unit.orientation - PI_X_1_4, &a3_sin, &a3_cos);
     sincos (unit.orientation - PI_X_3_4, &a4_sin, &a4_cos);
-    qreal scale = viewport_scale*sprite_scale*match_state->unitDiameter (unit.type)*SQRT_2*MAP_TO_SCREEN_FACTOR;
+    qreal scale = viewport_scale * sprite_scale * match_state->unitDiameter (unit.type) * SQRT_2 * MAP_TO_SCREEN_FACTOR;
 
     const GLfloat vertices[] = {
-        GLfloat (center.x () + scale*a1_cos), GLfloat (center.y () + scale*a1_sin),
-        GLfloat (center.x () + scale*a2_cos), GLfloat (center.y () + scale*a2_sin),
-        GLfloat (center.x () + scale*a3_cos), GLfloat (center.y () + scale*a3_sin),
-        GLfloat (center.x () + scale*a4_cos), GLfloat (center.y () + scale*a4_sin),
+        GLfloat (center.x () + scale * a1_cos),
+        GLfloat (center.y () + scale * a1_sin),
+        GLfloat (center.x () + scale * a2_cos),
+        GLfloat (center.y () + scale * a2_sin),
+        GLfloat (center.x () + scale * a3_cos),
+        GLfloat (center.y () + scale * a3_sin),
+        GLfloat (center.x () + scale * a4_cos),
+        GLfloat (center.y () + scale * a4_sin),
     };
 
     static const GLfloat texture_coords[] = {
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
     };
 
     static const GLuint indices[] = {
-        0, 1, 2,
-        0, 2, 3,
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
     };
 
     drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
     if (unit.type == Unit::Type::Contaminator && unit.cast_cooldown_left_ticks) {
         qreal max_cooldown_ticks = qMax (match_state->effectAttackDescription (AttackDescription::Type::PestilenceMissile).cooldown_ticks,
                                          match_state->effectAttackDescription (AttackDescription::Type::SpawnBeetle).cooldown_ticks);
-        qreal remaining = qreal (unit.cast_cooldown_left_ticks)/max_cooldown_ticks;
+        qreal remaining = qreal (unit.cast_cooldown_left_ticks) / max_cooldown_ticks;
 
-        qreal scale = viewport_scale*sprite_scale*match_state->unitDiameter (unit.type)*MAP_TO_SCREEN_FACTOR;
+        qreal scale = viewport_scale * sprite_scale * match_state->unitDiameter (unit.type) * MAP_TO_SCREEN_FACTOR;
 
         QVector<GLfloat> vertices;
         QVector<GLfloat> texture_coords;
@@ -1549,13 +1738,13 @@ void RoomWidget::drawUnit (const Unit& unit)
         QPointF bottom_left = {center.x () - scale, center.y () + scale};
         QPointF bottom_right = {center.x () + scale, center.y () + scale};
 
-        qreal angle = M_PI*remaining;
+        qreal angle = M_PI * remaining;
 
         do {
-            if (angle < M_PI*0.25) {
-                qreal off_x = -scale*qTan (angle);
+            if (angle < M_PI * 0.25) {
+                qreal off_x = -scale * qTan (angle);
                 qreal off_y = -scale;
-                qreal toff_x = -0.5*qTan (angle);
+                qreal toff_x = -0.5 * qTan (angle);
                 qreal toff_y = -0.5;
                 vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
                                   GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
@@ -1573,11 +1762,11 @@ void RoomWidget::drawUnit (const Unit& unit)
                                         0, 0});
             }
 
-            if (angle < M_PI*0.75) {
+            if (angle < M_PI * 0.75) {
                 qreal off_x = -scale;
-                qreal off_y = -scale/qTan (angle);
+                qreal off_y = -scale / qTan (angle);
                 qreal toff_x = -0.5;
-                qreal toff_y = -0.5/qTan (angle);
+                qreal toff_y = -0.5 / qTan (angle);
                 vertices.append ({GLfloat (top_left.x ()), GLfloat (top_left.y ()),
                                   GLfloat (center.x ()), GLfloat (center.y ()),
                                   GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
@@ -1607,9 +1796,9 @@ void RoomWidget::drawUnit (const Unit& unit)
             }
 
             {
-                qreal off_x = scale*qTan (angle);
+                qreal off_x = scale * qTan (angle);
                 qreal off_y = scale;
-                qreal toff_x = 0.5*qTan (angle);
+                qreal toff_x = 0.5 * qTan (angle);
                 qreal toff_y = 0.5;
                 vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
                                   GLfloat (bottom_left.x ()), GLfloat (bottom_left.y ()),
@@ -1626,39 +1815,63 @@ void RoomWidget::drawUnit (const Unit& unit)
             }
         } while (0);
 
-        drawTextured (GL_TRIANGLES, vertices.size ()/2, vertices.data (), texture_coords.data (), textures.units.contaminator_cooldown_shade.get ());
+        drawTextured (GL_TRIANGLES, vertices.size () / 2, vertices.data (), texture_coords.data (), textures.units.contaminator_cooldown_shade.get ());
     }
 
     if (unit.selected)
-        drawCircle (center.x (), center.y (), scale*0.25, {0, 255, 0});
+        drawCircle (center.x (), center.y (), scale * 0.25, {0, 255, 0});
 }
 void RoomWidget::drawTabs (int x, int y, int w, int h)
 {
     const GLfloat vertices[] = {
-        GLfloat (x), GLfloat (y + h),
-        GLfloat (x), GLfloat (y),
-        GLfloat (x + w), GLfloat (y),
-        GLfloat (x + w), GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y + h),
     };
 
     static const GLuint indices[] = {
-        0, 1, 2,
-        0, 2, 3,
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
     };
 
     static const GLfloat texture_coords[] = {
-        0.25, 0.25,
-        0.75, 0.25,
-        0.75, 0.75,
-        0.25, 0.75,
+        0.25,
+        0.25,
+        0.75,
+        0.25,
+        0.75,
+        0.75,
+        0.25,
+        0.75,
     };
 
     QColor color = QColor::fromRgbF (1.0, 1.0, 1.0, 1.0);
     const GLfloat colors[] = {
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
     };
     drawColoredTextured (GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, textures.unit_icons.tabs.get ());
 }
@@ -1688,52 +1901,93 @@ void RoomWidget::drawIcon (const Unit& unit, int x, int y, int w, int h, bool fr
         texture = textures.unit_icons.contaminator.get ();
     } break;
     default: {
-    } return;
+    }
+        return;
     }
 
     const GLfloat vertices[] = {
-        GLfloat (x), GLfloat (y + h),
-        GLfloat (x), GLfloat (y),
-        GLfloat (x + w), GLfloat (y),
-        GLfloat (x + w), GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y + h),
     };
 
     const GLfloat texture_coords[] = {
-        GLfloat (0.5 - 0.5/sprite_scale), GLfloat (0.5 - 0.5/sprite_scale),
-        GLfloat (0.5 + 0.5/sprite_scale), GLfloat (0.5 - 0.5/sprite_scale),
-        GLfloat (0.5 + 0.5/sprite_scale), GLfloat (0.5 + 0.5/sprite_scale),
-        GLfloat (0.5 - 0.5/sprite_scale), GLfloat (0.5 + 0.5/sprite_scale),
+        GLfloat (0.5 - 0.5 / sprite_scale),
+        GLfloat (0.5 - 0.5 / sprite_scale),
+        GLfloat (0.5 + 0.5 / sprite_scale),
+        GLfloat (0.5 - 0.5 / sprite_scale),
+        GLfloat (0.5 + 0.5 / sprite_scale),
+        GLfloat (0.5 + 0.5 / sprite_scale),
+        GLfloat (0.5 - 0.5 / sprite_scale),
+        GLfloat (0.5 + 0.5 / sprite_scale),
     };
 
-    qreal hp_ratio = qreal (unit.hp)/match_state->unitMaxHP (unit.type);
+    qreal hp_ratio = qreal (unit.hp) / match_state->unitMaxHP (unit.type);
 
     QColor color = getHPColor (hp_ratio);
 
     const GLfloat colors[] = {
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
     };
 
     static const GLuint indices[] = {
-        0, 1, 2,
-        0, 2, 3,
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
     };
 
     if (framed) {
         static const GLfloat texture_coords[] = {
-            0.25, 0.25,
-            0.75, 0.25,
-            0.75, 0.75,
-            0.25, 0.75,
+            0.25,
+            0.25,
+            0.75,
+            0.25,
+            0.75,
+            0.75,
+            0.25,
+            0.75,
         };
         QColor color = QColor::fromRgbF (1.0, 1.0, 1.0, 1.0);
         const GLfloat colors[] = {
-            GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-            GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-            GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-            GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+            GLfloat (color.redF ()),
+            GLfloat (color.greenF ()),
+            GLfloat (color.blueF ()),
+            GLfloat (color.alphaF ()),
+            GLfloat (color.redF ()),
+            GLfloat (color.greenF ()),
+            GLfloat (color.blueF ()),
+            GLfloat (color.alphaF ()),
+            GLfloat (color.redF ()),
+            GLfloat (color.greenF ()),
+            GLfloat (color.blueF ()),
+            GLfloat (color.alphaF ()),
+            GLfloat (color.redF ()),
+            GLfloat (color.greenF ()),
+            GLfloat (color.blueF ()),
+            GLfloat (color.alphaF ()),
         };
         drawColoredTextured (GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, textures.unit_icons.frame.get ());
     }
@@ -1744,26 +1998,42 @@ void RoomWidget::drawUnitHPBar (const Unit& unit)
 {
     if (unit.hp < match_state->unitMaxHP (unit.type)) {
         QPointF center = toScreenCoords (unit.position);
-        qreal hp_ratio = qreal (unit.hp)/match_state->unitMaxHP (unit.type);
-        qreal hitbar_height = viewport_scale*MAP_TO_SCREEN_FACTOR*0.16;
-        qreal radius = viewport_scale*match_state->unitDiameter (unit.type)*MAP_TO_SCREEN_FACTOR*0.42;
+        qreal hp_ratio = qreal (unit.hp) / match_state->unitMaxHP (unit.type);
+        qreal hitbar_height = viewport_scale * MAP_TO_SCREEN_FACTOR * 0.16;
+        qreal radius = viewport_scale * match_state->unitDiameter (unit.type) * MAP_TO_SCREEN_FACTOR * 0.42;
 
         {
             const GLfloat vertices[] = {
-                GLfloat (center.x () - radius), GLfloat (center.y () - radius),
-                GLfloat (center.x () + radius*(-1.0 + hp_ratio*2.0)), GLfloat (center.y () - radius),
-                GLfloat (center.x () + radius*(-1.0 + hp_ratio*2.0)), GLfloat (center.y () - radius - hitbar_height),
-                GLfloat (center.x () - radius), GLfloat (center.y () - radius - hitbar_height),
+                GLfloat (center.x () - radius),
+                GLfloat (center.y () - radius),
+                GLfloat (center.x () + radius * (-1.0 + hp_ratio * 2.0)),
+                GLfloat (center.y () - radius),
+                GLfloat (center.x () + radius * (-1.0 + hp_ratio * 2.0)),
+                GLfloat (center.y () - radius - hitbar_height),
+                GLfloat (center.x () - radius),
+                GLfloat (center.y () - radius - hitbar_height),
             };
 
             QColor color = getHPColor (hp_ratio);
             color.setRgbF (color.redF (), color.greenF (), color.blueF (), color.alphaF ());
 
             const GLfloat colors[] = {
-                GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-                GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-                GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-                GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+                GLfloat (color.redF ()),
+                GLfloat (color.greenF ()),
+                GLfloat (color.blueF ()),
+                GLfloat (color.alphaF ()),
+                GLfloat (color.redF ()),
+                GLfloat (color.greenF ()),
+                GLfloat (color.blueF ()),
+                GLfloat (color.alphaF ()),
+                GLfloat (color.redF ()),
+                GLfloat (color.greenF ()),
+                GLfloat (color.blueF ()),
+                GLfloat (color.alphaF ()),
+                GLfloat (color.redF ()),
+                GLfloat (color.greenF ()),
+                GLfloat (color.blueF ()),
+                GLfloat (color.alphaF ()),
             };
 
             drawColored (GL_TRIANGLE_FAN, 4, vertices, colors);
@@ -1771,17 +2041,33 @@ void RoomWidget::drawUnitHPBar (const Unit& unit)
 
         {
             const GLfloat vertices[] = {
-                GLfloat (center.x () - radius), GLfloat (center.y () - radius),
-                GLfloat (center.x () + radius), GLfloat (center.y () - radius),
-                GLfloat (center.x () + radius), GLfloat (center.y () - radius - hitbar_height),
-                GLfloat (center.x () - radius), GLfloat (center.y () - radius - hitbar_height),
+                GLfloat (center.x () - radius),
+                GLfloat (center.y () - radius),
+                GLfloat (center.x () + radius),
+                GLfloat (center.y () - radius),
+                GLfloat (center.x () + radius),
+                GLfloat (center.y () - radius - hitbar_height),
+                GLfloat (center.x () - radius),
+                GLfloat (center.y () - radius - hitbar_height),
             };
 
             const GLfloat colors[] = {
-                0, 0.8, 0.8, 1,
-                0, 0.8, 0.8, 1,
-                0, 0.8, 0.8, 1,
-                0, 0.8, 0.8, 1,
+                0,
+                0.8,
+                0.8,
+                1,
+                0,
+                0.8,
+                0.8,
+                1,
+                0,
+                0.8,
+                0.8,
+                1,
+                0,
+                0.8,
+                0.8,
+                1,
             };
 
             drawColored (GL_LINE_LOOP, 4, vertices, colors);
@@ -1794,14 +2080,14 @@ void RoomWidget::drawMissile (const Missile& missile)
     qreal sprite_scale = 1.0;
 
     quint64 period = missileAnimationPeriodNS (Missile::Type::Rocket);
-    quint64 phase = clock_ns%period;
+    quint64 phase = clock_ns % period;
     QOpenGLTexture* texture;
     switch (missile.type) {
     case Missile::Type::Rocket:
-        texture = (phase < period/2) ? textures.effects.goon_rocket.rocket1.get () : textures.effects.goon_rocket.rocket2.get ();
+        texture = (phase < period / 2) ? textures.effects.goon_rocket.rocket1.get () : textures.effects.goon_rocket.rocket2.get ();
         break;
     case Missile::Type::Pestilence:
-        texture = (phase < period/2) ? textures.effects.pestilence_missile.missile1.get () : textures.effects.pestilence_missile.missile2.get ();
+        texture = (phase < period / 2) ? textures.effects.pestilence_missile.missile1.get () : textures.effects.pestilence_missile.missile2.get ();
         break;
     default:
         return;
@@ -1817,25 +2103,37 @@ void RoomWidget::drawMissile (const Missile& missile)
     sincos (missile.orientation + PI_X_1_4, &a2_sin, &a2_cos);
     sincos (missile.orientation - PI_X_1_4, &a3_sin, &a3_cos);
     sincos (missile.orientation - PI_X_3_4, &a4_sin, &a4_cos);
-    qreal scale = viewport_scale*sprite_scale*match_state->missileDiameter (Missile::Type::Rocket)*SQRT_2*MAP_TO_SCREEN_FACTOR;
+    qreal scale = viewport_scale * sprite_scale * match_state->missileDiameter (Missile::Type::Rocket) * SQRT_2 * MAP_TO_SCREEN_FACTOR;
 
     const GLfloat vertices[] = {
-        GLfloat (center.x () + scale*a1_cos), GLfloat (center.y () + scale*a1_sin),
-        GLfloat (center.x () + scale*a2_cos), GLfloat (center.y () + scale*a2_sin),
-        GLfloat (center.x () + scale*a3_cos), GLfloat (center.y () + scale*a3_sin),
-        GLfloat (center.x () + scale*a4_cos), GLfloat (center.y () + scale*a4_sin),
+        GLfloat (center.x () + scale * a1_cos),
+        GLfloat (center.y () + scale * a1_sin),
+        GLfloat (center.x () + scale * a2_cos),
+        GLfloat (center.y () + scale * a2_sin),
+        GLfloat (center.x () + scale * a3_cos),
+        GLfloat (center.y () + scale * a3_sin),
+        GLfloat (center.x () + scale * a4_cos),
+        GLfloat (center.y () + scale * a4_sin),
     };
 
     static const GLfloat texture_coords[] = {
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
     };
 
     static const GLuint indices[] = {
-        0, 1, 2,
-        0, 2, 3,
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
     };
 
     drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
@@ -1857,14 +2155,14 @@ void RoomWidget::drawExplosion (const Explosion& explosion)
 
     qreal orientation = 0.0;
     quint64 clock_ns = match_state->clockNS ();
-    GLfloat alpha = explosion.remaining_ticks*0.5/attack_description.duration_ticks;
+    GLfloat alpha = explosion.remaining_ticks * 0.5 / attack_description.duration_ticks;
 
     quint64 period = explosionAnimationPeriodNS ();
-    quint64 phase = clock_ns%period;
+    quint64 phase = clock_ns % period;
     QOpenGLTexture* texture;
     switch (explosion.type) {
     case Explosion::Type::Fire:
-        texture = (phase < period/2) ? textures.effects.explosion.explosion1.get () : textures.effects.explosion.explosion2.get ();
+        texture = (phase < period / 2) ? textures.effects.explosion.explosion1.get () : textures.effects.explosion.explosion2.get ();
         break;
     case Explosion::Type::Pestilence:
         texture = textures.effects.pestilence_splash.splash.get ();
@@ -1883,32 +2181,56 @@ void RoomWidget::drawExplosion (const Explosion& explosion)
     sincos (orientation + PI_X_1_4, &a2_sin, &a2_cos);
     sincos (orientation - PI_X_1_4, &a3_sin, &a3_cos);
     sincos (orientation - PI_X_3_4, &a4_sin, &a4_cos);
-    qreal scale = viewport_scale*sprite_scale*match_state->explosionDiameter (explosion.type)*SQRT_2*MAP_TO_SCREEN_FACTOR;
+    qreal scale = viewport_scale * sprite_scale * match_state->explosionDiameter (explosion.type) * SQRT_2 * MAP_TO_SCREEN_FACTOR;
 
     const GLfloat colors[] = {
-        1, 1, 1, alpha,
-        1, 1, 1, alpha,
-        1, 1, 1, alpha,
-        1, 1, 1, alpha,
+        1,
+        1,
+        1,
+        alpha,
+        1,
+        1,
+        1,
+        alpha,
+        1,
+        1,
+        1,
+        alpha,
+        1,
+        1,
+        1,
+        alpha,
     };
 
     const GLfloat vertices[] = {
-        GLfloat (center.x () + scale*a1_cos), GLfloat (center.y () + scale*a1_sin),
-        GLfloat (center.x () + scale*a2_cos), GLfloat (center.y () + scale*a2_sin),
-        GLfloat (center.x () + scale*a3_cos), GLfloat (center.y () + scale*a3_sin),
-        GLfloat (center.x () + scale*a4_cos), GLfloat (center.y () + scale*a4_sin),
+        GLfloat (center.x () + scale * a1_cos),
+        GLfloat (center.y () + scale * a1_sin),
+        GLfloat (center.x () + scale * a2_cos),
+        GLfloat (center.y () + scale * a2_sin),
+        GLfloat (center.x () + scale * a3_cos),
+        GLfloat (center.y () + scale * a3_sin),
+        GLfloat (center.x () + scale * a4_cos),
+        GLfloat (center.y () + scale * a4_sin),
     };
 
     static const GLfloat texture_coords[] = {
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
     };
 
     static const GLuint indices[] = {
-        0, 1, 2,
-        0, 2, 3,
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
     };
 
     drawColoredTextured (GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, texture);
@@ -1951,18 +2273,32 @@ void RoomWidget::drawUnitPathToTarget (const Unit& unit)
     QPointF target = toScreenCoords (*target_position);
 
     const GLfloat vertices[] = {
-        GLfloat (current.x ()), GLfloat (current.y ()),
-        GLfloat (target.x ()), GLfloat (target.y ()),
+        GLfloat (current.x ()),
+        GLfloat (current.y ()),
+        GLfloat (target.x ()),
+        GLfloat (target.y ()),
     };
 
     static const GLfloat attack_colors[] = {
-        1, 0, 0, 1,
-        1, 0, 0, 1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
     };
 
     static const GLfloat move_colors[] = {
-        0, 1, 0, 1,
-        0, 1, 0, 1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
     };
 
     drawColored (GL_LINES, 2, vertices, std::holds_alternative<AttackAction> (unit.action) ? attack_colors : move_colors);
@@ -1975,107 +2311,219 @@ void RoomWidget::drawActionButton (const QRect& rect, bool pressed, QOpenGLTextu
     static const QColor gray (0x5b, 0x46, 0x72);
 
     qreal outer_factor = pressed ? 0.2 : 0.1;
-    qreal inner_factor = pressed ? (1.0/3.0) : 0.25;
+    qreal inner_factor = pressed ? (1.0 / 3.0) : 0.25;
 
-    QPointF o1 (rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5));
-    QPointF o2 (rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5));
-    QPointF o3 (rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5));
-    QPointF o4 (rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5));
+    QPointF o1 (rect.x () + rect.width () * (outer_factor * 0.5), rect.y () + rect.height () * (outer_factor * 0.5));
+    QPointF o2 (rect.x () + rect.width () * (1 - outer_factor * 0.5), rect.y () + rect.height () * (outer_factor * 0.5));
+    QPointF o3 (rect.x () + rect.width () * (outer_factor * 0.5), rect.y () + rect.height () * (1 - outer_factor * 0.5));
+    QPointF o4 (rect.x () + rect.width () * (1 - outer_factor * 0.5), rect.y () + rect.height () * (1 - outer_factor * 0.5));
 
-    QPointF i1 (rect.x () + rect.width ()*(inner_factor*0.5), rect.y () + rect.height ()*(inner_factor*0.5));
-    QPointF i2 (rect.x () + rect.width ()*(1 - inner_factor*0.5), rect.y () + rect.height ()*(inner_factor*0.5));
-    QPointF i3 (rect.x () + rect.width ()*(inner_factor*0.5), rect.y () + rect.height ()*(1 - inner_factor*0.5));
-    QPointF i4 (rect.x () + rect.width ()*(1 - inner_factor*0.5), rect.y () + rect.height ()*(1 - inner_factor*0.5));
+    QPointF i1 (rect.x () + rect.width () * (inner_factor * 0.5), rect.y () + rect.height () * (inner_factor * 0.5));
+    QPointF i2 (rect.x () + rect.width () * (1 - inner_factor * 0.5), rect.y () + rect.height () * (inner_factor * 0.5));
+    QPointF i3 (rect.x () + rect.width () * (inner_factor * 0.5), rect.y () + rect.height () * (1 - inner_factor * 0.5));
+    QPointF i4 (rect.x () + rect.width () * (1 - inner_factor * 0.5), rect.y () + rect.height () * (1 - inner_factor * 0.5));
 
     {
         const GLfloat vertices[] = {
-            GLfloat (i1.x ()), GLfloat (i1.y ()),
-            GLfloat (i2.x ()), GLfloat (i2.y ()),
-            GLfloat (i3.x ()), GLfloat (i3.y ()),
-            GLfloat (i4.x ()), GLfloat (i4.y ()),
+            GLfloat (i1.x ()),
+            GLfloat (i1.y ()),
+            GLfloat (i2.x ()),
+            GLfloat (i2.y ()),
+            GLfloat (i3.x ()),
+            GLfloat (i3.y ()),
+            GLfloat (i4.x ()),
+            GLfloat (i4.y ()),
 
-            GLfloat (o1.x ()), GLfloat (o1.y ()),
-            GLfloat (o2.x ()), GLfloat (o2.y ()),
-            GLfloat (i1.x ()), GLfloat (i1.y ()),
-            GLfloat (i2.x ()), GLfloat (i2.y ()),
+            GLfloat (o1.x ()),
+            GLfloat (o1.y ()),
+            GLfloat (o2.x ()),
+            GLfloat (o2.y ()),
+            GLfloat (i1.x ()),
+            GLfloat (i1.y ()),
+            GLfloat (i2.x ()),
+            GLfloat (i2.y ()),
 
-            GLfloat (i3.x ()), GLfloat (i3.y ()),
-            GLfloat (i4.x ()), GLfloat (i4.y ()),
-            GLfloat (o3.x ()), GLfloat (o3.y ()),
-            GLfloat (o4.x ()), GLfloat (o4.y ()),
+            GLfloat (i3.x ()),
+            GLfloat (i3.y ()),
+            GLfloat (i4.x ()),
+            GLfloat (i4.y ()),
+            GLfloat (o3.x ()),
+            GLfloat (o3.y ()),
+            GLfloat (o4.x ()),
+            GLfloat (o4.y ()),
 
-            GLfloat (o1.x ()), GLfloat (o1.y ()),
-            GLfloat (i1.x ()), GLfloat (i1.y ()),
-            GLfloat (o3.x ()), GLfloat (o3.y ()),
-            GLfloat (i3.x ()), GLfloat (i3.y ()),
+            GLfloat (o1.x ()),
+            GLfloat (o1.y ()),
+            GLfloat (i1.x ()),
+            GLfloat (i1.y ()),
+            GLfloat (o3.x ()),
+            GLfloat (o3.y ()),
+            GLfloat (i3.x ()),
+            GLfloat (i3.y ()),
 
-            GLfloat (i2.x ()), GLfloat (i2.y ()),
-            GLfloat (o2.x ()), GLfloat (o2.y ()),
-            GLfloat (i4.x ()), GLfloat (i4.y ()),
-            GLfloat (o4.x ()), GLfloat (o4.y ()),
+            GLfloat (i2.x ()),
+            GLfloat (i2.y ()),
+            GLfloat (o2.x ()),
+            GLfloat (o2.y ()),
+            GLfloat (i4.x ()),
+            GLfloat (i4.y ()),
+            GLfloat (o4.x ()),
+            GLfloat (o4.y ()),
         };
 
         const GLfloat colors[] = {
-            GLfloat (bright.redF ()), GLfloat (bright.greenF ()), GLfloat (bright.blueF ()), GLfloat (1),
-            GLfloat (bright.redF ()), GLfloat (bright.greenF ()), GLfloat (bright.blueF ()), GLfloat (1),
-            GLfloat (bright.redF ()), GLfloat (bright.greenF ()), GLfloat (bright.blueF ()), GLfloat (1),
-            GLfloat (bright.redF ()), GLfloat (bright.greenF ()), GLfloat (bright.blueF ()), GLfloat (1),
+            GLfloat (bright.redF ()),
+            GLfloat (bright.greenF ()),
+            GLfloat (bright.blueF ()),
+            GLfloat (1),
+            GLfloat (bright.redF ()),
+            GLfloat (bright.greenF ()),
+            GLfloat (bright.blueF ()),
+            GLfloat (1),
+            GLfloat (bright.redF ()),
+            GLfloat (bright.greenF ()),
+            GLfloat (bright.blueF ()),
+            GLfloat (1),
+            GLfloat (bright.redF ()),
+            GLfloat (bright.greenF ()),
+            GLfloat (bright.blueF ()),
+            GLfloat (1),
 
-            GLfloat (gray.redF ()), GLfloat (gray.greenF ()), GLfloat (gray.blueF ()), GLfloat (1),
-            GLfloat (gray.redF ()), GLfloat (gray.greenF ()), GLfloat (gray.blueF ()), GLfloat (1),
-            GLfloat (gray.redF ()), GLfloat (gray.greenF ()), GLfloat (gray.blueF ()), GLfloat (1),
-            GLfloat (gray.redF ()), GLfloat (gray.greenF ()), GLfloat (gray.blueF ()), GLfloat (1),
+            GLfloat (gray.redF ()),
+            GLfloat (gray.greenF ()),
+            GLfloat (gray.blueF ()),
+            GLfloat (1),
+            GLfloat (gray.redF ()),
+            GLfloat (gray.greenF ()),
+            GLfloat (gray.blueF ()),
+            GLfloat (1),
+            GLfloat (gray.redF ()),
+            GLfloat (gray.greenF ()),
+            GLfloat (gray.blueF ()),
+            GLfloat (1),
+            GLfloat (gray.redF ()),
+            GLfloat (gray.greenF ()),
+            GLfloat (gray.blueF ()),
+            GLfloat (1),
 
-            GLfloat (dark.redF ()), GLfloat (dark.greenF ()), GLfloat (dark.blueF ()), GLfloat (1),
-            GLfloat (dark.redF ()), GLfloat (dark.greenF ()), GLfloat (dark.blueF ()), GLfloat (1),
-            GLfloat (dark.redF ()), GLfloat (dark.greenF ()), GLfloat (dark.blueF ()), GLfloat (1),
-            GLfloat (dark.redF ()), GLfloat (dark.greenF ()), GLfloat (dark.blueF ()), GLfloat (1),
+            GLfloat (dark.redF ()),
+            GLfloat (dark.greenF ()),
+            GLfloat (dark.blueF ()),
+            GLfloat (1),
+            GLfloat (dark.redF ()),
+            GLfloat (dark.greenF ()),
+            GLfloat (dark.blueF ()),
+            GLfloat (1),
+            GLfloat (dark.redF ()),
+            GLfloat (dark.greenF ()),
+            GLfloat (dark.blueF ()),
+            GLfloat (1),
+            GLfloat (dark.redF ()),
+            GLfloat (dark.greenF ()),
+            GLfloat (dark.blueF ()),
+            GLfloat (1),
 
-            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
-            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
-            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
-            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+            GLfloat (light.redF ()),
+            GLfloat (light.greenF ()),
+            GLfloat (light.blueF ()),
+            GLfloat (1),
+            GLfloat (light.redF ()),
+            GLfloat (light.greenF ()),
+            GLfloat (light.blueF ()),
+            GLfloat (1),
+            GLfloat (light.redF ()),
+            GLfloat (light.greenF ()),
+            GLfloat (light.blueF ()),
+            GLfloat (1),
+            GLfloat (light.redF ()),
+            GLfloat (light.greenF ()),
+            GLfloat (light.blueF ()),
+            GLfloat (1),
 
-            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
-            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
-            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
-            GLfloat (light.redF ()), GLfloat (light.greenF ()), GLfloat (light.blueF ()), GLfloat (1),
+            GLfloat (light.redF ()),
+            GLfloat (light.greenF ()),
+            GLfloat (light.blueF ()),
+            GLfloat (1),
+            GLfloat (light.redF ()),
+            GLfloat (light.greenF ()),
+            GLfloat (light.blueF ()),
+            GLfloat (1),
+            GLfloat (light.redF ()),
+            GLfloat (light.greenF ()),
+            GLfloat (light.blueF ()),
+            GLfloat (1),
+            GLfloat (light.redF ()),
+            GLfloat (light.greenF ()),
+            GLfloat (light.blueF ()),
+            GLfloat (1),
         };
 
         static const GLuint indices[] = {
-            0, 1, 3,
-            0, 3, 2,
-            4, 5, 7,
-            4, 7, 6,
-            8, 9, 11,
-            8, 11, 10,
-            12, 13, 15,
-            12, 15, 14,
-            16, 17, 19,
-            16, 19, 18,
+            0,
+            1,
+            3,
+            0,
+            3,
+            2,
+            4,
+            5,
+            7,
+            4,
+            7,
+            6,
+            8,
+            9,
+            11,
+            8,
+            11,
+            10,
+            12,
+            13,
+            15,
+            12,
+            15,
+            14,
+            16,
+            17,
+            19,
+            16,
+            19,
+            18,
         };
 
-        drawColored (GL_TRIANGLES, vertices, colors, sizeof (indices)/sizeof (indices[0]), indices);
+        drawColored (GL_TRIANGLES, vertices, colors, sizeof (indices) / sizeof (indices[0]), indices);
     }
 
     {
         const GLfloat vertices[] = {
-            GLfloat (i1.x ()), GLfloat (i1.y ()),
-            GLfloat (i2.x ()), GLfloat (i2.y ()),
-            GLfloat (i3.x ()), GLfloat (i3.y ()),
-            GLfloat (i4.x ()), GLfloat (i4.y ()),
+            GLfloat (i1.x ()),
+            GLfloat (i1.y ()),
+            GLfloat (i2.x ()),
+            GLfloat (i2.y ()),
+            GLfloat (i3.x ()),
+            GLfloat (i3.y ()),
+            GLfloat (i4.x ()),
+            GLfloat (i4.y ()),
         };
 
         static const GLfloat texture_coords[] = {
-            0, 0,
-            1, 0,
-            0, 1,
-            1, 1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            1,
         };
 
         static const GLuint indices[] = {
-            0, 1, 3,
-            0, 3, 2,
+            0,
+            1,
+            3,
+            0,
+            3,
+            2,
         };
 
         drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
@@ -2091,36 +2539,81 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
     qreal outer_factor = pressed ? 0.2 : 0.1;
 
     QPointF center = QRectF (rect).center ();
-    QPointF top_left = {rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5)};
-    QPointF top_right = {rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(outer_factor*0.5)};
-    QPointF bottom_left = {rect.x () + rect.width ()*(outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5)};
-    QPointF bottom_right = {rect.x () + rect.width ()*(1 - outer_factor*0.5), rect.y () + rect.height ()*(1 - outer_factor*0.5)};
+    QPointF top_left = {rect.x () + rect.width () * (outer_factor * 0.5), rect.y () + rect.height () * (outer_factor * 0.5)};
+    QPointF top_right = {rect.x () + rect.width () * (1 - outer_factor * 0.5), rect.y () + rect.height () * (outer_factor * 0.5)};
+    QPointF bottom_left = {rect.x () + rect.width () * (outer_factor * 0.5), rect.y () + rect.height () * (1 - outer_factor * 0.5)};
+    QPointF bottom_right = {rect.x () + rect.width () * (1 - outer_factor * 0.5), rect.y () + rect.height () * (1 - outer_factor * 0.5)};
 
     QVector<GLfloat> vertices;
     const GLfloat colors[] = {
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()), GLfloat (color.greenF ()), GLfloat (color.blueF ()), GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
+        GLfloat (color.redF ()),
+        GLfloat (color.greenF ()),
+        GLfloat (color.blueF ()),
+        GLfloat (color.alphaF ()),
     };
 
-    qreal angle = M_PI*remaining;
+    qreal angle = M_PI * remaining;
 
     do {
-        if (angle < M_PI*0.25) {
-            qreal scale = rect.height ()*(1 - outer_factor)*0.5;
-            qreal off_x = -scale*qTan (angle);
+        if (angle < M_PI * 0.25) {
+            qreal scale = rect.height () * (1 - outer_factor) * 0.5;
+            qreal off_x = -scale * qTan (angle);
             qreal off_y = -scale;
             vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
                               GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
@@ -2132,10 +2625,10 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
                               GLfloat (top_left.x ()), GLfloat (top_left.y ())});
         }
 
-        if (angle < M_PI*0.75) {
-            qreal scale = rect.height ()*(1 - outer_factor)*0.5;
+        if (angle < M_PI * 0.75) {
+            qreal scale = rect.height () * (1 - outer_factor) * 0.5;
             qreal off_x = -scale;
-            qreal off_y = -scale/qTan (angle);
+            qreal off_y = -scale / qTan (angle);
             vertices.append ({GLfloat (top_left.x ()), GLfloat (top_left.y ()),
                               GLfloat (center.x ()), GLfloat (center.y ()),
                               GLfloat (center.x () + off_x), GLfloat (center.y () + off_y),
@@ -2153,8 +2646,8 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
         }
 
         {
-            qreal scale = rect.height ()*(1 - outer_factor)*0.5;
-            qreal off_x = scale*qTan (angle);
+            qreal scale = rect.height () * (1 - outer_factor) * 0.5;
+            qreal off_x = scale * qTan (angle);
             qreal off_y = scale;
             vertices.append ({GLfloat (center.x ()), GLfloat (center.y ()),
                               GLfloat (bottom_left.x ()), GLfloat (bottom_left.y ()),
@@ -2165,7 +2658,7 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
         }
     } while (0);
 
-    drawColored (GL_TRIANGLES, vertices.size ()/2, vertices.data (), colors);
+    drawColored (GL_TRIANGLES, vertices.size () / 2, vertices.data (), colors);
 }
 void RoomWidget::groupEvent (quint64 group_num)
 {
@@ -2194,7 +2687,7 @@ QVector<QPair<quint32, const Unit*>> RoomWidget::buildOrderedSelection ()
         Unit::Type::Beetle,
     };
 
-    for (const Unit::Type unit_type: unit_order) {
+    for (const Unit::Type unit_type : unit_order) {
         for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
             if (it->selected && it->type == unit_type) {
                 selection.append ({it.key (), &*it});

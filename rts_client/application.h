@@ -9,8 +9,8 @@
 #include <QSharedPointer>
 
 class QNetworkDatagram;
-//class MatchState;
-//class Unit;
+// class MatchState;
+// class Unit;
 
 class MatchStateCollector
 {
@@ -38,9 +38,9 @@ public:
 signals:
     void roomListUpdated (const QVector<RoomEntry>& room_list);
     void queryReadiness ();
-    void startCountdown();
+    void startCountdown ();
     void startMatch ();
-    void updateMatchState (QVector<QPair<quint32, Unit> > units, QVector<QPair<quint32, Missile> > missiles);
+    void updateMatchState (QVector<QPair<quint32, Unit>> units, QVector<QPair<quint32, Missile>> missiles);
 
 private:
     void showLobby (const QString& login);
@@ -62,13 +62,12 @@ private slots:
     void readinessCallback ();
     void matchStartCallback ();
     void createUnitCallback (Unit::Team team, Unit::Type type, QPointF positon);
-    //void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
+    // void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
     void unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
 
-
 private:
-    void joinTeam(RTS::Team id);
+    void joinTeam (RTS::Team id);
     bool single_mode = false;
     QWidget* current_window = nullptr;
     QSharedPointer<NetworkThread> network_thread;

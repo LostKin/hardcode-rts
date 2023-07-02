@@ -10,9 +10,9 @@
 #include <QPushButton>
 #include <QDebug>
 
-
 LobbyWidget::LobbyWidget (const QString& login, QWidget* parent)
-    : QWidget (parent), login (login)
+    : QWidget (parent)
+    , login (login)
 {
     QVBoxLayout* layout = new QVBoxLayout;
     {
@@ -73,7 +73,7 @@ void LobbyWidget::joinRoomClicked ()
 }
 void LobbyWidget::createRoomButtonClicked ()
 {
-    QWidget* button = (QWidget*) sender ();
+    QWidget* button = (QWidget*)sender ();
     RoomSettingsWidget popup (button);
     connect (&popup, SIGNAL (createRequested (const QString&)), this, SIGNAL (createRoomRequested (const QString&)));
     QPoint left_bottom = button->mapToGlobal (QPoint (0, 0)) + QPoint (0, button->height ());
@@ -83,7 +83,7 @@ void LobbyWidget::createRoomButtonClicked ()
 }
 void LobbyWidget::profileButtonClicked ()
 {
-    QWidget* button = (QWidget*) sender ();
+    QWidget* button = (QWidget*)sender ();
     ProfileWidget popup (login, button);
     connect (&popup, SIGNAL (logoutRequested ()), this, SIGNAL (logoutRequested ()));
     QPoint right_bottom = button->mapToGlobal (QPoint (0, 0)) + QPoint (button->width (), button->height ());

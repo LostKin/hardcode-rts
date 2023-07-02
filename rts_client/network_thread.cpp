@@ -5,9 +5,10 @@
 #include <QThread>
 #include <QUdpSocket>
 
-
-NetworkThread::NetworkThread(const QString& host, quint16 port, QObject* parent)
-    : QThread (parent), host (host), port (port)
+NetworkThread::NetworkThread (const QString& host, quint16 port, QObject* parent)
+    : QThread (parent)
+    , host (host)
+    , port (port)
 {
 }
 
@@ -32,7 +33,7 @@ void NetworkThread::run ()
 }
 void NetworkThread::recieveDatagrams ()
 {
-    NetworkManager* network_manager = (NetworkManager*) sender ();
+    NetworkManager* network_manager = (NetworkManager*)sender ();
     while (QSharedPointer<QNetworkDatagram> datagram = network_manager->takeDatagram ()) {
         emit datagramReceived (datagram);
     }

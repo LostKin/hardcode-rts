@@ -5,7 +5,6 @@
 
 #include "actions.h"
 
-
 class Unit
 {
 public:

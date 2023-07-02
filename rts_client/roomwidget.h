@@ -30,10 +30,9 @@ signals:
     void readinessRequested ();
     void quitRequested ();
     void createUnitRequested (Unit::Team team, Unit::Type type, QPointF position);
-    //void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
-    
-    void unitActionRequested (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
+    // void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
+    void unitActionRequested (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
 
 private slots:
     void joinRedTeamRequestedHandler ();
@@ -45,14 +44,13 @@ private slots:
 
 public slots:
     void readinessHandler ();
-    void startMatchHandler();
+    void startMatchHandler ();
     void startCountDownHandler ();
-    void loadMatchState (QVector<QPair<quint32, Unit> > units, QVector<QPair<quint32, Missile> > missiles);
-    //void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
+    void loadMatchState (QVector<QPair<quint32, Unit>> units, QVector<QPair<quint32, Missile>> missiles);
+    // void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
     void unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
     void unitCreateCallback (Unit::Team team, Unit::Type type, QPointF position);
-
 
 protected:
     virtual void initResources () override;

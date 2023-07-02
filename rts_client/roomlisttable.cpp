@@ -7,7 +7,6 @@
 #include <QDebug>
 #include <QMessageBox>
 
-
 RoomListTable::RoomListTable (QWidget* parent)
     : QTableWidget (0, 3, parent)
 {
@@ -60,7 +59,7 @@ void RoomListTable::cellClicked (int row, int column)
     if (column == 2) {
         QString room_name = name_item->data (Qt::DisplayRole).toString ();
         QMessageBox::StandardButton reply = QMessageBox::question (this, "Delete room?",
-            "Do you really want to delete room '" + room_name + "'?", QMessageBox::Yes | QMessageBox::No);
+                                                                   "Do you really want to delete room '" + room_name + "'?", QMessageBox::Yes | QMessageBox::No);
         if (reply == QMessageBox::Yes)
             emit deleteRoomRequested (room_id);
     }

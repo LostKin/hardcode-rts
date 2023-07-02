@@ -5,13 +5,12 @@
 #include <QQueue>
 #include <QMutex>
 
-
 class NetworkManager: public QObject
 {
     Q_OBJECT
 
 public:
-    NetworkManager (const QString& host, quint16 port, QObject *parent = nullptr);
+    NetworkManager (const QString& host, quint16 port, QObject* parent = nullptr);
     bool start (QString& error_message);
     QSharedPointer<QNetworkDatagram> takeDatagram ();
 

@@ -5,9 +5,10 @@
 #include <QCoreApplication>
 #include <QNetworkDatagram>
 
-
 NetworkManager::NetworkManager (const QString& host, quint16 port, QObject* parent)
-    : QObject (parent), host (host), port (port)
+    : QObject (parent)
+    , host (host)
+    , port (port)
 {
 }
 

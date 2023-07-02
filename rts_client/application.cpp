@@ -9,14 +9,13 @@
 #include <QFontDatabase>
 #include <QMessageBox>
 
-
 MatchStateCollector::MatchStateCollector (const RTS::MatchState& initial_fragment)
 {
     if (initial_fragment.fragment_count () > 0 && initial_fragment.fragment_count () <= 1024 && initial_fragment.fragment_no () < initial_fragment.fragment_count ()) {
         fragments_.resize (initial_fragment.fragment_count ());
         fragments_[initial_fragment.fragment_no ()] = QSharedPointer<RTS::MatchState> (new RTS::MatchState (initial_fragment));
         filled_fragment_count = 1;
-   } else {
+    } else {
         filled_fragment_count = 0;
     }
 }
@@ -43,7 +42,6 @@ const QVector<QSharedPointer<RTS::MatchState>>& MatchStateCollector::fragments (
 {
     return fragments_;
 }
-
 
 Application::Application (int& argc, char** argv)
     : QApplication (argc, argv)
@@ -88,18 +86,20 @@ void Application::start ()
         authorizationPromptCallback ();
 }
 
-void Application::joinTeam (RTS::Team team) {
+void Application::joinTeam (RTS::Team team)
+{
     RTS::Request request_oneof;
     RTS::JoinTeamRequest* request = request_oneof.mutable_join_team ();
     request->mutable_session_token ()->set_value (session_token.value ());
     request->mutable_request_token ()->set_value (request_token++);
-    request->set_team(team);
+    request->set_team (team);
     std::string message;
     request_oneof.SerializeToString (&message);
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
 
-void Application::readinessCallback () {
+void Application::readinessCallback ()
+{
     RTS::Request request_oneof;
     RTS::ReadyRequest* request = request_oneof.mutable_ready ();
     request->mutable_session_token ()->set_value (session_token.value ());
@@ -109,19 +109,23 @@ void Application::readinessCallback () {
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
 
-void Application::matchStartCallback () {
+void Application::matchStartCallback ()
+{
     //
 }
 
-void Application::joinRedTeamCallback () {
-    //qDebug() << "callback!";
+void Application::joinRedTeamCallback ()
+{
+    // qDebug() << "callback!";
     joinTeam (RTS::RED);
 }
 
-void Application::joinBlueTeamCallback () {
+void Application::joinBlueTeamCallback ()
+{
     joinTeam (RTS::BLUE);
 }
-void Application::joinSpectatorCallback () {
+void Application::joinSpectatorCallback ()
+{
     joinTeam (RTS::SPECTATOR);
 }
 
@@ -199,29 +203,28 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
     RTS::UnitCreateRequest* request = request_oneof.mutable_unit_create ();
     request->mutable_session_token ()->set_value (session_token.value ());
     request->mutable_request_token ()->set_value (request_token++);
-    request->mutable_position ()->set_x(position.x());
-    request->mutable_position ()->set_y(position.y());
+    request->mutable_position ()->set_x (position.x ());
+    request->mutable_position ()->set_y (position.y ());
     RTS::UnitType unit_type = RTS::UnitType::CRUSADER;
     switch (type) {
-        case Unit::Type::Crusader: {
-            unit_type = RTS::UnitType::CRUSADER;
-        } break;
-        case Unit::Type::Seal: {
-            unit_type = RTS::UnitType::SEAL;
-        } break;
-        case Unit::Type::Goon: {
-            unit_type = RTS::UnitType::GOON;
-        } break;
-        case Unit::Type::Beetle: {
-            unit_type = RTS::UnitType::BEETLE;
-        } break;
-        case Unit::Type::Contaminator: {
-            unit_type = RTS::UnitType::CONTAMINATOR;
-        } break;
+    case Unit::Type::Crusader: {
+        unit_type = RTS::UnitType::CRUSADER;
+    } break;
+    case Unit::Type::Seal: {
+        unit_type = RTS::UnitType::SEAL;
+    } break;
+    case Unit::Type::Goon: {
+        unit_type = RTS::UnitType::GOON;
+    } break;
+    case Unit::Type::Beetle: {
+        unit_type = RTS::UnitType::BEETLE;
+    } break;
+    case Unit::Type::Contaminator: {
+        unit_type = RTS::UnitType::CONTAMINATOR;
+    } break;
     }
-    request->set_unit_type(unit_type);
-    request->set_id(10);
-
+    request->set_unit_type (unit_type);
+    request->set_id (10);
 
     std::string message;
     request_oneof.SerializeToString (&message);
@@ -229,11 +232,10 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
 
-
 void Application::unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action)
-//void Application::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target)
+// void Application::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target)
 {
-    //qDebug() << "Create unit action callback";
+    // qDebug() << "Create unit action callback";
     if (!session_token.has_value ())
         return;
 
@@ -242,52 +244,52 @@ void Application::unitActionCallback (quint32 id, const std::variant<StopAction,
 
     request->mutable_session_token ()->set_value (session_token.value ());
     request->mutable_request_token ()->set_value (request_token++);
-    request->set_unit_id(id);
-    RTS::UnitAction* unit_action = request->mutable_action();
-    if (std::holds_alternative<MoveAction>(action)) {
-        MoveAction move_action = std::get<MoveAction>(action);
-        RTS::MoveAction* move = unit_action->mutable_move();
-        if (move_action.target.index() == 0) {
-            move->mutable_position()->mutable_position()->set_x(std::get<QPointF>(move_action.target).x());
-            move->mutable_position()->mutable_position()->set_y(std::get<QPointF>(move_action.target).y());
+    request->set_unit_id (id);
+    RTS::UnitAction* unit_action = request->mutable_action ();
+    if (std::holds_alternative<MoveAction> (action)) {
+        MoveAction move_action = std::get<MoveAction> (action);
+        RTS::MoveAction* move = unit_action->mutable_move ();
+        if (move_action.target.index () == 0) {
+            move->mutable_position ()->mutable_position ()->set_x (std::get<QPointF> (move_action.target).x ());
+            move->mutable_position ()->mutable_position ()->set_y (std::get<QPointF> (move_action.target).y ());
         } else {
-            move->mutable_unit()->set_id(std::get<quint32>(move_action.target));
+            move->mutable_unit ()->set_id (std::get<quint32> (move_action.target));
         }
-    } else if (std::holds_alternative<AttackAction>(action)) {
-        AttackAction attack_action = std::get<AttackAction>(action);
-        RTS::AttackAction* attack = unit_action->mutable_attack();
-        if (attack_action.target.index() == 0) {
-            attack->mutable_position()->mutable_position()->set_x(std::get<QPointF>(attack_action.target).x());
-            attack->mutable_position()->mutable_position()->set_y(std::get<QPointF>(attack_action.target).y());
+    } else if (std::holds_alternative<AttackAction> (action)) {
+        AttackAction attack_action = std::get<AttackAction> (action);
+        RTS::AttackAction* attack = unit_action->mutable_attack ();
+        if (attack_action.target.index () == 0) {
+            attack->mutable_position ()->mutable_position ()->set_x (std::get<QPointF> (attack_action.target).x ());
+            attack->mutable_position ()->mutable_position ()->set_y (std::get<QPointF> (attack_action.target).y ());
         } else {
-            attack->mutable_unit()->set_id(std::get<quint32>(attack_action.target));
+            attack->mutable_unit ()->set_id (std::get<quint32> (attack_action.target));
         }
-    } else if (std::holds_alternative<CastAction>(action)) {
+    } else if (std::holds_alternative<CastAction> (action)) {
         // qDebug() << "Requesting a cast action";
-        CastAction cast_action = std::get<CastAction>(action);
-        RTS::CastAction* cast = unit_action->mutable_cast();
-        cast->mutable_position()->mutable_position()->set_x(cast_action.target.x());
-        cast->mutable_position()->mutable_position()->set_y(cast_action.target.y());
+        CastAction cast_action = std::get<CastAction> (action);
+        RTS::CastAction* cast = unit_action->mutable_cast ();
+        cast->mutable_position ()->mutable_position ()->set_x (cast_action.target.x ());
+        cast->mutable_position ()->mutable_position ()->set_y (cast_action.target.y ());
         switch (cast_action.type) {
         case (CastAction::Type::Pestilence): {
-            cast->set_type(RTS::CastType::PESTILENCE);
+            cast->set_type (RTS::CastType::PESTILENCE);
         } break;
         case (CastAction::Type::SpawnBeetle): {
-            cast->set_type(RTS::CastType::SPAWN_BEETLE);
+            cast->set_type (RTS::CastType::SPAWN_BEETLE);
         } break;
         default: {
             return;
         }
         }
-    } else if (std::holds_alternative<StopAction>(action)) {
+    } else if (std::holds_alternative<StopAction> (action)) {
         StopAction stop_action = std::get<StopAction> (action);
         RTS::StopAction* stop = unit_action->mutable_stop ();
-        if (stop_action.current_target.has_value() ) {
-            stop->mutable_target ()->set_id (stop_action.current_target.value());
+        if (stop_action.current_target.has_value ()) {
+            stop->mutable_target ()->set_id (stop_action.current_target.value ());
         }
     }
 
-    //qDebug() << "creating unit action request";
+    // qDebug() << "creating unit action request";
 
     std::string message;
     request_oneof.SerializeToString (&message);
@@ -350,21 +352,21 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     case RTS::Response::MessageCase::kJoinTeam: {
         // lets manage some shit
         const RTS::JoinTeamResponse& response = response_oneof.join_team ();
-        if (!response.has_success()) {
+        if (!response.has_success ()) {
             return;
         }
-        emit queryReadiness();
+        emit queryReadiness ();
     } break;
     case RTS::Response::MessageCase::kReady: {
         emit startCountdown ();
     } break;
     case RTS::Response::MessageCase::kMatchStart: {
-        //qDebug() << "Ready respose caught";
+        // qDebug() << "Ready respose caught";
         emit startMatch ();
     } break;
     case RTS::Response::MessageCase::kMatchState: {
         const RTS::MatchState& response = response_oneof.match_state ();
-        if (response.fragment_count() == 1) {
+        if (response.fragment_count () == 1) {
             QVector<QPair<quint32, Unit>> units;
             QVector<QPair<quint32, Missile>> missiles;
             QString error_message;
@@ -392,7 +394,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
                     QVector<QPair<quint32, Unit>> units;
                     QVector<QPair<quint32, Missile>> missiles;
                     const QVector<QSharedPointer<RTS::MatchState>>& fragments = (*it)->fragments ();
-                    for (const QSharedPointer<RTS::MatchState>& fragment: fragments) {
+                    for (const QSharedPointer<RTS::MatchState>& fragment : fragments) {
                         QString error_message;
                         if (!parseMatchStateFragment (*fragment, units, missiles, error_message)) {
                             QMessageBox::critical (nullptr, "Malformed message from server", error_message);
@@ -429,16 +431,16 @@ void Application::showLobby (const QString& login)
 void Application::showRoom (bool single_mode)
 {
     RoomWidget* room_widget = new RoomWidget; // connect roomwidget signals ...
-    connect(room_widget, &RoomWidget::joinRedTeamRequested, this, &Application::joinRedTeamCallback);
-    connect(room_widget, &RoomWidget::joinBlueTeamRequested, this, &Application::joinBlueTeamCallback);
-    connect(room_widget, &RoomWidget::spectateRequested, this, &Application::joinSpectatorCallback);
-    connect(this, &Application::queryReadiness, room_widget, &RoomWidget::readinessHandler);
-    connect(room_widget, &RoomWidget::readinessRequested, this, &Application::readinessCallback);
-    connect(this, &Application::startMatch, room_widget, &RoomWidget::startMatchHandler);
-    connect(this, &Application::startCountdown, room_widget, &RoomWidget::startCountDownHandler);
-    connect(this, &Application::updateMatchState, room_widget, &RoomWidget::loadMatchState);
-    connect(room_widget, &RoomWidget::createUnitRequested, this, &Application::createUnitCallback);
-    connect(room_widget, &RoomWidget::unitActionRequested, this, &Application::unitActionCallback);
+    connect (room_widget, &RoomWidget::joinRedTeamRequested, this, &Application::joinRedTeamCallback);
+    connect (room_widget, &RoomWidget::joinBlueTeamRequested, this, &Application::joinBlueTeamCallback);
+    connect (room_widget, &RoomWidget::spectateRequested, this, &Application::joinSpectatorCallback);
+    connect (this, &Application::queryReadiness, room_widget, &RoomWidget::readinessHandler);
+    connect (room_widget, &RoomWidget::readinessRequested, this, &Application::readinessCallback);
+    connect (this, &Application::startMatch, room_widget, &RoomWidget::startMatchHandler);
+    connect (this, &Application::startCountdown, room_widget, &RoomWidget::startCountDownHandler);
+    connect (this, &Application::updateMatchState, room_widget, &RoomWidget::loadMatchState);
+    connect (room_widget, &RoomWidget::createUnitRequested, this, &Application::createUnitCallback);
+    connect (room_widget, &RoomWidget::unitActionRequested, this, &Application::unitActionCallback);
     room_widget->grabMouse ();
     room_widget->grabKeyboard ();
     room_widget->showFullScreen ();
@@ -454,61 +456,61 @@ void Application::startSingleMode (RoomWidget* room_widget)
     quint32 unit_id = 0;
     std::mt19937 random_generator;
     QVector<QPair<quint32, Unit>> units = {
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
-        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI*0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
         {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-10, -5}, 0}},
         {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-12, -3}, 0}},
         {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-11, -2}, 0}},
@@ -536,7 +538,7 @@ void Application::startSingleMode (RoomWidget* room_widget)
         {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Blue, {4, 5}, 0}},
     };
     for (int off = -4; off <= 4; ++off)
-        units.push_back ({unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Blue, {off*2.0/3.0, 7}, 0}});
+        units.push_back ({unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Blue, {off * 2.0 / 3.0, 7}, 0}});
     emit updateMatchState (units, {});
 }
 bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message)
@@ -578,67 +580,59 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
             return false;
         }
 
-        if (!r_unit.has_position()) {
+        if (!r_unit.has_position ()) {
             error_message = "Invalid 'MatchState' from server: missing position";
             return false;
         }
-        
+
         quint32 id = r_unit.has_client_id () ? r_unit.client_id ().id () : r_unit.id ();
         units.push_back ({id, {type, 0, team, QPointF (r_unit.position ().x (), r_unit.position ().y ()), r_unit.orientation ()}});
         units.last ().second.hp = r_unit.health ();
-        switch (r_unit.current_action().action_case()) {
-        case RTS::UnitAction::kStop:
-        {
+        switch (r_unit.current_action ().action_case ()) {
+        case RTS::UnitAction::kStop: {
             StopAction stop;
             if (r_unit.current_action ().stop ().has_target ()) {
                 stop.current_target = r_unit.current_action ().stop ().target ().id ();
             }
             units.last ().second.action = stop;
         } break;
-        case RTS::UnitAction::kMove:
-        {
-            MoveAction move (QPointF(0, 0));
+        case RTS::UnitAction::kMove: {
+            MoveAction move (QPointF (0, 0));
             if (r_unit.current_action ().move ().target_case () == RTS::MoveAction::kPosition) {
-                move.target = QPointF(r_unit.current_action ().move ().position ().position ().x (), r_unit.current_action ().move ().position ().position ().y ());
+                move.target = QPointF (r_unit.current_action ().move ().position ().position ().x (), r_unit.current_action ().move ().position ().position ().y ());
             } else {
-                move.target = (quint32)r_unit.current_action ().move ().unit ().id();
+                move.target = (quint32)r_unit.current_action ().move ().unit ().id ();
             }
             units.last ().second.action = move;
         } break;
-        case RTS::UnitAction::kAttack:
-        {
+        case RTS::UnitAction::kAttack: {
             AttackAction attack (QPointF (0, 0));
             if (r_unit.current_action ().attack ().target_case () == RTS::AttackAction::kPosition) {
-                attack.target = QPointF(r_unit.current_action ().attack ().position ().position ().x (), r_unit.current_action ().attack ().position ().position ().y ());
+                attack.target = QPointF (r_unit.current_action ().attack ().position ().position ().x (), r_unit.current_action ().attack ().position ().position ().y ());
             } else {
-                attack.target = (quint32)r_unit.current_action ().attack ().unit ().id();
+                attack.target = (quint32)r_unit.current_action ().attack ().unit ().id ();
             }
             units.last ().second.action = attack;
         } break;
-        case RTS::UnitAction::kCast:
-        {
+        case RTS::UnitAction::kCast: {
             CastAction cast (CastAction::Type::Unknown, QPointF (0, 0));
-            cast.target = QPointF(r_unit.current_action ().cast ().position ().position ().x (), r_unit.current_action ().cast ().position ().position ().y ());
-            switch (r_unit.current_action() .cast ().type ()) {
-            case RTS::CastType::PESTILENCE:
-            {
+            cast.target = QPointF (r_unit.current_action ().cast ().position ().position ().x (), r_unit.current_action ().cast ().position ().position ().y ());
+            switch (r_unit.current_action ().cast ().type ()) {
+            case RTS::CastType::PESTILENCE: {
                 cast.type = CastAction::Type::Pestilence;
             } break;
-            case RTS::CastType::SPAWN_BEETLE:
-            {
+            case RTS::CastType::SPAWN_BEETLE: {
                 cast.type = CastAction::Type::SpawnBeetle;
             } break;
             }
             units.last ().second.action = cast;
         } break;
         }
-        units.last().second.attack_remaining_ticks = r_unit.attack_remaining_ticks();
-        units.last().second.cast_cooldown_left_ticks = r_unit.cooldown();
-
-        
+        units.last ().second.attack_remaining_ticks = r_unit.attack_remaining_ticks ();
+        units.last ().second.cast_cooldown_left_ticks = r_unit.cooldown ();
     }
     for (int i = 0; i < response.missiles_size (); i++) {
-        const RTS::Missile& r_missile = response.missiles(i);
+        const RTS::Missile& r_missile = response.missiles (i);
 
         Unit::Team team;
         switch (r_missile.team ()) {
@@ -671,13 +665,13 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
             return false;
         }
 
-        missiles.push_back ({r_missile.id(), {type, team, QPointF (r_missile.position ().x (), r_missile.position ().y ()), 0, QPointF(r_missile.target_position ().x (), r_missile.target_position ().y ())}});
+        missiles.push_back ({r_missile.id (), {type, team, QPointF (r_missile.position ().x (), r_missile.position ().y ()), 0, QPointF (r_missile.target_position ().x (), r_missile.target_position ().y ())}});
 
         if (r_missile.has_target_unit ()) {
-            //qDebug() << "Application Missile has target unit";
-            missiles.last().second.target_unit = r_missile.target_unit().id();
+            // qDebug() << "Application Missile has target unit";
+            missiles.last ().second.target_unit = r_missile.target_unit ().id ();
         } else {
-            missiles.last().second.target_unit.reset ();
+            missiles.last ().second.target_unit.reset ();
         }
     }
     return true;

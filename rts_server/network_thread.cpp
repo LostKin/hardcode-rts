@@ -6,9 +6,10 @@
 #include <QUdpSocket>
 #include <QDebug>
 
-
-NetworkThread::NetworkThread(const QString& host, quint16 port, QObject* parent)
-    : QThread (parent), host (host), port (port)
+NetworkThread::NetworkThread (const QString& host, quint16 port, QObject* parent)
+    : QThread (parent)
+    , host (host)
+    , port (port)
 {
 }
 
@@ -22,7 +23,7 @@ void NetworkThread::sendDatagram (const QNetworkDatagram& datagram)
 }
 void NetworkThread::run ()
 {
-    //qDebug() << "NetwrokThread running";
+    // qDebug() << "NetwrokThread running";
     NetworkManager network_manager (host, port);
     if (!network_manager.start (error_message)) {
         return_code = 1;
@@ -34,7 +35,7 @@ void NetworkThread::run ()
 }
 void NetworkThread::recieveDatagrams ()
 {
-    NetworkManager* network_manager = (NetworkManager*) sender ();
+    NetworkManager* network_manager = (NetworkManager*)sender ();
     while (QSharedPointer<QNetworkDatagram> datagram = network_manager->takeDatagram ()) {
         emit datagramReceived (datagram);
     }

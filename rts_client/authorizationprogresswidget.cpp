@@ -5,7 +5,6 @@
 #include <QLabel>
 #include <QPushButton>
 
-
 AuthorizationProgressWidget::AuthorizationProgressWidget (const QString& message, QWidget* parent)
     : QWidget (parent)
 {

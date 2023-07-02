@@ -6,7 +6,6 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-
 RoomSettingsWidget::RoomSettingsWidget (QWidget* parent)
     : QDialog (parent, Qt::Popup)
 {

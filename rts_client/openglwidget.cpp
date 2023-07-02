@@ -4,13 +4,12 @@
 #include <QPainter>
 #include <math.h>
 
-
 OpenGLWidget::OpenGLWidget (QWidget* parent)
     : QOpenGLWidget (parent)
 {
     setMinimumSize (512, 512);
     setUpdateBehavior (QOpenGLWidget::NoPartialUpdate);
-    connect (this, SIGNAL (frameSwapped()), this, SLOT (update ()));
+    connect (this, SIGNAL (frameSwapped ()), this, SLOT (update ()));
 }
 OpenGLWidget::~OpenGLWidget ()
 {
@@ -108,8 +107,8 @@ void OpenGLWidget::initTexturedProgram ()
 void OpenGLWidget::resizeGL (int w, int h)
 {
     const qreal retinaScale = devicePixelRatio ();
-    pixels_w = w*retinaScale;
-    pixels_h = h*retinaScale;
+    pixels_w = w * retinaScale;
+    pixels_h = h * retinaScale;
     ortho_matrix.setToIdentity ();
     ortho_matrix.ortho (0, pixels_w, pixels_h, 0, -1, 1);
     updateSize (pixels_w, pixels_h);
@@ -129,11 +128,11 @@ QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2D (const QString& path,
 {
     if (autogenerate_margin) {
         QImage source_image (path);
-        QImage image (source_image.width ()*2, source_image.height ()*2, QImage::Format_ARGB32);
+        QImage image (source_image.width () * 2, source_image.height () * 2, QImage::Format_ARGB32);
         image.fill (QColor (0, 0, 0, 0));
         {
             QPainter p (&image);
-            p.drawImage (source_image.width ()/2, source_image.height ()/2, source_image);
+            p.drawImage (source_image.width () / 2, source_image.height () / 2, source_image);
         }
         QOpenGLTexture* texture = new QOpenGLTexture (image);
         texture->setMinificationFilter (QOpenGLTexture::LinearMipMapLinear);
@@ -231,7 +230,7 @@ void OpenGLWidget::drawColoredTextured (GLenum mode, GLsizei vertex_count, const
     glDisableVertexAttribArray (1);
     glDisableVertexAttribArray (0);
 
-    texture->release();
+    texture->release ();
     colored_textured_program.program->release ();
 
     glDisable (GL_BLEND);
@@ -263,7 +262,7 @@ void OpenGLWidget::drawColoredTextured (GLenum mode, const GLfloat* vertex_posit
     glDisableVertexAttribArray (colored_textured_program.color_attr_idx);
     glDisableVertexAttribArray (colored_textured_program.position_attr_idx);
 
-    texture->release();
+    texture->release ();
     colored_textured_program.program->release ();
 
     glDisable (GL_BLEND);
@@ -292,7 +291,7 @@ void OpenGLWidget::drawTextured (GLenum mode, GLsizei vertex_count, const GLfloa
     glDisableVertexAttribArray (textured_program.texture_coords_attr_idx);
     glDisableVertexAttribArray (textured_program.position_attr_idx);
 
-    texture->release();
+    texture->release ();
     textured_program.program->release ();
 
     glDisable (GL_BLEND);
@@ -321,7 +320,7 @@ void OpenGLWidget::drawTextured (GLenum mode, const GLfloat* vertex_positions, c
     glDisableVertexAttribArray (textured_program.texture_coords_attr_idx);
     glDisableVertexAttribArray (textured_program.position_attr_idx);
 
-    texture->release();
+    texture->release ();
     textured_program.program->release ();
 
     glDisable (GL_BLEND);
@@ -329,10 +328,14 @@ void OpenGLWidget::drawTextured (GLenum mode, const GLfloat* vertex_positions, c
 void OpenGLWidget::drawRectangle (int x, int y, int w, int h, const QColor& color)
 {
     const GLfloat vertices[] = {
-        GLfloat (x + 0.5), GLfloat (y + 0.5),
-        GLfloat (x + 0.5 + w), GLfloat (y + 0.5),
-        GLfloat (x + 0.5 + w), GLfloat (y + 0.5 + h),
-        GLfloat (x + 0.5), GLfloat (y + 0.5 + h),
+        GLfloat (x + 0.5),
+        GLfloat (y + 0.5),
+        GLfloat (x + 0.5 + w),
+        GLfloat (y + 0.5),
+        GLfloat (x + 0.5 + w),
+        GLfloat (y + 0.5 + h),
+        GLfloat (x + 0.5),
+        GLfloat (y + 0.5 + h),
     };
 
     GLfloat r = color.redF ();
@@ -341,10 +344,22 @@ void OpenGLWidget::drawRectangle (int x, int y, int w, int h, const QColor& colo
     GLfloat a = color.alphaF ();
 
     const GLfloat colors[] = {
-        r, g, b, a,
-        r, g, b, a,
-        r, g, b, a,
-        r, g, b, a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
     };
 
     drawColored (GL_LINE_LOOP, 4, vertices, colors);
@@ -354,22 +369,34 @@ void OpenGLWidget::fillRectangle (int x, int y, QOpenGLTexture* texture)
     int w = texture->width ();
     int h = texture->height ();
     const GLfloat vertices[] = {
-        GLfloat (x), GLfloat (y),
-        GLfloat (x + w), GLfloat (y),
-        GLfloat (x + w), GLfloat (y + h),
-        GLfloat (x), GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y + h),
     };
 
     const GLfloat texture_coords[] = {
-        0, 0,
-        GLfloat (w), 0,
-        GLfloat (w), GLfloat (h),
-        0, GLfloat (h),
+        0,
+        0,
+        GLfloat (w),
+        0,
+        GLfloat (w),
+        GLfloat (h),
+        0,
+        GLfloat (h),
     };
 
     const GLuint indices[] = {
-        0, 1, 2,
-        0, 2, 3,
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
     };
 
     drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
@@ -377,22 +404,34 @@ void OpenGLWidget::fillRectangle (int x, int y, QOpenGLTexture* texture)
 void OpenGLWidget::fillRectangle (int x, int y, int w, int h, QOpenGLTexture* texture)
 {
     const GLfloat vertices[] = {
-        GLfloat (x), GLfloat (y),
-        GLfloat (x + w), GLfloat (y),
-        GLfloat (x + w), GLfloat (y + h),
-        GLfloat (x), GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y + h),
     };
 
     const GLfloat texture_coords[] = {
-        0, 0,
-        GLfloat (w), 0,
-        GLfloat (w), GLfloat (h),
-        0, GLfloat (h),
+        0,
+        0,
+        GLfloat (w),
+        0,
+        GLfloat (w),
+        GLfloat (h),
+        0,
+        GLfloat (h),
     };
 
     const GLuint indices[] = {
-        0, 1, 2,
-        0, 2, 3,
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
     };
 
     drawTextured (GL_TRIANGLES, vertices, texture_coords, 6, indices, texture);
@@ -400,10 +439,14 @@ void OpenGLWidget::fillRectangle (int x, int y, int w, int h, QOpenGLTexture* te
 void OpenGLWidget::fillRectangle (int x, int y, int w, int h, const QColor& color)
 {
     const GLfloat vertices[] = {
-        GLfloat (x), GLfloat (y),
-        GLfloat (x + w), GLfloat (y),
-        GLfloat (x), GLfloat (y + h),
-        GLfloat (x + w), GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y),
+        GLfloat (x),
+        GLfloat (y + h),
+        GLfloat (x + w),
+        GLfloat (y + h),
     };
 
     GLfloat r = color.redF ();
@@ -412,10 +455,22 @@ void OpenGLWidget::fillRectangle (int x, int y, int w, int h, const QColor& colo
     GLfloat a = color.alphaF ();
 
     const GLfloat colors[] = {
-        r, g, b, a,
-        r, g, b, a,
-        r, g, b, a,
-        r, g, b, a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
     };
 
     drawColored (GL_TRIANGLE_STRIP, 4, vertices, colors);
@@ -423,10 +478,14 @@ void OpenGLWidget::fillRectangle (int x, int y, int w, int h, const QColor& colo
 void OpenGLWidget::fillRectangle (qreal x, qreal y, qreal w, qreal h, const QColor& color)
 {
     const GLfloat vertices[] = {
-        GLfloat (x), GLfloat (y),
-        GLfloat (x + w), GLfloat (y),
-        GLfloat (x), GLfloat (y + h),
-        GLfloat (x + w), GLfloat (y + h),
+        GLfloat (x),
+        GLfloat (y),
+        GLfloat (x + w),
+        GLfloat (y),
+        GLfloat (x),
+        GLfloat (y + h),
+        GLfloat (x + w),
+        GLfloat (y + h),
     };
 
     GLfloat r = color.redF ();
@@ -435,10 +494,22 @@ void OpenGLWidget::fillRectangle (qreal x, qreal y, qreal w, qreal h, const QCol
     GLfloat a = color.alphaF ();
 
     const GLfloat colors[] = {
-        r, g, b, a,
-        r, g, b, a,
-        r, g, b, a,
-        r, g, b, a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
     };
 
     drawColored (GL_TRIANGLE_STRIP, 4, vertices, colors);
@@ -465,11 +536,11 @@ void OpenGLWidget::drawCircle (qreal x, qreal y, qreal radius, const QColor& col
 
     size_t count = 128;
     for (size_t i = 0; i < count; ++i) {
-        float angle = i*(M_PI*2.0)/count;
+        float angle = i * (M_PI * 2.0) / count;
         float dx, dy;
         sincosf (angle, &dy, &dx);
-        vertices.append (x_f + radius*dx);
-        vertices.append (y_f + radius*dy);
+        vertices.append (x_f + radius * dx);
+        vertices.append (y_f + radius * dy);
         colors.append (r);
         colors.append (g);
         colors.append (b);

@@ -14,7 +14,7 @@ class RoomThread: public QThread
 {
     Q_OBJECT
 public:
-    RoomThread (QObject *parent = nullptr);
+    RoomThread (QObject* parent = nullptr);
     const QString& errorMessage ();
 
 protected:
@@ -29,7 +29,7 @@ signals:
     void receiveRequest (RTS::Request request_oneof, QSharedPointer<Session> session);
     void sendRequest (RTS::Request request_oneof, QSharedPointer<Session> session);
     void sendResponse (RTS::Response response, QSharedPointer<Session> session);
-    
+
 public slots:
     void receiveRequestHandler (RTS::Request request_oneof, QSharedPointer<Session> session);
     void sendResponseHandler (RTS::Response response, QSharedPointer<Session> session);

@@ -3,9 +3,7 @@
 #include <QString>
 #include <stdint.h>
 
-
-struct RoomEntry
-{
+struct RoomEntry {
     RoomEntry ();
     RoomEntry (uint32_t id, const QString& name);
 
