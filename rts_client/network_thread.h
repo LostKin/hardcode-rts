@@ -9,7 +9,7 @@ class NetworkThread: public QThread
     Q_OBJECT
 
 public:
-    NetworkThread (const QString& host, quint16 port, QObject* parent = nullptr);
+    NetworkThread (QObject* parent = nullptr);
     const QString& errorMessage ();
     void sendDatagram (const QNetworkDatagram& datagram);
 
@@ -19,10 +19,6 @@ signals:
 
 protected:
     void run () override;
-
-private:
-    const QString host;
-    const quint16 port;
 
     int return_code = 0;
     QString error_message;

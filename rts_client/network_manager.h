@@ -10,7 +10,7 @@ class NetworkManager: public QObject
     Q_OBJECT
 
 public:
-    NetworkManager (const QString& host, quint16 port, QObject* parent = nullptr);
+    NetworkManager (QObject* parent = nullptr);
     bool start (QString& error_message);
     QSharedPointer<QNetworkDatagram> takeDatagram ();
 
@@ -19,9 +19,6 @@ signals:
     void datagramsReady ();
 
 private:
-    const QString host;
-    const quint16 port;
-
     QUdpSocket socket;
     int return_code = 0;
     QQueue<QSharedPointer<QNetworkDatagram>> input_queue;

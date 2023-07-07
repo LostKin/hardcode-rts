@@ -4,6 +4,7 @@
 #include "roomentry.h"
 #include "session_level.pb.h"
 #include "roomwidget.h"
+#include "authorizationcredentials.h"
 
 #include <QApplication>
 #include <QSharedPointer>
@@ -48,11 +49,12 @@ private:
     void setCurrentWindow (QWidget* new_window);
     void startSingleMode (RoomWidget* room_widget);
     bool parseMatchStateFragment (const RTS::MatchState& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message);
+    QVector<AuthorizationCredentials> loadCredentials ();
 
 private slots:
     void quitCallback ();
     void authorizationPromptCallback ();
-    void loginCallback (const QString& host, quint16 port, const QString& login, const QString& password);
+    void loginCallback (const AuthorizationCredentials& credentials);
     void createRoomCallback (const QString& name);
     void joinRoomCallback (quint32 name);
     void sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datagram);
@@ -62,6 +64,7 @@ private slots:
     void readinessCallback ();
     void matchStartCallback ();
     void createUnitCallback (Unit::Team team, Unit::Type type, QPointF positon);
+    void savedCredentials (const QVector<AuthorizationCredentials>& credentials);
     // void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
     void unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);

@@ -5,10 +5,8 @@
 #include <QThread>
 #include <QUdpSocket>
 
-NetworkThread::NetworkThread (const QString& host, quint16 port, QObject* parent)
+NetworkThread::NetworkThread (QObject* parent)
     : QThread (parent)
-    , host (host)
-    , port (port)
 {
 }
 
@@ -22,7 +20,7 @@ void NetworkThread::sendDatagram (const QNetworkDatagram& datagram)
 }
 void NetworkThread::run ()
 {
-    NetworkManager network_manager (host, port);
+    NetworkManager network_manager;
     if (!network_manager.start (error_message)) {
         return_code = 1;
         return;

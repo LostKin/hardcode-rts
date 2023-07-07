@@ -8,6 +8,7 @@
 #include <QDateTime>
 #include <QFontDatabase>
 #include <QMessageBox>
+#include <QSettings>
 
 MatchStateCollector::MatchStateCollector (const RTS::MatchState& initial_fragment)
 {
@@ -65,7 +66,7 @@ Application::Application (int& argc, char** argv)
     QFontDatabase::addApplicationFont (":/fonts/NotCourierSans.otf");
 
     // TODO: Implement proper dialog switches and uncomment: setQuitOnLastWindowClosed (false);
-    network_thread.reset (new NetworkThread ("188.32.216.227", 1331, this));
+    network_thread.reset (new NetworkThread (this));
     connect (&*network_thread, &NetworkThread::datagramReceived, this, &Application::sessionDatagramHandler);
 }
 Application::~Application ()
@@ -135,24 +136,28 @@ void Application::quitCallback ()
 }
 void Application::authorizationPromptCallback ()
 {
-    AuthorizationWidget* authorization_widget = new AuthorizationWidget;
+    // TODO: Implement DNS resolving
+    AuthorizationWidget* authorization_widget = new AuthorizationWidget (loadCredentials ());
     connect (authorization_widget, SIGNAL (windowsCloseRequested ()), this, SLOT (quitCallback ()));
-    connect (authorization_widget, SIGNAL (loginRequested (const QString&, quint16, const QString&, const QString&)),
-             this, SLOT (loginCallback (const QString&, quint16, const QString&, const QString&)));
+    connect (authorization_widget, SIGNAL (loginRequested (const AuthorizationCredentials&)),
+             this, SLOT (loginCallback (const AuthorizationCredentials&)));
+    connect (authorization_widget, &AuthorizationWidget::savedCredentialsUpdated, this, &Application::savedCredentials);
+
     setCurrentWindow (authorization_widget);
 }
-void Application::loginCallback (const QString& host, quint16 port, const QString& login, const QString& password)
+void Application::loginCallback (const AuthorizationCredentials& credentials) // QString& host, quint16 port, const QString& login, const QString& password)
 {
-    this->host_address = QHostAddress (host);
-    this->port = port;
-    this->login = login;
+    this->host_address = QHostAddress (credentials.host);
+    this->port = credentials.port;
+    this->login = credentials.login;
 
-    AuthorizationProgressWidget* authorization_progress_widget = new AuthorizationProgressWidget ("Connecting to '" + host + ":" + QString::number (port) + "' as '" + login + "'");
+    AuthorizationProgressWidget* authorization_progress_widget = new AuthorizationProgressWidget (
+        "Connecting to '" + credentials.host + ":" + QString::number (credentials.port) + "' as '" + credentials.login + "'");
     connect (authorization_progress_widget, SIGNAL (cancelRequested ()), this, SLOT (authorizationPromptCallback ()));
     RTS::Request request_oneof;
     RTS::AuthorizationRequest* request = request_oneof.mutable_authorization ();
-    request->set_login (login.toStdString ());
-    request->set_password (password.toStdString ());
+    request->set_login (credentials.login.toStdString ());
+    request->set_password (credentials.password.toStdString ());
 
     std::string message;
     request_oneof.SerializeToString (&message);
@@ -193,7 +198,6 @@ void Application::joinRoomCallback (quint32 room_id)
 
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
-
 void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF position)
 {
     if (!session_token.has_value ())
@@ -231,7 +235,21 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
 
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
-
+void Application::savedCredentials (const QVector<AuthorizationCredentials>& credentials)
+{
+    QSettings settings ("HC Software", "RTS Client");
+    {
+        settings.beginWriteArray ("credentials");
+        for (qsizetype i = 0; i < credentials.size (); ++i) {
+            settings.setArrayIndex (i);
+            settings.setValue ("host", credentials[i].host);
+            settings.setValue ("port", credentials[i].port);
+            settings.setValue ("login", credentials[i].login);
+            settings.setValue ("password", credentials[i].password);
+        }
+        settings.endArray ();
+    }
+}
 void Application::unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action)
 // void Application::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target)
 {
@@ -675,6 +693,25 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
         }
     }
     return true;
+}
+QVector<AuthorizationCredentials> Application::loadCredentials ()
+{
+    QVector<AuthorizationCredentials> credentials;
+    QSettings settings ("HC Software", "RTS Client");
+    {
+        int size = settings.beginReadArray ("credentials");
+        for (qsizetype i = 0; i < size; ++i) {
+            settings.setArrayIndex (i);
+            credentials.append ({
+                settings.value ("host").toString (),
+                quint16 (settings.value ("port").toInt ()),
+                settings.value ("login").toString (),
+                settings.value ("password").toString (),
+            });
+        }
+        settings.endArray ();
+    }
+    return credentials;
 }
 void Application::setCurrentWindow (QWidget* new_window)
 {
