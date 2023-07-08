@@ -1,8 +1,10 @@
 #include "application.h"
 #include "network_thread.h"
 #include "room_thread.h"
+
 #include <random>
 #include <QFile>
+#include <QSettings>
 
 /*SessionInfo::SessionInfo(int32_t id, std::string _login) {
     current_room = id;
@@ -66,11 +68,10 @@ bool Application::init ()
             return false;
         }
         user_passwords[fields.at (0)] = fields.at (1);
-        qDebug () << fields.at (0) << "->" << fields.at (1);
     }
-    // users["login"] = "a";
-    // qDebug() << test << "\n";
-    // qDebug() << users[test].data();
+
+    loadRoomList ();
+
     network_thread->start ();
 
     return true;
@@ -258,6 +259,8 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         response->mutable_request_token ()->set_value (request_token);
         response->set_room_id (new_room_id);
 
+        storeRoomList ();
+
         std::string message;
         response_oneof.SerializeToString (&message);
 
@@ -379,4 +382,28 @@ bool Application::validateRequestToken (const QNetworkDatagram& client_datagram,
     }
     *request_token_ptr = request.request_token ().value ();
     return true;
+}
+void Application::loadRoomList ()
+{
+    QSettings room_settings ("room.ini", QSettings::IniFormat);
+    int size = room_settings.beginReadArray ("rooms");
+    for (int new_room_id = 0; new_room_id < size; ++new_room_id) {
+        room_settings.setArrayIndex (new_room_id);
+        room_list[new_room_id].reset (new RoomThread (this));
+        connect (&*room_list[new_room_id], &RoomThread::receiveRequest, &*room_list[new_room_id], &RoomThread::receiveRequestHandler);
+        connect (&*room_list[new_room_id], &RoomThread::sendResponse, this, &Application::receiveResponseHandler);
+        rooms[new_room_id] = room_settings.value ("name").toString ();
+    }
+    room_settings.endArray ();
+}
+void Application::storeRoomList ()
+{
+    QSettings room_settings ("room.ini", QSettings::IniFormat);
+    room_settings.beginWriteArray ("rooms");
+    int i = 0;
+    for (const QString& name : rooms) {
+        room_settings.setArrayIndex (i++);
+        room_settings.setValue ("name", name);
+    }
+    room_settings.endArray ();
 }

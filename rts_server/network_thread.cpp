@@ -35,7 +35,7 @@ void NetworkThread::run ()
 }
 void NetworkThread::recieveDatagrams ()
 {
-    NetworkManager* network_manager = (NetworkManager*)sender ();
+    NetworkManager* network_manager = (NetworkManager*) sender ();
     while (QSharedPointer<QNetworkDatagram> datagram = network_manager->takeDatagram ()) {
         emit datagramReceived (datagram);
     }

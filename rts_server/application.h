@@ -69,4 +69,6 @@ private:
     QSharedPointer<Session> validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr);
     template <class Request>
     bool validateRequestToken (const QNetworkDatagram& client_datagram, const Request& request, quint64* request_token_ptr);
+    void loadRoomList ();
+    void storeRoomList ();
 };

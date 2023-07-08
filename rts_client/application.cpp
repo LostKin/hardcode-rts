@@ -619,7 +619,7 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
             if (r_unit.current_action ().move ().target_case () == RTS::MoveAction::kPosition) {
                 move.target = QPointF (r_unit.current_action ().move ().position ().position ().x (), r_unit.current_action ().move ().position ().position ().y ());
             } else {
-                move.target = (quint32)r_unit.current_action ().move ().unit ().id ();
+                move.target = (quint32) r_unit.current_action ().move ().unit ().id ();
             }
             units.last ().second.action = move;
         } break;
@@ -628,7 +628,7 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
             if (r_unit.current_action ().attack ().target_case () == RTS::AttackAction::kPosition) {
                 attack.target = QPointF (r_unit.current_action ().attack ().position ().position ().x (), r_unit.current_action ().attack ().position ().position ().y ());
             } else {
-                attack.target = (quint32)r_unit.current_action ().attack ().unit ().id ();
+                attack.target = (quint32) r_unit.current_action ().attack ().unit ().id ();
             }
             units.last ().second.action = attack;
         } break;

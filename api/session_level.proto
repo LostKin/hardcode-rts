@@ -147,7 +147,7 @@ message UnitAction {
 }
 
 message ClientId {
-    fixed32 id = 1; // Задаётся клиентом (Старший бит == 1)                                                                                                                                                                
+    fixed32 id = 1; // Задаётся клиентом (Старший бит == 1)
 }
 
 message UnitCreateRequest {
