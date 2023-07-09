@@ -16,14 +16,14 @@ class QNetworkDatagram;
 class MatchStateCollector
 {
 public:
-    MatchStateCollector (const RTS::MatchState& initial_fragment);
-    bool addFragment (const RTS::MatchState& fragment);
+    MatchStateCollector (const RTS::MatchStateFragmentResponse& initial_fragment);
+    bool addFragment (const RTS::MatchStateFragmentResponse& fragment);
     bool valid () const;
     bool filled () const;
-    const QVector<QSharedPointer<RTS::MatchState>>& fragments () const;
+    const QVector<QSharedPointer<RTS::MatchStateFragmentResponse>>& fragments () const;
 
 private:
-    QVector<QSharedPointer<RTS::MatchState>> fragments_;
+    QVector<QSharedPointer<RTS::MatchStateFragmentResponse>> fragments_;
     quint32 filled_fragment_count;
 };
 
@@ -39,7 +39,7 @@ public:
 signals:
     void roomListUpdated (const QVector<RoomEntry>& room_list);
     void queryReadiness ();
-    void startCountdown ();
+    void startCountdown (Unit::Team team);
     void startMatch ();
     void updateMatchState (QVector<QPair<quint32, Unit>> units, QVector<QPair<quint32, Missile>> missiles);
 
@@ -48,7 +48,7 @@ private:
     void showRoom (bool single_mode = false);
     void setCurrentWindow (QWidget* new_window);
     void startSingleMode (RoomWidget* room_widget);
-    bool parseMatchStateFragment (const RTS::MatchState& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message);
+    bool parseMatchStateFragment (const RTS::MatchStateFragmentResponse& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message);
     QVector<AuthorizationCredentials> loadCredentials ();
 
 private slots:
@@ -58,8 +58,7 @@ private slots:
     void createRoomCallback (const QString& name);
     void joinRoomCallback (quint32 name);
     void sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datagram);
-    void joinRedTeamCallback ();
-    void joinBlueTeamCallback ();
+    void selectRolePlayerCallback ();
     void joinSpectatorCallback ();
     void readinessCallback ();
     void matchStartCallback ();
@@ -70,7 +69,7 @@ private slots:
     void unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
 
 private:
-    void joinTeam (RTS::Team id);
+    void selectRolePlayer ();
     bool single_mode = false;
     QWidget* current_window = nullptr;
     QSharedPointer<NetworkThread> network_thread;

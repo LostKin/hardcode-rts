@@ -10,23 +10,23 @@
 #include <QMessageBox>
 #include <QSettings>
 
-MatchStateCollector::MatchStateCollector (const RTS::MatchState& initial_fragment)
+MatchStateCollector::MatchStateCollector (const RTS::MatchStateFragmentResponse& initial_fragment)
 {
     if (initial_fragment.fragment_count () > 0 && initial_fragment.fragment_count () <= 1024 && initial_fragment.fragment_no () < initial_fragment.fragment_count ()) {
         fragments_.resize (initial_fragment.fragment_count ());
-        fragments_[initial_fragment.fragment_no ()] = QSharedPointer<RTS::MatchState> (new RTS::MatchState (initial_fragment));
+        fragments_[initial_fragment.fragment_no ()] = QSharedPointer<RTS::MatchStateFragmentResponse> (new RTS::MatchStateFragmentResponse (initial_fragment));
         filled_fragment_count = 1;
     } else {
         filled_fragment_count = 0;
     }
 }
-bool MatchStateCollector::addFragment (const RTS::MatchState& fragment)
+bool MatchStateCollector::addFragment (const RTS::MatchStateFragmentResponse& fragment)
 {
     if (fragment.fragment_no () >= quint32 (fragments_.size ())) {
         return false;
     }
     if (!fragments_[fragment.fragment_no ()]) {
-        fragments_[fragment.fragment_no ()] = QSharedPointer<RTS::MatchState> (new RTS::MatchState (fragment));
+        fragments_[fragment.fragment_no ()] = QSharedPointer<RTS::MatchStateFragmentResponse> (new RTS::MatchStateFragmentResponse (fragment));
         ++filled_fragment_count;
     }
     return true;
@@ -39,7 +39,7 @@ bool MatchStateCollector::filled () const
 {
     return filled_fragment_count == quint32 (fragments_.size ());
 }
-const QVector<QSharedPointer<RTS::MatchState>>& MatchStateCollector::fragments () const
+const QVector<QSharedPointer<RTS::MatchStateFragmentResponse>>& MatchStateCollector::fragments () const
 {
     return fragments_;
 }
@@ -86,19 +86,17 @@ void Application::start ()
     else
         authorizationPromptCallback ();
 }
-
-void Application::joinTeam (RTS::Team team)
+void Application::selectRolePlayer ()
 {
     RTS::Request request_oneof;
-    RTS::JoinTeamRequest* request = request_oneof.mutable_join_team ();
+    RTS::SelectRoleRequest* request = request_oneof.mutable_select_role ();
     request->mutable_session_token ()->set_value (session_token.value ());
     request->mutable_request_token ()->set_value (request_token++);
-    request->set_team (team);
+    request->set_role (RTS::Role::ROLE_PLAYER);
     std::string message;
     request_oneof.SerializeToString (&message);
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
-
 void Application::readinessCallback ()
 {
     RTS::Request request_oneof;
@@ -109,27 +107,18 @@ void Application::readinessCallback ()
     request_oneof.SerializeToString (&message);
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
 }
-
 void Application::matchStartCallback ()
 {
     //
 }
-
-void Application::joinRedTeamCallback ()
+void Application::selectRolePlayerCallback ()
 {
-    // qDebug() << "callback!";
-    joinTeam (RTS::RED);
-}
-
-void Application::joinBlueTeamCallback ()
-{
-    joinTeam (RTS::BLUE);
+    selectRolePlayer ();
 }
 void Application::joinSpectatorCallback ()
 {
-    joinTeam (RTS::SPECTATOR);
+    QMessageBox::critical (nullptr, "Join spectator callback not implemented", "Join spectator callback not implemented");
 }
-
 void Application::quitCallback ()
 {
     exit (0);
@@ -209,22 +198,22 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
     request->mutable_request_token ()->set_value (request_token++);
     request->mutable_position ()->set_x (position.x ());
     request->mutable_position ()->set_y (position.y ());
-    RTS::UnitType unit_type = RTS::UnitType::CRUSADER;
+    RTS::UnitType unit_type = RTS::UnitType::UNIT_TYPE_CRUSADER;
     switch (type) {
     case Unit::Type::Crusader: {
-        unit_type = RTS::UnitType::CRUSADER;
+        unit_type = RTS::UnitType::UNIT_TYPE_CRUSADER;
     } break;
     case Unit::Type::Seal: {
-        unit_type = RTS::UnitType::SEAL;
+        unit_type = RTS::UnitType::UNIT_TYPE_SEAL;
     } break;
     case Unit::Type::Goon: {
-        unit_type = RTS::UnitType::GOON;
+        unit_type = RTS::UnitType::UNIT_TYPE_GOON;
     } break;
     case Unit::Type::Beetle: {
-        unit_type = RTS::UnitType::BEETLE;
+        unit_type = RTS::UnitType::UNIT_TYPE_BEETLE;
     } break;
     case Unit::Type::Contaminator: {
-        unit_type = RTS::UnitType::CONTAMINATOR;
+        unit_type = RTS::UnitType::UNIT_TYPE_CONTAMINATOR;
     } break;
     }
     request->set_unit_type (unit_type);
@@ -367,23 +356,37 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         }
         emit roomListUpdated (room_list);
     } break;
-    case RTS::Response::MessageCase::kJoinTeam: {
+    case RTS::Response::MessageCase::kSelectRole: {
         // lets manage some shit
-        const RTS::JoinTeamResponse& response = response_oneof.join_team ();
-        if (!response.has_success ()) {
-            return;
+        const RTS::SelectRoleResponse& response = response_oneof.select_role ();
+        if (response.has_success ()) {
+            emit queryReadiness ();
+        } else if (response.has_error ()) {
+            QMessageBox::critical (nullptr, "Failed to select role at room", QString::fromStdString (response.error ().message ())); // TODO: Apply code
+        } else {
+            QMessageBox::critical (nullptr, "Failed to select role at room", "Unknown error");
         }
-        emit queryReadiness ();
     } break;
     case RTS::Response::MessageCase::kReady: {
-        emit startCountdown ();
+    } break;
+    case RTS::Response::MessageCase::kMatchPrepared: {
+        const RTS::MatchPreparedResponse& response = response_oneof.match_prepared ();
+        switch (response.team ()) {
+        case RTS::Team::TEAM_RED:
+            emit startCountdown (Unit::Team::Red);
+            break;
+        case RTS::Team::TEAM_BLUE:
+            emit startCountdown (Unit::Team::Blue);
+            break;
+        default:
+            QMessageBox::critical (nullptr, "Malformed message from server", "Invalid team at 'MatchStartedResponse'");
+        }
     } break;
     case RTS::Response::MessageCase::kMatchStart: {
-        // qDebug() << "Ready respose caught";
         emit startMatch ();
     } break;
-    case RTS::Response::MessageCase::kMatchState: {
-        const RTS::MatchState& response = response_oneof.match_state ();
+    case RTS::Response::MessageCase::kMatchStateFragment: {
+        const RTS::MatchStateFragmentResponse& response = response_oneof.match_state_fragment ();
         if (response.fragment_count () == 1) {
             QVector<QPair<quint32, Unit>> units;
             QVector<QPair<quint32, Missile>> missiles;
@@ -411,8 +414,8 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
                 if ((*it)->filled ()) {
                     QVector<QPair<quint32, Unit>> units;
                     QVector<QPair<quint32, Missile>> missiles;
-                    const QVector<QSharedPointer<RTS::MatchState>>& fragments = (*it)->fragments ();
-                    for (const QSharedPointer<RTS::MatchState>& fragment : fragments) {
+                    const QVector<QSharedPointer<RTS::MatchStateFragmentResponse>>& fragments = (*it)->fragments ();
+                    for (const QSharedPointer<RTS::MatchStateFragmentResponse>& fragment : fragments) {
                         QString error_message;
                         if (!parseMatchStateFragment (*fragment, units, missiles, error_message)) {
                             QMessageBox::critical (nullptr, "Malformed message from server", error_message);
@@ -433,6 +436,10 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
             }
         }
     } break;
+    case RTS::Response::MessageCase::kError: {
+        const RTS::ErrorResponse& response = response_oneof.error ();
+        QMessageBox::critical (nullptr, "Malformed message from server", QString::fromStdString (response.error ().message ()));
+    } break;
     default: {
         qDebug () << "Response -> UNKNOWN:" << response_oneof.message_case ();
     }
@@ -449,8 +456,7 @@ void Application::showLobby (const QString& login)
 void Application::showRoom (bool single_mode)
 {
     RoomWidget* room_widget = new RoomWidget; // connect roomwidget signals ...
-    connect (room_widget, &RoomWidget::joinRedTeamRequested, this, &Application::joinRedTeamCallback);
-    connect (room_widget, &RoomWidget::joinBlueTeamRequested, this, &Application::joinBlueTeamCallback);
+    connect (room_widget, &RoomWidget::selectRolePlayerRequested, this, &Application::selectRolePlayerCallback);
     connect (room_widget, &RoomWidget::spectateRequested, this, &Application::joinSpectatorCallback);
     connect (this, &Application::queryReadiness, room_widget, &RoomWidget::readinessHandler);
     connect (room_widget, &RoomWidget::readinessRequested, this, &Application::readinessCallback);
@@ -559,16 +565,16 @@ void Application::startSingleMode (RoomWidget* room_widget)
         units.push_back ({unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Blue, {off * 2.0 / 3.0, 7}, 0}});
     emit updateMatchState (units, {});
 }
-bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message)
+bool Application::parseMatchStateFragment (const RTS::MatchStateFragmentResponse& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message)
 {
     for (int i = 0; i < response.units_size (); i++) {
         const RTS::Unit& r_unit = response.units (i);
         Unit::Team team;
         switch (r_unit.team ()) {
-        case RTS::Team::RED:
+        case RTS::Team::TEAM_RED:
             team = Unit::Team::Red;
             break;
-        case RTS::Team::BLUE:
+        case RTS::Team::TEAM_BLUE:
             team = Unit::Team::Blue;
             break;
         default:
@@ -578,19 +584,19 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
 
         Unit::Type type;
         switch (r_unit.type ()) {
-        case RTS::UnitType::CRUSADER:
+        case RTS::UnitType::UNIT_TYPE_CRUSADER:
             type = Unit::Type::Crusader;
             break;
-        case RTS::UnitType::SEAL:
+        case RTS::UnitType::UNIT_TYPE_SEAL:
             type = Unit::Type::Seal;
             break;
-        case RTS::UnitType::GOON:
+        case RTS::UnitType::UNIT_TYPE_GOON:
             type = Unit::Type::Goon;
             break;
-        case RTS::UnitType::BEETLE:
+        case RTS::UnitType::UNIT_TYPE_BEETLE:
             type = Unit::Type::Beetle;
             break;
-        case RTS::UnitType::CONTAMINATOR:
+        case RTS::UnitType::UNIT_TYPE_CONTAMINATOR:
             type = Unit::Type::Contaminator;
             break;
         default:
@@ -654,10 +660,10 @@ bool Application::parseMatchStateFragment (const RTS::MatchState& response, QVec
 
         Unit::Team team;
         switch (r_missile.team ()) {
-        case RTS::Team::RED:
+        case RTS::Team::TEAM_RED:
             team = Unit::Team::Red;
             break;
-        case RTS::Team::BLUE:
+        case RTS::Team::TEAM_BLUE:
             team = Unit::Team::Blue;
             break;
         default:

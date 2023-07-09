@@ -68,7 +68,7 @@ void LobbyWidget::setRoomList (const QVector<RoomEntry>& room_list)
 void LobbyWidget::joinRoomClicked ()
 {
     QVariant current_room = room_list_table->getCurrentRoom ();
-    if (current_room.type () == QVariant::UInt)
+    if (current_room.typeId () == QVariant::UInt)
         emit joinRoomRequested (current_room.toUInt ());
 }
 void LobbyWidget::createRoomButtonClicked ()

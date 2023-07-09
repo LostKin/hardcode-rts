@@ -1,6 +1,7 @@
 #pragma once
 
 #include ".proto_stubs/session_level.pb.h"
+#include "matchstate.h"
 
 #include <QCoreApplication>
 #include <QSharedPointer>
@@ -14,7 +15,8 @@ struct Session {
     QHostAddress client_address;
     quint16 client_port;
     std::optional<quint32> current_room = {};
-    std::optional<RTS::Team> current_team = {};
+    RTS::Role current_role = RTS::ROLE_UNSPECIFIED;
+    std::optional<Unit::Team> current_team = {};
     QByteArray login;
     bool query_room_list_requested = false;
     bool ready = false;

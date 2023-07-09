@@ -29,14 +29,12 @@
         <file>images/labels/starting-in-4.png</file>
         <file>images/labels/starting-in-5.png</file>
 
-        <file>images/buttons/join-blue-team.png</file>
-        <file>images/buttons/join-red-team.png</file>
+        <file>images/buttons/join-as-player.png</file>
         <file>images/buttons/spectate.png</file>
         <file>images/buttons/ready.png</file>
         <file>images/buttons/cancel.png</file>
         <file>images/buttons/quit.png</file>
-        <file>images/buttons/join-blue-team-pressed.png</file>
-        <file>images/buttons/join-red-team-pressed.png</file>
+        <file>images/buttons/join-as-player-pressed.png</file>
         <file>images/buttons/spectate-pressed.png</file>
         <file>images/buttons/ready-pressed.png</file>
         <file>images/buttons/cancel-pressed.png</file>

@@ -13,18 +13,53 @@ class RoomWidget: public OpenGLWidget
 {
     Q_OBJECT
 
+private:
+    enum class UnitRole {
+        Unspecified,
+        Spectator,
+        Player,
+    };
+
+    enum class State {
+        RoleSelection,
+        RoleSelectionRequested,
+        ConfirmingReadiness,
+        Ready,
+        AwaitingMatch,
+        MatchStarted,
+    };
+
+    enum class ButtonId {
+        None,
+        JoinRedTeam,
+        JoinBlueTeam,
+        Spectate,
+        Ready,
+        Cancel,
+        Quit,
+    };
+
+    enum class ActionButtonId {
+        None,
+        Move,
+        Stop,
+        Hold,
+        Attack,
+        Pestilence,
+        Spawn,
+    };
+
 public:
     RoomWidget (QWidget* parent = nullptr);
     virtual ~RoomWidget ();
-    void awaitTeamSelection (Unit::Team team);
+    void awaitRoleSelection (UnitRole role);
     void queryReadiness (Unit::Team team);
     void ready (Unit::Team team);
     void awaitMatch (Unit::Team team);
     void startMatch (Unit::Team team);
 
 signals:
-    void joinRedTeamRequested ();
-    void joinBlueTeamRequested ();
+    void selectRolePlayerRequested ();
     void spectateRequested ();
     void cancelJoinTeamRequested ();
     void readinessRequested ();
@@ -35,8 +70,7 @@ signals:
     void unitActionRequested (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
 
 private slots:
-    void joinRedTeamRequestedHandler ();
-    void joinBlueTeamRequestedHandler ();
+    void selectRolePlayerRequestedHandler ();
     void spectateRequestedHandler ();
     void readinessRequestedHandler ();
     void cancelJoinTeamRequestedHandler ();
@@ -45,7 +79,7 @@ private slots:
 public slots:
     void readinessHandler ();
     void startMatchHandler ();
-    void startCountDownHandler ();
+    void startCountDownHandler (Unit::Team team);
     void loadMatchState (QVector<QPair<quint32, Unit>> units, QVector<QPair<quint32, Missile>> missiles);
     // void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
@@ -75,8 +109,8 @@ private:
     void matchMouseReleaseEvent (QMouseEvent* event);
     void matchWheelEvent (QWheelEvent* event);
     void loadTextures ();
-    void drawTeamSelection ();
-    void drawTeamSelectionRequested ();
+    void drawRoleSelection ();
+    void drawRoleSelectionRequested ();
     void drawConfirmingReadiness ();
     void drawReady ();
     void drawAwaitingMatch ();
@@ -127,35 +161,6 @@ private:
         UnitTextureTeam blue;
     };
 
-    enum class State {
-        TeamSelection,
-        TeamSelectionRequested,
-        ConfirmingReadiness,
-        Ready,
-        AwaitingMatch,
-        MatchStarted,
-    };
-
-    enum class ButtonId {
-        None,
-        JoinRedTeam,
-        JoinBlueTeam,
-        Spectate,
-        Ready,
-        Cancel,
-        Quit,
-    };
-
-    enum class ActionButtonId {
-        None,
-        Move,
-        Stop,
-        Hold,
-        Attack,
-        Pestilence,
-        Spawn,
-    };
-
 private:
     static ActionButtonId getActionButtonFromGrid (int row, int col);
 
@@ -179,14 +184,12 @@ private:
             QSharedPointer<QOpenGLTexture> starting_in_5;
         } labels;
         struct {
-            QSharedPointer<QOpenGLTexture> join_red_team;
-            QSharedPointer<QOpenGLTexture> join_blue_team;
+            QSharedPointer<QOpenGLTexture> join_as_player;
             QSharedPointer<QOpenGLTexture> spectate;
             QSharedPointer<QOpenGLTexture> ready;
             QSharedPointer<QOpenGLTexture> cancel;
             QSharedPointer<QOpenGLTexture> quit;
-            QSharedPointer<QOpenGLTexture> join_red_team_pressed;
-            QSharedPointer<QOpenGLTexture> join_blue_team_pressed;
+            QSharedPointer<QOpenGLTexture> join_as_player_pressed;
             QSharedPointer<QOpenGLTexture> spectate_pressed;
             QSharedPointer<QOpenGLTexture> ready_pressed;
             QSharedPointer<QOpenGLTexture> cancel_pressed;
@@ -261,7 +264,7 @@ private:
     } hud;
     QRect arena_viewport = {0, 0, 1, 1};
     QPointF arena_viewport_center = {0, 0};
-    State state = State::TeamSelection;
+    State state = State::RoleSelection;
     ButtonId pressed_button = ButtonId::None;
     QPoint cursor_position = {-1, -1};
     ActionButtonId pressed_action_button = ActionButtonId::None;

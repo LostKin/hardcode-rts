@@ -103,7 +103,7 @@ void Application::sendReplySessionExpired (const QNetworkDatagram& client_datagr
     RTS::Response response_oneof;
     RTS::SessionClosedResponse* response = response_oneof.mutable_session_closed ();
     response->mutable_session_token ()->set_value (session_token);
-    setError (response->mutable_error (), "Session expired", RTS::SESSION_EXPIRED);
+    setError (response->mutable_error (), "Session expired", RTS::ERROR_CODE_SESSION_EXPIRED);
 
     std::string message;
     response_oneof.SerializeToString (&message);
@@ -144,7 +144,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         if (password_it == user_passwords.end () || password != *password_it) {
             RTS::Response response_oneof;
             RTS::AuthorizationResponse* response = response_oneof.mutable_authorization ();
-            response->mutable_error ()->set_message ("invalid login or password", RTS::LOGIN_FAILED);
+            response->mutable_error ()->set_message ("invalid login or password", RTS::ERROR_CODE_LOGIN_FAILED);
 
             std::string message;
             response_oneof.SerializeToString (&message);
@@ -207,7 +207,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         if (session->current_room.has_value ()) {
             RTS::Response response_oneof;
             RTS::JoinRoomResponse* response = response_oneof.mutable_join_room ();
-            setError (response->mutable_error (), "Already joined room", RTS::ALREADY_JOINED_ROOM);
+            setError (response->mutable_error (), "Already joined room", RTS::ERROR_CODE_ALREADY_JOINED_ROOM);
 
             std::string message;
             response_oneof.SerializeToString (&message);
@@ -282,7 +282,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         if (room_it == rooms.end ()) {
             RTS::Response response_oneof;
             RTS::DeleteRoomResponse* response = response_oneof.mutable_delete_room ();
-            setError (response->mutable_error (), "Room not found", RTS::ROOM_NOT_FOUND);
+            setError (response->mutable_error (), "Room not found", RTS::ERROR_CODE_ROOM_NOT_FOUND);
 
             std::string message;
             response_oneof.SerializeToString (&message);
@@ -303,9 +303,9 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
 
         sendReply (*session, message);
     } break;
-    case RTS::Request::MessageCase::kJoinTeam: {
+    case RTS::Request::MessageCase::kSelectRole: {
         // qDebug() << "JOIN TEAM";
-        const RTS::JoinTeamRequest& request = request_oneof.join_team ();
+        const RTS::SelectRoleRequest& request = request_oneof.select_role ();
         quint64 session_token;
         QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
         if (session.isNull ())
@@ -356,7 +356,7 @@ template <class Request>
 QSharedPointer<Session> Application::validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr)
 {
     if (!request.has_session_token ()) {
-        sendReplyError (client_datagram, "Missing 'session_token'", RTS::MALFORMED_MESSAGE);
+        sendReplyError (client_datagram, "Missing 'session_token'", RTS::ERROR_CODE_MALFORMED_MESSAGE);
         return nullptr;
     }
     quint64 session_token = request.session_token ().value ();
@@ -367,7 +367,7 @@ QSharedPointer<Session> Application::validateSessionRequest (const QNetworkDatag
     }
     QSharedPointer<Session> session = *session_it;
     if (!clientMatch (client_datagram, *session)) {
-        sendReplyError (client_datagram, "Client address changed since authorization", RTS::MISMATCHED_SENDER);
+        sendReplyError (client_datagram, "Client address changed since authorization", RTS::ERROR_CODE_MISMATCHED_SENDER);
         return nullptr;
     }
     *session_token_ptr = session_token;
@@ -377,7 +377,7 @@ template <class Request>
 bool Application::validateRequestToken (const QNetworkDatagram& client_datagram, const Request& request, quint64* request_token_ptr)
 {
     if (!request.has_request_token ()) {
-        sendReplyError (client_datagram, "Missing 'request_token'", RTS::MALFORMED_MESSAGE);
+        sendReplyError (client_datagram, "Missing 'request_token'", RTS::ERROR_CODE_MALFORMED_MESSAGE);
         return false;
     }
     *request_token_ptr = request.request_token ().value ();

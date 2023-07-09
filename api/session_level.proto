@@ -13,30 +13,39 @@ message SessionToken {
 }
 
 enum ErrorCode {
-    UNSPECIFIED_ERROR = 0;
-    MALFORMED_MESSAGE = 1;
-    MISMATCHED_SENDER = 2;
-    LOGIN_FAILED = 3;
-    MISSING_SESSION_TOKEN = 4;
-    SESSION_EXPIRED = 5;
-    ALREADY_JOINED_ROOM = 6;
-    ROOM_NOT_FOUND = 7;
-    TEAM_ALREADY_TAKEN = 8;
-    ALREADY_JOINED_TEAM = 9;
+    ERROR_CODE_UNSPECIFIED = 0;
+    ERROR_CODE_NOT_IMPLEMENTED = 1;
+    ERROR_CODE_MALFORMED_MESSAGE = 2;
+    ERROR_CODE_MISMATCHED_SENDER = 3;
+    ERROR_CODE_LOGIN_FAILED = 4;
+    ERROR_CODE_MISSING_SESSION_TOKEN = 5;
+    ERROR_CODE_SESSION_EXPIRED = 6;
+    ERROR_CODE_ALREADY_JOINED_ROOM = 7;
+    ERROR_CODE_ROOM_NOT_FOUND = 8;
+    ERROR_CODE_TOO_MANY_PLAYERS_IN_ROOM = 9;
+    ERROR_CODE_ALREADY_SELECTED_ROLE = 10;
 }
 
 enum Team {
-    SPECTATOR = 0;
-    RED = 1;
-    BLUE = 2;
+    TEAM_UNSPECIFIED = 0;
+    TEAM_SPECTATOR = 1;
+    TEAM_RED = 2;
+    TEAM_BLUE = 3;
+}
+
+enum Role {
+    ROLE_UNSPECIFIED = 0;
+    ROLE_SPECTATOR = 1;
+    ROLE_PLAYER = 2;
 }
 
 enum UnitType {
-    CRUSADER = 0;
-    SEAL = 1;
-    GOON = 2;
-    BEETLE = 3;
-    CONTAMINATOR = 4;
+    UNIT_TYPE_UNSPECIFIED = 0;
+    UNIT_TYPE_CRUSADER = 1;
+    UNIT_TYPE_SEAL = 2;
+    UNIT_TYPE_GOON = 3;
+    UNIT_TYPE_BEETLE = 4;
+    UNIT_TYPE_CONTAMINATOR = 5;
 }
 
 
@@ -90,10 +99,10 @@ message DeleteRoomRequest {
     uint32 room_id = 3;
 }
 
-message JoinTeamRequest {
+message SelectRoleRequest {
     RequestToken request_token = 1;
     SessionToken session_token = 2;
-    Team team = 3;
+    Role role = 3;
 }
 
 message ReadyRequest {
@@ -205,7 +214,7 @@ message DeleteRoomResponse {
     }
 }
 
-message JoinTeamResponse {
+message SelectRoleResponse {
     RequestToken request_token = 1;
     oneof status {
         google.protobuf.Empty success = 2;
@@ -213,12 +222,11 @@ message JoinTeamResponse {
     }
 }
 
+message MatchPreparedResponse {
+    Team team = 1;
+}
+
 message MatchStartResponse {
-    RequestToken request_token = 1;
-    oneof status {
-        google.protobuf.Empty success = 2;
-        Error error = 3;
-    }
 }
 
 message ReadyResponse {
@@ -273,7 +281,7 @@ message Explosion {
 
 }
 
-message MatchState {
+message MatchStateFragmentResponse {
     uint32 tick = 1;
     uint32 fragment_count = 2;
     uint32 fragment_no = 3;
@@ -289,7 +297,7 @@ message Request {
         JoinRoomRequest join_room = 7;
         CreateRoomRequest create_room = 8;
         DeleteRoomRequest delete_room = 9;
-        JoinTeamRequest join_team = 10;
+        SelectRoleRequest select_role = 10;
         ReadyRequest ready = 11;
         UnitCreateRequest unit_create = 12;
         UnitActionRequest unit_action = 13;
@@ -305,9 +313,10 @@ message Response {
         JoinRoomResponse join_room = 7;
         CreateRoomResponse create_room = 8;
         DeleteRoomResponse delete_room = 9;
-        JoinTeamResponse join_team = 10;
+        SelectRoleResponse select_role = 10;
         ReadyResponse ready = 11;
-        MatchStartResponse match_start = 12;
-        MatchState match_state = 13;
+        MatchPreparedResponse match_prepared = 12;
+        MatchStartResponse match_start = 13;
+        MatchStateFragmentResponse match_state_fragment = 14;
     }
 }

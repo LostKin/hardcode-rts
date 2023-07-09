@@ -104,8 +104,7 @@ RoomWidget::RoomWidget (QWidget* parent)
     setMouseTracking (true);
     setCursor (QCursor (Qt::BlankCursor));
     connect (&match_timer, SIGNAL (timeout ()), this, SLOT (tick ()));
-    connect (this, &RoomWidget::joinRedTeamRequested, this, &RoomWidget::joinRedTeamRequestedHandler);
-    connect (this, &RoomWidget::joinBlueTeamRequested, this, &RoomWidget::joinBlueTeamRequestedHandler);
+    connect (this, &RoomWidget::selectRolePlayerRequested, this, &RoomWidget::selectRolePlayerRequestedHandler);
     connect (this, &RoomWidget::spectateRequested, this, &RoomWidget::spectateRequestedHandler);
     connect (this, &RoomWidget::cancelJoinTeamRequested, this, &RoomWidget::cancelJoinTeamRequestedHandler);
     connect (this, &RoomWidget::quitRequested, this, &RoomWidget::quitRequestedHandler);
@@ -126,21 +125,17 @@ void RoomWidget::unitCreateCallback (Unit::Team team, Unit::Type type, QPointF p
     emit createUnitRequested (team, type, position);
 }
 
-void RoomWidget::joinRedTeamRequestedHandler ()
+void RoomWidget::selectRolePlayerRequestedHandler ()
 {
-    awaitTeamSelection (Unit::Team::Red);
-}
-void RoomWidget::joinBlueTeamRequestedHandler ()
-{
-    awaitTeamSelection (Unit::Team::Blue);
+    awaitRoleSelection (UnitRole::Player);
 }
 void RoomWidget::spectateRequestedHandler ()
 {
-    awaitTeamSelection (Unit::Team::Spectator);
+    awaitRoleSelection (UnitRole::Spectator);
 }
 void RoomWidget::cancelJoinTeamRequestedHandler ()
 {
-    state = State::TeamSelection;
+    state = State::RoleSelection;
 }
 void RoomWidget::readinessRequestedHandler ()
 {
@@ -155,9 +150,9 @@ void RoomWidget::quitRequestedHandler ()
     return;
 }
 
-void RoomWidget::startCountDownHandler ()
+void RoomWidget::startCountDownHandler (Unit::Team team)
 {
-    awaitMatch (this->team);
+    awaitMatch (team);
 }
 
 void RoomWidget::startMatchHandler ()
@@ -166,12 +161,11 @@ void RoomWidget::startMatchHandler ()
     startMatch (this->team);
     // emit createUnitRequested();
 }
-void RoomWidget::awaitTeamSelection (Unit::Team team)
+void RoomWidget::awaitRoleSelection (UnitRole role)
 {
-    this->team = team;
     pressed_button = ButtonId::None;
     match_timer.stop ();
-    state = State::TeamSelectionRequested;
+    state = State::RoleSelectionRequested;
 }
 void RoomWidget::queryReadiness (Unit::Team team)
 {
@@ -342,14 +336,12 @@ void RoomWidget::loadTextures ()
     textures.labels.starting_in_4 = loadTexture2DRectangle (":/images/labels/starting-in-4.png");
     textures.labels.starting_in_5 = loadTexture2DRectangle (":/images/labels/starting-in-5.png");
 
-    textures.buttons.join_red_team = loadTexture2DRectangle (":/images/buttons/join-red-team.png");
-    textures.buttons.join_blue_team = loadTexture2DRectangle (":/images/buttons/join-blue-team.png");
+    textures.buttons.join_as_player = loadTexture2DRectangle (":/images/buttons/join-as-player.png");
     textures.buttons.spectate = loadTexture2DRectangle (":/images/buttons/spectate.png");
     textures.buttons.ready = loadTexture2DRectangle (":/images/buttons/ready.png");
     textures.buttons.cancel = loadTexture2DRectangle (":/images/buttons/cancel.png");
     textures.buttons.quit = loadTexture2DRectangle (":/images/buttons/quit.png");
-    textures.buttons.join_red_team_pressed = loadTexture2DRectangle (":/images/buttons/join-red-team-pressed.png");
-    textures.buttons.join_blue_team_pressed = loadTexture2DRectangle (":/images/buttons/join-blue-team-pressed.png");
+    textures.buttons.join_as_player_pressed = loadTexture2DRectangle (":/images/buttons/join-as-player-pressed.png");
     textures.buttons.spectate_pressed = loadTexture2DRectangle (":/images/buttons/spectate-pressed.png");
     textures.buttons.ready_pressed = loadTexture2DRectangle (":/images/buttons/ready-pressed.png");
     textures.buttons.cancel_pressed = loadTexture2DRectangle (":/images/buttons/cancel-pressed.png");
@@ -521,11 +513,11 @@ void RoomWidget::draw ()
         cursor_position = QWidget::mapFromGlobal (QCursor::pos ());
 
     switch (state) {
-    case State::TeamSelection:
-        drawTeamSelection ();
+    case State::RoleSelection:
+        drawRoleSelection ();
         break;
-    case State::TeamSelectionRequested:
-        drawTeamSelectionRequested ();
+    case State::RoleSelectionRequested:
+        drawRoleSelectionRequested ();
         break;
     case State::ConfirmingReadiness:
         drawConfirmingReadiness ();
@@ -595,19 +587,17 @@ void RoomWidget::mousePressEvent (QMouseEvent* event)
     shift_pressed = modifiers & Qt::ShiftModifier;
     alt_pressed = modifiers & Qt::AltModifier;
     switch (state) {
-    case State::TeamSelection: {
+    case State::RoleSelection: {
         if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 30), textures.buttons.join_blue_team))
+            if (pointInsideButton (cursor_position, QPoint (30, 30), textures.buttons.join_as_player))
                 pressed_button = ButtonId::JoinBlueTeam;
-            else if (pointInsideButton (cursor_position, QPoint (30, 130), textures.buttons.join_red_team))
-                pressed_button = ButtonId::JoinRedTeam;
             else if (pointInsideButton (cursor_position, QPoint (30, 230), textures.buttons.spectate))
                 pressed_button = ButtonId::Spectate;
             else if (pointInsideButton (cursor_position, QPoint (30, 400), textures.buttons.quit))
                 pressed_button = ButtonId::Quit;
         }
     } break;
-    case State::TeamSelectionRequested: {
+    case State::RoleSelectionRequested: {
         if (event->button () == Qt::LeftButton) {
             if (pointInsideButton (cursor_position, QPoint (30, 230), textures.buttons.cancel))
                 pressed_button = ButtonId::Cancel;
@@ -649,14 +639,11 @@ void RoomWidget::mouseReleaseEvent (QMouseEvent* event)
     shift_pressed = modifiers & Qt::ShiftModifier;
     alt_pressed = modifiers & Qt::AltModifier;
     switch (state) {
-    case State::TeamSelection: {
+    case State::RoleSelection: {
         if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 30), textures.buttons.join_blue_team)) {
+            if (pointInsideButton (cursor_position, QPoint (30, 30), textures.buttons.join_as_player)) {
                 if (pressed_button == ButtonId::JoinBlueTeam)
-                    emit joinBlueTeamRequested ();
-            } else if (pointInsideButton (cursor_position, QPoint (30, 130), textures.buttons.join_red_team)) {
-                if (pressed_button == ButtonId::JoinRedTeam)
-                    emit joinRedTeamRequested ();
+                    emit selectRolePlayerRequested ();
             } else if (pointInsideButton (cursor_position, QPoint (30, 230), textures.buttons.spectate)) {
                 if (pressed_button == ButtonId::Spectate)
                     emit spectateRequested ();
@@ -666,7 +653,7 @@ void RoomWidget::mouseReleaseEvent (QMouseEvent* event)
             }
         }
     } break;
-    case State::TeamSelectionRequested: {
+    case State::RoleSelectionRequested: {
         if (event->button () == Qt::LeftButton) {
             if (pointInsideButton (cursor_position, QPoint (30, 230), textures.buttons.cancel)) {
                 if (pressed_button == ButtonId::Cancel)
@@ -927,16 +914,15 @@ void RoomWidget::matchWheelEvent (QWheelEvent* event)
     viewport_scale_power = qBound (-10, viewport_scale_power, 10);
     viewport_scale = pow (1.125, viewport_scale_power);
 }
-void RoomWidget::drawTeamSelection ()
+void RoomWidget::drawRoleSelection ()
 {
     fillRectangle (0, 0, w, h, textures.grass.get ());
 
-    fillRectangle (30, 30, (pressed_button == ButtonId::JoinBlueTeam) ? textures.buttons.join_blue_team_pressed.get () : textures.buttons.join_blue_team.get ());
-    fillRectangle (30, 130, (pressed_button == ButtonId::JoinRedTeam) ? textures.buttons.join_red_team_pressed.get () : textures.buttons.join_red_team.get ());
+    fillRectangle (30, 30, (pressed_button == ButtonId::JoinBlueTeam) ? textures.buttons.join_as_player_pressed.get () : textures.buttons.join_as_player.get ());
     fillRectangle (30, 230, (pressed_button == ButtonId::Spectate) ? textures.buttons.spectate_pressed.get () : textures.buttons.spectate.get ());
     fillRectangle (30, 400, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get ());
 }
-void RoomWidget::drawTeamSelectionRequested ()
+void RoomWidget::drawRoleSelectionRequested ()
 {
     fillRectangle (0, 0, w, h, textures.grass.get ());
 

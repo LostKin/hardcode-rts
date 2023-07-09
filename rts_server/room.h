@@ -2,7 +2,7 @@
 
 #include ".proto_stubs/session_level.pb.h"
 #include "application.h"
-#include "../match_state/matchstate.h"
+#include "matchstate.h"
 
 #include <QUdpSocket>
 #include <QNetworkDatagram>
@@ -16,6 +16,7 @@ class Room: public QObject
     Q_OBJECT
 
 private:
+    QVector<QSharedPointer<Session>> players;
     QSharedPointer<Session> red_team;
     QSharedPointer<Session> blue_team;
     QSharedPointer<QTimer> timer;
