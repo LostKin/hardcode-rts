@@ -227,7 +227,7 @@ void Room::init_matchstate ()
     }
 }
 
-void Room::receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer<Session> session)
+void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session)
 {
     switch (request_oneof.message_case ()) {
     case RTS::Request::MessageCase::kSelectRole: {
@@ -237,7 +237,7 @@ void Room::receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer
             if (players.size () >= 2) {
                 RTS::Response response_oneof;
                 RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
-                response->mutable_request_token ()->set_value (request.request_token ().value ());
+                response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
                 setError (response->mutable_error (), "Too many players in room", RTS::ERROR_CODE_TOO_MANY_PLAYERS_IN_ROOM);
                 emit sendResponseRoom (response_oneof, session);
                 return;
@@ -247,19 +247,19 @@ void Room::receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer
 
             RTS::Response response_oneof;
             RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
-            response->mutable_request_token ()->set_value (request.request_token ().value ());
+            response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
             response->mutable_success ();
             emit sendResponseRoom (response_oneof, session);
         } else if (request.role () == RTS::Role::ROLE_SPECTATOR) {
             RTS::Response response_oneof;
             RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
-            response->mutable_request_token ()->set_value (request.request_token ().value ());
+            response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
             setError (response->mutable_error (), "Spectatorship not implemented", RTS::ERROR_CODE_NOT_IMPLEMENTED);
             emit sendResponseRoom (response_oneof, session);
         } else {
             RTS::Response response_oneof;
             RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
-            response->mutable_request_token ()->set_value (request.request_token ().value ());
+            response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
             setError (response->mutable_error (), "Invalid role specified", RTS::ERROR_CODE_MALFORMED_MESSAGE);
             emit sendResponseRoom (response_oneof, session);
         }
@@ -346,7 +346,7 @@ void Room::receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer
             } else {
                 RTS::Response response_oneof;
                 RTS::ErrorResponse* response = response_oneof.mutable_error ();
-                response->mutable_request_token ()->set_value (request.request_token ().value ());
+                response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
                 setError (response->mutable_error (), "Malformed message", RTS::ERROR_CODE_MALFORMED_MESSAGE);
                 emit sendResponseRoom (response_oneof, session);
             }
@@ -364,7 +364,7 @@ void Room::receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer
             } else {
                 RTS::Response response_oneof;
                 RTS::ErrorResponse* response = response_oneof.mutable_error ();
-                response->mutable_request_token ()->set_value (request.request_token ().value ());
+                response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
                 setError (response->mutable_error (), "Malformed message", RTS::ERROR_CODE_MALFORMED_MESSAGE);
                 emit sendResponseRoom (response_oneof, session);
             }
@@ -416,6 +416,7 @@ void Room::readyHandler ()
     qDebug () << "readyHandler started";
     RTS::Response response_oneof;
     RTS::MatchStartResponse* response = response_oneof.mutable_match_start ();
+    (void) response;
     emit sendResponseRoom (response_oneof, red_team);
     emit sendResponseRoom (response_oneof, blue_team);
     return;

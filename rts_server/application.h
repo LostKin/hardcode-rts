@@ -67,10 +67,8 @@ private:
     void sendReplyError (const QNetworkDatagram& client_datagram, const std::string& error_message, RTS::ErrorCode error_code);
     void sendReplySessionExpired (const QNetworkDatagram& client_datagram, quint64 session_token);
     void sendReplyRoomList (const Session& session, quint64 session_token);
-    template <class Request>
-    QSharedPointer<Session> validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr);
-    template <class Request>
-    bool validateRequestToken (const QNetworkDatagram& client_datagram, const Request& request, quint64* request_token_ptr);
+    QSharedPointer<Session> validateSessionRequest (const QNetworkDatagram& client_datagram, const RTS::Request& request, quint64* session_token_ptr);
+    bool validateRequestToken (const QNetworkDatagram& client_datagram, const RTS::Request& request, quint64* request_token_ptr);
     void loadRoomList ();
     void storeRoomList ();
 };

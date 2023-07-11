@@ -89,9 +89,9 @@ void Application::start ()
 void Application::selectRolePlayer ()
 {
     RTS::Request request_oneof;
+    request_oneof.mutable_session_token ()->set_value (session_token.value ());
+    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::SelectRoleRequest* request = request_oneof.mutable_select_role ();
-    request->mutable_session_token ()->set_value (session_token.value ());
-    request->mutable_request_token ()->set_value (request_token++);
     request->set_role (RTS::Role::ROLE_PLAYER);
     std::string message;
     request_oneof.SerializeToString (&message);
@@ -100,9 +100,10 @@ void Application::selectRolePlayer ()
 void Application::readinessCallback ()
 {
     RTS::Request request_oneof;
+    request_oneof.mutable_session_token ()->set_value (session_token.value ());
+    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::ReadyRequest* request = request_oneof.mutable_ready ();
-    request->mutable_session_token ()->set_value (session_token.value ());
-    request->mutable_request_token ()->set_value (request_token++);
+    (void) request;
     std::string message;
     request_oneof.SerializeToString (&message);
     network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
@@ -161,9 +162,9 @@ void Application::createRoomCallback (const QString& name)
         return;
 
     RTS::Request request_oneof;
+    request_oneof.mutable_session_token ()->set_value (session_token.value ());
+    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::CreateRoomRequest* request = request_oneof.mutable_create_room ();
-    request->mutable_session_token ()->set_value (session_token.value ());
-    request->mutable_request_token ()->set_value (request_token++);
     request->set_name (name.toStdString ());
 
     std::string message;
@@ -177,9 +178,9 @@ void Application::joinRoomCallback (quint32 room_id)
         return;
 
     RTS::Request request_oneof;
+    request_oneof.mutable_session_token ()->set_value (session_token.value ());
+    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::JoinRoomRequest* request = request_oneof.mutable_join_room ();
-    request->mutable_session_token ()->set_value (session_token.value ());
-    request->mutable_request_token ()->set_value (request_token++);
     request->set_room_id (room_id);
 
     std::string message;
@@ -193,9 +194,9 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
         return;
 
     RTS::Request request_oneof;
+    request_oneof.mutable_session_token ()->set_value (session_token.value ());
+    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::UnitCreateRequest* request = request_oneof.mutable_unit_create ();
-    request->mutable_session_token ()->set_value (session_token.value ());
-    request->mutable_request_token ()->set_value (request_token++);
     request->mutable_position ()->set_x (position.x ());
     request->mutable_position ()->set_y (position.y ());
     RTS::UnitType unit_type = RTS::UnitType::UNIT_TYPE_CRUSADER;
@@ -247,10 +248,9 @@ void Application::unitActionCallback (quint32 id, const std::variant<StopAction,
         return;
 
     RTS::Request request_oneof;
+    request_oneof.mutable_session_token ()->set_value (session_token.value ());
+    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::UnitActionRequest* request = request_oneof.mutable_unit_action ();
-
-    request->mutable_session_token ()->set_value (session_token.value ());
-    request->mutable_request_token ()->set_value (request_token++);
     request->set_unit_id (id);
     RTS::UnitAction* unit_action = request->mutable_action ();
     if (std::holds_alternative<MoveAction> (action)) {
@@ -326,9 +326,9 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
             showLobby (login);
 
             RTS::Request request_oneof;
+            request_oneof.mutable_session_token ()->set_value (*this->session_token);
             RTS::QueryRoomListRequest* request = request_oneof.mutable_query_room_list ();
-            request->mutable_session_token ()->set_value (*this->session_token);
-
+            (void) request;
             std::string message;
             request_oneof.SerializeToString (&message);
 

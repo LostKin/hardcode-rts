@@ -61,9 +61,8 @@ message RoomInfo {
 }
 
 message AuthorizationRequest {
-    RequestToken request_token = 1;
-    bytes login = 2;
-    bytes password = 3;
+    bytes login = 1;
+    bytes password = 2;
 }
 
 message AuthorizationResponse {
@@ -74,40 +73,28 @@ message AuthorizationResponse {
 }
 
 message QueryRoomListRequest {
-    SessionToken session_token = 1;
 }
 
 message StopQueryRoomListRequest {
-    SessionToken session_token = 1;
 }
 
 message JoinRoomRequest {
-    SessionToken session_token = 1;
-    RequestToken request_token = 2;
-    uint32 room_id = 3;
+    uint32 room_id = 1;
 }
 
 message CreateRoomRequest {
-    SessionToken session_token = 1;
-    RequestToken request_token = 2;
-    bytes name = 3;
+    bytes name = 1;
 }
 
 message DeleteRoomRequest {
-    SessionToken session_token = 1;
-    RequestToken request_token = 2;
-    uint32 room_id = 3;
+    uint32 room_id = 1;
 }
 
 message SelectRoleRequest {
-    RequestToken request_token = 1;
-    SessionToken session_token = 2;
-    Role role = 3;
+    Role role = 1;
 }
 
 message ReadyRequest {
-    RequestToken request_token = 1;
-    SessionToken session_token = 2;
 }
 
 message TargetUnit {
@@ -160,65 +147,53 @@ message ClientId {
 }
 
 message UnitCreateRequest {
-    SessionToken session_token = 1;
-    RequestToken request_token = 2;
-    uint32 id = 3;
-    Vector2D position = 4;
-    UnitType unit_type = 6;
+    uint32 id = 1;
+    Vector2D position = 2;
+    UnitType unit_type = 3;
 }
 
 message UnitActionRequest {
-    SessionToken session_token = 1;
-    RequestToken request_token = 2;
-    uint32 unit_id = 3;
-    UnitAction action = 4;
+    uint32 unit_id = 1;
+    UnitAction action = 2;
 }
 
 message RoomListResponse {
-    SessionToken session_token = 1;
-    repeated RoomInfo room_info_list = 2;
+    repeated RoomInfo room_info_list = 1;
 }
 
 message JoinRoomResponse {
-    RequestToken request_token = 1;
     oneof response {
-        Error error = 2;
-        google.protobuf.Empty success = 3;
+        Error error = 1;
+        google.protobuf.Empty success = 2;
     }
 }
 
 message ErrorResponse {
-    SessionToken session_token = 1;
-    RequestToken request_token = 2;
-    Error error = 3;
+    Error error = 1;
 }
 
 message SessionClosedResponse {
-    SessionToken session_token = 1;
-    Error error = 2;
+    Error error = 1;
 }
 
 message CreateRoomResponse {
-    RequestToken request_token = 1;
     oneof status {
-        uint32 room_id = 2;
-        Error error = 3;
+        uint32 room_id = 1;
+        Error error = 2;
     }
 }
 
 message DeleteRoomResponse {
-    RequestToken request_token = 1;
     oneof status {
-        google.protobuf.Empty success = 2;
-        Error error = 3;
+        google.protobuf.Empty success = 1;
+        Error error = 2;
     }
 }
 
 message SelectRoleResponse {
-    RequestToken request_token = 1;
     oneof status {
-        google.protobuf.Empty success = 2;
-        Error error = 3;
+        google.protobuf.Empty success = 1;
+        Error error = 2;
     }
 }
 
@@ -230,19 +205,17 @@ message MatchStartResponse {
 }
 
 message ReadyResponse {
-    RequestToken request_token = 1;
     oneof status {
-        google.protobuf.Empty success = 2;
-        Error error = 3;
+        google.protobuf.Empty success = 1;
+        Error error = 2;
     }
 }
 
 message UnitCreateResponse {
     ClientId client_id = 1;
-    RequestToken request_token = 2;
-    uint32 unit_id = 3;
-    Vector2D position = 4;
-    UnitType unit_type = 5;
+    uint32 unit_id = 2;
+    Vector2D position = 3;
+    UnitType unit_type = 4;
 }
 
 message Vector2D {
@@ -269,12 +242,12 @@ enum MissileType {
 }
 
 message Missile {
-    uint32 id = 2;
-    MissileType type = 3;
-    Team team = 4;
-    Vector2D position = 5;
-    Vector2D target_position = 6;
-    TargetUnit target_unit = 7;
+    uint32 id = 1;
+    MissileType type = 2;
+    Team team = 3;
+    Vector2D position = 4;
+    Vector2D target_position = 5;
+    TargetUnit target_unit = 6;
 }
 
 message Explosion {
@@ -290,25 +263,29 @@ message MatchStateFragmentResponse {
 }
 
 message Request {
+    SessionToken session_token = 1;
+    RequestToken request_token = 2;
     oneof message {
-        AuthorizationRequest authorization = 2;
+        AuthorizationRequest authorization = 3;
         QueryRoomListRequest query_room_list = 4;
         StopQueryRoomListRequest stop_query_room_list = 5;
-        JoinRoomRequest join_room = 7;
-        CreateRoomRequest create_room = 8;
-        DeleteRoomRequest delete_room = 9;
-        SelectRoleRequest select_role = 10;
-        ReadyRequest ready = 11;
-        UnitCreateRequest unit_create = 12;
-        UnitActionRequest unit_action = 13;
+        JoinRoomRequest join_room = 6;
+        CreateRoomRequest create_room = 7;
+        DeleteRoomRequest delete_room = 8;
+        SelectRoleRequest select_role = 9;
+        ReadyRequest ready = 10;
+        UnitCreateRequest unit_create = 11;
+        UnitActionRequest unit_action = 12;
     }
 }
 
 message Response {
+    SessionToken session_token = 1;
+    RequestToken request_token = 2;
     oneof message {
-        ErrorResponse error = 1;
-        AuthorizationResponse authorization = 2;
-        SessionClosedResponse session_closed = 3;
+        ErrorResponse error = 3;
+        AuthorizationResponse authorization = 4;
+        SessionClosedResponse session_closed = 5;
         RoomListResponse room_list = 6;
         JoinRoomResponse join_room = 7;
         CreateRoomResponse create_room = 8;

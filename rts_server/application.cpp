@@ -101,8 +101,8 @@ void Application::sendReplyError (const QNetworkDatagram& client_datagram, const
 void Application::sendReplySessionExpired (const QNetworkDatagram& client_datagram, quint64 session_token)
 {
     RTS::Response response_oneof;
+    response_oneof.mutable_session_token ()->set_value (session_token);
     RTS::SessionClosedResponse* response = response_oneof.mutable_session_closed ();
-    response->mutable_session_token ()->set_value (session_token);
     setError (response->mutable_error (), "Session expired", RTS::ERROR_CODE_SESSION_EXPIRED);
 
     std::string message;
@@ -112,8 +112,8 @@ void Application::sendReplySessionExpired (const QNetworkDatagram& client_datagr
 void Application::sendReplyRoomList (const Session& session, quint64 session_token)
 {
     RTS::Response response_oneof;
+    response_oneof.mutable_session_token ()->set_value (session_token);
     RTS::RoomListResponse* response = response_oneof.mutable_room_list ();
-    response->mutable_session_token ()->set_value (session_token);
     google::protobuf::RepeatedPtrField<RTS::RoomInfo>* room_info_list = response->mutable_room_info_list ();
     for (QMap<quint32, QString>::const_iterator room_it = rooms.constBegin (); room_it != rooms.constEnd (); ++room_it) {
         RTS::RoomInfo* room_info = room_info_list->Add ();
@@ -178,9 +178,8 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         sendReply (*datagram, message);
     } break;
     case RTS::Request::MessageCase::kQueryRoomList: {
-        const RTS::QueryRoomListRequest& request = request_oneof.query_room_list ();
         quint64 session_token;
-        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request_oneof, &session_token);
         if (!session)
             break;
         session->query_room_list_requested = true;
@@ -188,9 +187,8 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         sendReplyRoomList (*session, session_token);
     } break;
     case RTS::Request::MessageCase::kStopQueryRoomList: {
-        const RTS::StopQueryRoomListRequest& request = request_oneof.stop_query_room_list ();
         quint64 session_token;
-        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request_oneof, &session_token);
         if (!session)
             break;
         session->query_room_list_requested = false;
@@ -198,11 +196,11 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     case RTS::Request::MessageCase::kJoinRoom: {
         const RTS::JoinRoomRequest& request = request_oneof.join_room ();
         quint64 session_token;
-        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request_oneof, &session_token);
         if (!session)
             break;
         quint64 request_token;
-        if (!validateRequestToken (*datagram, request, &request_token))
+        if (!validateRequestToken (*datagram, request_oneof, &request_token))
             break;
         if (session->current_room.has_value ()) {
             RTS::Response response_oneof;
@@ -219,8 +217,8 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         session->current_room = request.room_id ();
 
         RTS::Response response_oneof;
+        response_oneof.mutable_request_token ()->set_value (request_token);
         RTS::JoinRoomResponse* response = response_oneof.mutable_join_room ();
-        response->mutable_request_token ()->set_value (request_token);
         response->mutable_success ();
 
         std::string message;
@@ -231,11 +229,11 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     case RTS::Request::MessageCase::kCreateRoom: {
         const RTS::CreateRoomRequest& request = request_oneof.create_room ();
         quint64 session_token;
-        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request_oneof, &session_token);
         if (!session)
             break;
         quint64 request_token;
-        if (!validateRequestToken (*datagram, request, &request_token))
+        if (!validateRequestToken (*datagram, request_oneof, &request_token))
             break;
         quint32 new_room_id = 0;
         if (!rooms.empty ()) {
@@ -255,8 +253,8 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         rooms[new_room_id] = QString::fromStdString (request.name ());
 
         RTS::Response response_oneof;
+        response_oneof.mutable_request_token ()->set_value (request_token);
         RTS::CreateRoomResponse* response = response_oneof.mutable_create_room ();
-        response->mutable_request_token ()->set_value (request_token);
         response->set_room_id (new_room_id);
 
         storeRoomList ();
@@ -272,11 +270,11 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
     case RTS::Request::MessageCase::kDeleteRoom: {
         const RTS::DeleteRoomRequest& request = request_oneof.delete_room ();
         quint64 session_token;
-        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request_oneof, &session_token);
         if (session.isNull ())
             break;
         quint64 request_token;
-        if (!validateRequestToken (*datagram, request, &request_token))
+        if (!validateRequestToken (*datagram, request_oneof, &request_token))
             break;
         QMap<quint32, QString>::iterator room_it = rooms.find (request.room_id ());
         if (room_it == rooms.end ()) {
@@ -294,8 +292,8 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         rooms.erase (room_it);
 
         RTS::Response response_oneof;
+        response_oneof.mutable_request_token ()->set_value (request_token);
         RTS::DeleteRoomResponse* response = response_oneof.mutable_delete_room ();
-        response->mutable_request_token ()->set_value (request_token);
         response->mutable_success ();
 
         std::string message;
@@ -303,47 +301,24 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
 
         sendReply (*session, message);
     } break;
-    case RTS::Request::MessageCase::kSelectRole: {
-        // qDebug() << "JOIN TEAM";
-        const RTS::SelectRoleRequest& request = request_oneof.select_role ();
+    default: {
         quint64 session_token;
-        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
+        QSharedPointer<Session> session = validateSessionRequest (*datagram, request_oneof, &session_token);
         if (session.isNull ())
             break;
-        /*
-        quint64 request_token;
-        if (!validateRequestToken (*datagram, request, &request_token))
-            break;
-        */
-        emit room_list[session->current_room.value ()]->receiveRequest (request_oneof, session);
-    } break;
-    case RTS::Request::MessageCase::kReady: {
-        const RTS::ReadyRequest& request = request_oneof.ready ();
-        quint64 session_token;
-        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
-        /*
-        if (!session)
-            break;
-        quint64 request_token;
-        if (!validateRequestToken (*datagram, request, &request_token))
-            break;
-        */
-        emit room_list[session->current_room.value ()]->receiveRequest (request_oneof, session);
-    } break;
-    case RTS::Request::MessageCase::kUnitCreate: {
-        const RTS::UnitCreateRequest& request = request_oneof.unit_create ();
-        quint64 session_token;
-        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
-        emit room_list[session->current_room.value ()]->receiveRequest (request_oneof, session);
-    } break;
-    case RTS::Request::MessageCase::kUnitAction: {
-        // qDebug() << "Unit action";
-        const RTS::UnitActionRequest& request = request_oneof.unit_action ();
-        quint64 session_token;
-        QSharedPointer<Session> session = validateSessionRequest (*datagram, request, &session_token);
-        // qDebug() << "Unit action request";
-        emit room_list[session->current_room.value ()]->receiveRequest (request_oneof, session);
-        // emit room_list[session->current_room.value()]->receiveRequest(request_oneof, session);
+        QMap<quint32, QSharedPointer<RoomThread>>::iterator it = room_list.find (session->current_room.value ());
+        if (it == room_list.end ()) {
+            RTS::Response response_oneof;
+            RTS::DeleteRoomResponse* response = response_oneof.mutable_delete_room ();
+            setError (response->mutable_error (), "Room not found", RTS::ERROR_CODE_ROOM_NOT_FOUND);
+
+            std::string message;
+            response_oneof.SerializeToString (&message);
+
+            sendReply (*session, message);
+        }
+
+        emit (*it)->receiveRequest (request_oneof, session);
     }
     }
 }
@@ -352,8 +327,7 @@ void Application::setError (RTS::Error* error, const std::string& error_message,
     error->set_message (error_message);
     error->set_code (error_code);
 }
-template <class Request>
-QSharedPointer<Session> Application::validateSessionRequest (const QNetworkDatagram& client_datagram, const Request& request, quint64* session_token_ptr)
+QSharedPointer<Session> Application::validateSessionRequest (const QNetworkDatagram& client_datagram, const RTS::Request& request, quint64* session_token_ptr)
 {
     if (!request.has_session_token ()) {
         sendReplyError (client_datagram, "Missing 'session_token'", RTS::ERROR_CODE_MALFORMED_MESSAGE);
@@ -373,8 +347,7 @@ QSharedPointer<Session> Application::validateSessionRequest (const QNetworkDatag
     *session_token_ptr = session_token;
     return session;
 }
-template <class Request>
-bool Application::validateRequestToken (const QNetworkDatagram& client_datagram, const Request& request, quint64* request_token_ptr)
+bool Application::validateRequestToken (const QNetworkDatagram& client_datagram, const RTS::Request& request, quint64* request_token_ptr)
 {
     if (!request.has_request_token ()) {
         sendReplyError (client_datagram, "Missing 'request_token'", RTS::ERROR_CODE_MALFORMED_MESSAGE);

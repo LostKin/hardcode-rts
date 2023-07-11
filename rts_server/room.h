@@ -34,13 +34,13 @@ public:
     bool start (QString& error_message);
 
 signals:
-    void sendResponseRoom (RTS::Response response, QSharedPointer<Session> session);
-    void receiveRequest (RTS::Request request, QSharedPointer<Session> session);
+    void sendResponseRoom (const RTS::Response& response, QSharedPointer<Session> session);
+    void receiveRequest (const RTS::Request& request, QSharedPointer<Session> session);
 
 private slots:
     void readyHandler ();
     void tick ();
 
 public slots:
-    void receiveRequestHandlerRoom (RTS::Request request_oneof, QSharedPointer<Session> session);
+    void receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session);
 };
