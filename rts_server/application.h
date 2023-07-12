@@ -11,6 +11,7 @@
 #include <QMap>
 #include <QSharedPointer>
 
+// TODO: Locking sessions
 struct Session {
     QHostAddress client_address;
     quint16 client_port;
@@ -24,14 +25,6 @@ struct Session {
 
 class NetworkThread;
 class RoomThread;
-
-/*class Room {
-public:
-    quint32 id;
-    NetworkThread* network_thread;
-
-    Room();
-};*/
 
 class Application: public QCoreApplication
 {
@@ -52,13 +45,11 @@ private slots:
 
 private:
     QSharedPointer<NetworkThread> network_thread;
-    QMap<quint32, QSharedPointer<RoomThread>> room_list;
+    QMap<quint32, QSharedPointer<RoomThread>> rooms;
     QMap<QByteArray, QByteArray> user_passwords;
     quint64 next_session_token;
     QMap<quint64, QSharedPointer<Session>> sessions;
     QMap<QByteArray, quint64> login_session_tokens;
-    // Room room;
-    QMap<quint32, QString> rooms;
 
     quint64 nextSessionToken ();
     bool clientMatch (const QNetworkDatagram& datagram, const Session& session);

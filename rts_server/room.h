@@ -27,6 +27,7 @@ private:
     // QVector<std::optional<Session*> > teams;
     void setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code);
     void init_matchstate ();
+    void emitStatsUpdated ();
     int sampling = 0;
 
 public:
@@ -36,6 +37,7 @@ public:
 signals:
     void sendResponseRoom (const RTS::Response& response, QSharedPointer<Session> session);
     void receiveRequest (const RTS::Request& request, QSharedPointer<Session> session);
+    void statsUpdated (quint32 player_count, quint32 ready_player_count, quint32 spectator_count);
 
 private slots:
     void readyHandler ();

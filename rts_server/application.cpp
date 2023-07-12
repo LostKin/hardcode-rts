@@ -115,10 +115,20 @@ void Application::sendReplyRoomList (const Session& session, quint64 session_tok
     response_oneof.mutable_session_token ()->set_value (session_token);
     RTS::RoomListResponse* response = response_oneof.mutable_room_list ();
     google::protobuf::RepeatedPtrField<RTS::RoomInfo>* room_info_list = response->mutable_room_info_list ();
-    for (QMap<quint32, QString>::const_iterator room_it = rooms.constBegin (); room_it != rooms.constEnd (); ++room_it) {
+    QMap<quint32, quint32> room_client_counters;
+    for (QMap<quint64, QSharedPointer<Session>>::const_iterator it = sessions.constBegin (); it != sessions.constEnd (); ++it) {
+        if ((*it)->current_room.has_value ())
+            room_client_counters[(*it)->current_room.value ()]++;
+    }
+    for (QMap<quint32, QSharedPointer<RoomThread>>::const_iterator room_it = rooms.constBegin (); room_it != rooms.constEnd (); ++room_it) {
+        const RoomThread& room_thread = **room_it;
         RTS::RoomInfo* room_info = room_info_list->Add ();
         room_info->set_id (room_it.key ());
-        room_info->set_name (room_it.value ().toStdString ());
+        room_info->set_name (room_thread.name ().toStdString ());
+        room_info->set_client_count (room_client_counters[room_it.key ()]);
+        room_info->set_player_count (room_thread.playerCount ());
+        room_info->set_ready_player_count (room_thread.readyPlayerCount ());
+        room_info->set_spectator_count (room_thread.spectatorCount ());
     }
 
     std::string message;
@@ -237,20 +247,13 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
             break;
         quint32 new_room_id = 0;
         if (!rooms.empty ()) {
-            QVector<quint32> sorted_room_ids;
-            for (QMap<quint32, QString>::const_iterator room_it = rooms.constBegin (); room_it != rooms.constEnd (); ++room_it)
-                sorted_room_ids.append (room_it.key ());
-            std::sort (sorted_room_ids.begin (), sorted_room_ids.end ());
-            for (quint32 room_id : sorted_room_ids) {
-                if (new_room_id < room_id)
-                    break;
-                new_room_id = room_id + 1;
-            }
+            for (QMap<quint32, QSharedPointer<RoomThread>>::const_iterator room_it = rooms.constBegin (); room_it != rooms.constEnd (); ++room_it)
+                new_room_id = qMax (new_room_id, room_it.key ());
+            ++new_room_id;
         }
-        room_list[new_room_id].reset (new RoomThread (this));
-        connect (&*room_list[new_room_id], &RoomThread::receiveRequest, &*room_list[new_room_id], &RoomThread::receiveRequestHandler);
-        connect (&*room_list[new_room_id], &RoomThread::sendResponse, this, &Application::receiveResponseHandler);
-        rooms[new_room_id] = QString::fromStdString (request.name ());
+        rooms[new_room_id].reset (new RoomThread (QString::fromStdString (request.name ()), this));
+        connect (&*rooms[new_room_id], &RoomThread::receiveRequest, &*rooms[new_room_id], &RoomThread::receiveRequestHandler);
+        connect (&*rooms[new_room_id], &RoomThread::sendResponse, this, &Application::receiveResponseHandler);
 
         RTS::Response response_oneof;
         response_oneof.mutable_request_token ()->set_value (request_token);
@@ -276,7 +279,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         quint64 request_token;
         if (!validateRequestToken (*datagram, request_oneof, &request_token))
             break;
-        QMap<quint32, QString>::iterator room_it = rooms.find (request.room_id ());
+        QMap<quint32, QSharedPointer<RoomThread>>::iterator room_it = rooms.find (request.room_id ());
         if (room_it == rooms.end ()) {
             RTS::Response response_oneof;
             RTS::DeleteRoomResponse* response = response_oneof.mutable_delete_room ();
@@ -306,16 +309,28 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         QSharedPointer<Session> session = validateSessionRequest (*datagram, request_oneof, &session_token);
         if (session.isNull ())
             break;
-        QMap<quint32, QSharedPointer<RoomThread>>::iterator it = room_list.find (session->current_room.value ());
-        if (it == room_list.end ()) {
+        if (!session->current_room.has_value ()) {
             RTS::Response response_oneof;
-            RTS::DeleteRoomResponse* response = response_oneof.mutable_delete_room ();
+            RTS::ErrorResponse* response = response_oneof.mutable_error ();
+            setError (response->mutable_error (), "Not joined room", RTS::ERROR_CODE_NOT_JOINED_ROOM);
+
+            std::string message;
+            response_oneof.SerializeToString (&message);
+
+            sendReply (*session, message);
+            break;
+        }
+        QMap<quint32, QSharedPointer<RoomThread>>::iterator it = rooms.find (session->current_room.value ());
+        if (it == rooms.end ()) {
+            RTS::Response response_oneof;
+            RTS::ErrorResponse* response = response_oneof.mutable_error ();
             setError (response->mutable_error (), "Room not found", RTS::ERROR_CODE_ROOM_NOT_FOUND);
 
             std::string message;
             response_oneof.SerializeToString (&message);
 
             sendReply (*session, message);
+            break;
         }
 
         emit (*it)->receiveRequest (request_oneof, session);
@@ -362,10 +377,9 @@ void Application::loadRoomList ()
     int size = room_settings.beginReadArray ("rooms");
     for (int new_room_id = 0; new_room_id < size; ++new_room_id) {
         room_settings.setArrayIndex (new_room_id);
-        room_list[new_room_id].reset (new RoomThread (this));
-        connect (&*room_list[new_room_id], &RoomThread::receiveRequest, &*room_list[new_room_id], &RoomThread::receiveRequestHandler);
-        connect (&*room_list[new_room_id], &RoomThread::sendResponse, this, &Application::receiveResponseHandler);
-        rooms[new_room_id] = room_settings.value ("name").toString ();
+        rooms[new_room_id].reset (new RoomThread (room_settings.value ("name").toString (), this));
+        connect (&*rooms[new_room_id], &RoomThread::receiveRequest, &*rooms[new_room_id], &RoomThread::receiveRequestHandler);
+        connect (&*rooms[new_room_id], &RoomThread::sendResponse, this, &Application::receiveResponseHandler);
     }
     room_settings.endArray ();
 }
@@ -374,9 +388,9 @@ void Application::storeRoomList ()
     QSettings room_settings ("room.ini", QSettings::IniFormat);
     room_settings.beginWriteArray ("rooms");
     int i = 0;
-    for (const QString& name : rooms) {
+    for (const QSharedPointer<RoomThread>& room_thread: rooms) {
         room_settings.setArrayIndex (i++);
-        room_settings.setValue ("name", name);
+        room_settings.setValue ("name", room_thread->name ());
     }
     room_settings.endArray ();
 }

@@ -352,7 +352,8 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         QVector<RoomEntry> room_list;
         for (google::protobuf::RepeatedPtrField<RTS::RoomInfo>::const_iterator it = room_info_list.cbegin (); it != room_info_list.cend (); ++it) {
             const RTS::RoomInfo& room_info = *it;
-            room_list.append (RoomEntry (room_info.id (), QString::fromStdString (room_info.name ())));
+            room_list.append ({room_info.id (), QString::fromStdString (room_info.name ()),
+                               room_info.client_count (), room_info.player_count (), room_info.ready_player_count (), room_info.spectator_count ()});
         }
         emit roomListUpdated (room_list);
     } break;

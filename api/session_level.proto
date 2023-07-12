@@ -21,9 +21,10 @@ enum ErrorCode {
     ERROR_CODE_MISSING_SESSION_TOKEN = 5;
     ERROR_CODE_SESSION_EXPIRED = 6;
     ERROR_CODE_ALREADY_JOINED_ROOM = 7;
-    ERROR_CODE_ROOM_NOT_FOUND = 8;
-    ERROR_CODE_TOO_MANY_PLAYERS_IN_ROOM = 9;
-    ERROR_CODE_ALREADY_SELECTED_ROLE = 10;
+    ERROR_CODE_NOT_JOINED_ROOM = 8;
+    ERROR_CODE_ROOM_NOT_FOUND = 9;
+    ERROR_CODE_TOO_MANY_PLAYERS_IN_ROOM = 10;
+    ERROR_CODE_ALREADY_SELECTED_ROLE = 11;
 }
 
 enum Team {
@@ -58,6 +59,10 @@ message Error {
 message RoomInfo {
     uint32 id = 1;
     bytes name = 2;
+    uint32 client_count = 3;
+    uint32 player_count = 4;
+    uint32 ready_player_count = 5;
+    uint32 spectator_count = 6;
 }
 
 message AuthorizationRequest {

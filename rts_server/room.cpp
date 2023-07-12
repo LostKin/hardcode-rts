@@ -226,7 +226,15 @@ void Room::init_matchstate ()
         match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-20, -8), 0);*/
     }
 }
-
+void Room::emitStatsUpdated ()
+{
+    quint32 ready_player_count = 0;
+    for (const QSharedPointer<Session>& session : players) {
+        if (session->ready)
+            ++ready_player_count;
+    }
+    emit statsUpdated (players.count (), ready_player_count, spectators.count ());
+}
 void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session)
 {
     switch (request_oneof.message_case ()) {
@@ -244,6 +252,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             }
             session->current_role = RTS::Role::ROLE_PLAYER;
             players.append (session);
+            emitStatsUpdated ();
 
             RTS::Response response_oneof;
             RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
@@ -267,6 +276,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
     } break;
     case RTS::Request::MessageCase::kReady: {
         session->ready = true;
+        emitStatsUpdated ();
 
         RTS::Response response_oneof;
         RTS::ReadyResponse* response = response_oneof.mutable_ready ();

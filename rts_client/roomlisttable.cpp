@@ -6,11 +6,18 @@
 #include <QPushButton>
 #include <QDebug>
 #include <QMessageBox>
+#include <QHeaderView>
 
 RoomListTable::RoomListTable (QWidget* parent)
-    : QTableWidget (0, 3, parent)
+    : QTableWidget (0, 7, parent)
 {
-    setHorizontalHeaderLabels ({"ID", "Name", ""});
+    setHorizontalHeaderLabels ({"ID", "Name", "Clients", "Players", "Ready", "Spectators", ""});
+    horizontalHeader ()->setStretchLastSection (true);
+    horizontalHeader ()->setSectionResizeMode (2, QHeaderView::ResizeToContents);
+    horizontalHeader ()->setSectionResizeMode (3, QHeaderView::ResizeToContents);
+    horizontalHeader ()->setSectionResizeMode (4, QHeaderView::ResizeToContents);
+    horizontalHeader ()->setSectionResizeMode (5, QHeaderView::ResizeToContents);
+    horizontalHeader ()->setSectionResizeMode (6, QHeaderView::ResizeToContents);
     setEditTriggers (QAbstractItemView::NoEditTriggers);
     setSelectionBehavior (QAbstractItemView::SelectRows);
     connect (this, SIGNAL (cellClicked (int, int)), this, SLOT (cellClicked (int, int)));
@@ -35,10 +42,26 @@ void RoomListTable::setRoomList (const QVector<RoomEntry>& room_list)
             setItem (row, 1, item);
         }
         {
+            QTableWidgetItem* item = new QTableWidgetItem (tr ("%1").arg (entry.client_count));
+            setItem (row, 2, item);
+        }
+        {
+            QTableWidgetItem* item = new QTableWidgetItem (tr ("%1").arg (entry.player_count));
+            setItem (row, 3, item);
+        }
+        {
+            QTableWidgetItem* item = new QTableWidgetItem (tr ("%1").arg (entry.ready_player_count));
+            setItem (row, 4, item);
+        }
+        {
+            QTableWidgetItem* item = new QTableWidgetItem (tr ("%1").arg (entry.spectator_count));
+            setItem (row, 5, item);
+        }
+        {
             QTableWidgetItem* item = new QTableWidgetItem;
             QIcon icon (":/images/icons/delete.png");
             item->setIcon (icon);
-            setItem (row, 2, item);
+            setItem (row, 6, item);
         }
     }
 }
@@ -56,7 +79,7 @@ void RoomListTable::cellClicked (int row, int column)
     if (!name_item)
         return;
     uint32_t room_id = name_item->data (Qt::UserRole).toUInt ();
-    if (column == 2) {
+    if (column == 6) {
         QString room_name = name_item->data (Qt::DisplayRole).toString ();
         QMessageBox::StandardButton reply = QMessageBox::question (this, "Delete room?",
                                                                    "Do you really want to delete room '" + room_name + "'?", QMessageBox::Yes | QMessageBox::No);
