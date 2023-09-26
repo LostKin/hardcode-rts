@@ -353,7 +353,7 @@ void MatchState::blueTeamUserTick (BlueTeamUserData& user_data)
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = *it;
         if (unit.team == Unit::Team::Blue) {
-            for (const Missile* missile : new_missiles) {
+            for (const Missile* missile: new_missiles) {
                 if (missile->type == Missile::Type::Pestilence) {
                     qreal radius = pestilence_splash_attack.range + unitRadius (unit.type);
                     if (pointInsideCircle (unit.position, missile->target_position, radius)) {

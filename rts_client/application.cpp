@@ -89,24 +89,20 @@ void Application::start ()
 void Application::selectRolePlayer ()
 {
     RTS::Request request_oneof;
-    request_oneof.mutable_session_token ()->set_value (session_token.value ());
-    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::SelectRoleRequest* request = request_oneof.mutable_select_role ();
     request->set_role (RTS::Role::ROLE_PLAYER);
     std::string message;
     request_oneof.SerializeToString (&message);
-    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
 }
 void Application::readinessCallback ()
 {
     RTS::Request request_oneof;
-    request_oneof.mutable_session_token ()->set_value (session_token.value ());
-    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::ReadyRequest* request = request_oneof.mutable_ready ();
     (void) request;
     std::string message;
     request_oneof.SerializeToString (&message);
-    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
 }
 void Application::matchStartCallback ()
 {
@@ -152,50 +148,44 @@ void Application::loginCallback (const AuthorizationCredentials& credentials) //
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+    network_thread->sendDatagram ({this->host_address, this->port, {}, request_id++, QByteArray::fromStdString (message)});
 
     setCurrentWindow (authorization_progress_widget);
 }
 void Application::createRoomCallback (const QString& name)
 {
-    if (!session_token.has_value ())
+    if (!session_id.has_value ())
         return;
 
     RTS::Request request_oneof;
-    request_oneof.mutable_session_token ()->set_value (session_token.value ());
-    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::CreateRoomRequest* request = request_oneof.mutable_create_room ();
     request->set_name (name.toStdString ());
 
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
 }
 void Application::joinRoomCallback (quint32 room_id)
 {
-    if (!session_token.has_value ())
+    if (!session_id.has_value ())
         return;
 
     RTS::Request request_oneof;
-    request_oneof.mutable_session_token ()->set_value (session_token.value ());
-    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::JoinRoomRequest* request = request_oneof.mutable_join_room ();
     request->set_room_id (room_id);
 
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
 }
 void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF position)
 {
-    if (!session_token.has_value ())
+    if (!session_id.has_value ())
         return;
 
     RTS::Request request_oneof;
-    request_oneof.mutable_session_token ()->set_value (session_token.value ());
-    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::UnitCreateRequest* request = request_oneof.mutable_unit_create ();
     request->mutable_position ()->set_x (position.x ());
     request->mutable_position ()->set_y (position.y ());
@@ -223,7 +213,7 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
 }
 void Application::savedCredentials (const QVector<AuthorizationCredentials>& credentials)
 {
@@ -241,15 +231,11 @@ void Application::savedCredentials (const QVector<AuthorizationCredentials>& cre
     }
 }
 void Application::unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action)
-// void Application::unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target)
 {
-    // qDebug() << "Create unit action callback";
-    if (!session_token.has_value ())
+    if (!session_id.has_value ())
         return;
 
     RTS::Request request_oneof;
-    request_oneof.mutable_session_token ()->set_value (session_token.value ());
-    request_oneof.mutable_request_token ()->set_value (request_token++);
     RTS::UnitActionRequest* request = request_oneof.mutable_unit_action ();
     request->set_unit_id (id);
     RTS::UnitAction* unit_action = request->mutable_action ();
@@ -272,7 +258,6 @@ void Application::unitActionCallback (quint32 id, const std::variant<StopAction,
             attack->mutable_unit ()->set_id (std::get<quint32> (attack_action.target));
         }
     } else if (std::holds_alternative<CastAction> (action)) {
-        // qDebug() << "Requesting a cast action";
         CastAction cast_action = std::get<CastAction> (action);
         RTS::CastAction* cast = unit_action->mutable_cast ();
         cast->mutable_position ()->mutable_position ()->set_x (cast_action.target.x ());
@@ -296,22 +281,21 @@ void Application::unitActionCallback (quint32 id, const std::variant<StopAction,
         }
     }
 
-    // qDebug() << "creating unit action request";
-
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), this->host_address, this->port));
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
 }
 
-void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datagram)
+void Application::sessionDatagramHandler (const QSharedPointer<HCCN::ServerToClient::Message>& message)
 {
-    QByteArray data = datagram->data ();
+    const QByteArray& data = message->message;
     RTS::Response response_oneof;
     if (!response_oneof.ParseFromArray (data.data (), data.size ())) {
         qDebug () << "Invalid response from server: failed to parse protobuf message";
         return;
     }
+
     switch (response_oneof.message_case ()) {
     case RTS::Response::MessageCase::kAuthorization: {
         const RTS::AuthorizationResponse& response = response_oneof.authorization ();
@@ -322,22 +306,24 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
         } break;
         case RTS::AuthorizationResponse::kSessionToken: {
             const RTS::SessionToken& session_token = response.session_token ();
-            this->session_token = session_token.value ();
+            this->session_id = session_token.value ();
             showLobby (login);
 
             RTS::Request request_oneof;
-            request_oneof.mutable_session_token ()->set_value (*this->session_token);
             RTS::QueryRoomListRequest* request = request_oneof.mutable_query_room_list ();
             (void) request;
             std::string message;
             request_oneof.SerializeToString (&message);
 
-            network_thread->sendDatagram (QNetworkDatagram (QByteArray::fromStdString (message), host_address, port));
+            network_thread->sendDatagram ({this->host_address, this->port, *this->session_id, request_id++, QByteArray::fromStdString (message)});
         } break;
         default: {
             qDebug () << "Response -> AuthorizationResponse -> UNKNOWN:" << response.response_case ();
         }
         }
+    } break;
+    case RTS::Response::MessageCase::kSessionClosed: {
+        qDebug () << "Response -> SessionClosedResponse -> NOT IMPLEMENTED";
     } break;
     case RTS::Response::MessageCase::kJoinRoom: {
         showRoom ();
@@ -416,7 +402,7 @@ void Application::sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datag
                     QVector<QPair<quint32, Unit>> units;
                     QVector<QPair<quint32, Missile>> missiles;
                     const QVector<QSharedPointer<RTS::MatchStateFragmentResponse>>& fragments = (*it)->fragments ();
-                    for (const QSharedPointer<RTS::MatchStateFragmentResponse>& fragment : fragments) {
+                    for (const QSharedPointer<RTS::MatchStateFragmentResponse>& fragment: fragments) {
                         QString error_message;
                         if (!parseMatchStateFragment (*fragment, units, missiles, error_message)) {
                             QMessageBox::critical (nullptr, "Malformed message from server", error_message);
@@ -615,6 +601,7 @@ bool Application::parseMatchStateFragment (const RTS::MatchStateFragmentResponse
         units.last ().second.hp = r_unit.health ();
         switch (r_unit.current_action ().action_case ()) {
         case RTS::UnitAction::kStop: {
+            // TODO: Stop selected only
             StopAction stop;
             if (r_unit.current_action ().stop ().has_target ()) {
                 stop.current_target = r_unit.current_action ().stop ().target ().id ();

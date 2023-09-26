@@ -35,8 +35,8 @@ public:
     bool start (QString& error_message);
 
 signals:
-    void sendResponseRoom (const RTS::Response& response, QSharedPointer<Session> session);
-    void receiveRequest (const RTS::Request& request, QSharedPointer<Session> session);
+    void sendResponseRoom (const RTS::Response& response, const QSharedPointer<Session>& session, quint64 request_id);
+    void receiveRequest (const RTS::Request& request, const QSharedPointer<Session>& session, quint64 request_id);
     void statsUpdated (quint32 player_count, quint32 ready_player_count, quint32 spectator_count);
 
 private slots:
@@ -44,5 +44,5 @@ private slots:
     void tick ();
 
 public slots:
-    void receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session);
+    void receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session, quint64 request_id);
 };

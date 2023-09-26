@@ -28,7 +28,7 @@ AuthorizationWidget::AuthorizationWidget (const QVector<AuthorizationCredentials
             table->horizontalHeader ()->setStretchLastSection (true);
             table->setHorizontalHeaderLabels ({"Endpoint"});
             int new_idx = 0;
-            for (const AuthorizationCredentials& entry : initial_credentials) {
+            for (const AuthorizationCredentials& entry: initial_credentials) {
                 table->insertRow (new_idx);
 
                 QTableWidgetItem* item = new QTableWidgetItem (entry.login + "@" + entry.host + ":" + QString::number (entry.port));

@@ -1,5 +1,8 @@
 #pragma once
 
+#include "client_to_server.h"
+#include "server_to_client.h"
+
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #include <QQueue>
@@ -12,19 +15,20 @@ class NetworkManager: public QObject
 public:
     NetworkManager (QObject* parent = nullptr);
     bool start (QString& error_message);
-    QSharedPointer<QNetworkDatagram> takeDatagram ();
+    QSharedPointer<HCCN::ServerToClient::Message> takeDatagram ();
 
 signals:
-    void sendDatagram (const QNetworkDatagram& datagram);
+    void sendDatagram (const HCCN::ClientToServer::Message& transport_message);
     void datagramsReady ();
 
 private:
     QUdpSocket socket;
     int return_code = 0;
-    QQueue<QSharedPointer<QNetworkDatagram>> input_queue;
+    QHash<HCCN::TransportMessageIdentifier, QSharedPointer<HCCN::ServerToClient::MessageFragmentCollector>> input_fragment_queue;
+    QQueue<QSharedPointer<HCCN::ServerToClient::Message>> input_queue;
     QMutex input_queue_mutex;
 
 private slots:
     void recieveDatagrams ();
-    void sendDatagramHandler (const QNetworkDatagram& datagram);
+    void sendDatagramHandler (const HCCN::ClientToServer::Message& transport_message);
 };

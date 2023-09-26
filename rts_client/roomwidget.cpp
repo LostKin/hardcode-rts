@@ -2673,7 +2673,7 @@ QVector<QPair<quint32, const Unit*>> RoomWidget::buildOrderedSelection ()
         Unit::Type::Beetle,
     };
 
-    for (const Unit::Type unit_type : unit_order) {
+    for (const Unit::Type unit_type: unit_order) {
         for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
             if (it->selected && it->type == unit_type) {
                 selection.append ({it.key (), &*it});

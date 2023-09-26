@@ -1,5 +1,8 @@
 #pragma once
 
+#include "client_to_server.h"
+#include "server_to_client.h"
+
 #include <QThread>
 #include <QUdpSocket>
 #include <QNetworkDatagram>
@@ -11,11 +14,11 @@ class NetworkThread: public QThread
 public:
     NetworkThread (QObject* parent = nullptr);
     const QString& errorMessage ();
-    void sendDatagram (const QNetworkDatagram& datagram);
+    void sendDatagram (const HCCN::ClientToServer::Message& datagram);
 
 signals:
-    void sendDatagramSignal (const QNetworkDatagram& datagram);
-    void datagramReceived (QSharedPointer<QNetworkDatagram> datagram);
+    void sendDatagramSignal (const HCCN::ClientToServer::Message& datagram);
+    void datagramReceived (const QSharedPointer<HCCN::ServerToClient::Message>& datagram);
 
 protected:
     void run () override;

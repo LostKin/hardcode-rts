@@ -2,10 +2,11 @@
 
 #include <QThread>
 #include <QUdpSocket>
-#include <QDebug>
 #include <QCoreApplication>
 #include <QNetworkDatagram>
 #include <QTimer>
+
+static constexpr quint32 kTickDurationMs = 20;
 
 Room::Room (QObject* parent)
     : QObject (parent)
@@ -19,7 +20,6 @@ void Room::tick ()
     quint32 tick_no = match_state->get_tick_no ();
     match_state->tick ();
     QVector<RTS::Response> responses_for_red, responses_for_blue;
-    // RTS::Response response_oneof_for_red, response_oneof_for_blue;
     QHash<quint32, Unit>::const_iterator u_iter = match_state->unitsRef ().cbegin ();
     while (u_iter != match_state->unitsRef ().cend ()) {
         responses_for_red.push_back (RTS::Response ());
@@ -200,8 +200,8 @@ void Room::tick ()
         responses_for_blue[i].mutable_match_state_fragment ()->set_fragment_count (responses_for_blue.size ());
         responses_for_red[i].mutable_match_state_fragment ()->set_tick (tick_no);
         responses_for_blue[i].mutable_match_state_fragment ()->set_tick (tick_no);
-        emit sendResponseRoom (responses_for_red[i], red_team);
-        emit sendResponseRoom (responses_for_blue[i], blue_team);
+        emit sendResponseRoom (responses_for_red[i], red_team, {});
+        emit sendResponseRoom (responses_for_blue[i], blue_team, {});
     }
 
     // sampling = 1 - sampling;
@@ -229,13 +229,13 @@ void Room::init_matchstate ()
 void Room::emitStatsUpdated ()
 {
     quint32 ready_player_count = 0;
-    for (const QSharedPointer<Session>& session : players) {
+    for (const QSharedPointer<Session>& session: players) {
         if (session->ready)
             ++ready_player_count;
     }
     emit statsUpdated (players.count (), ready_player_count, spectators.count ());
 }
-void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session)
+void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session, quint64 request_id)
 {
     switch (request_oneof.message_case ()) {
     case RTS::Request::MessageCase::kSelectRole: {
@@ -245,9 +245,8 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             if (players.size () >= 2) {
                 RTS::Response response_oneof;
                 RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
-                response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
                 setError (response->mutable_error (), "Too many players in room", RTS::ERROR_CODE_TOO_MANY_PLAYERS_IN_ROOM);
-                emit sendResponseRoom (response_oneof, session);
+                emit sendResponseRoom (response_oneof, session, request_id);
                 return;
             }
             session->current_role = RTS::Role::ROLE_PLAYER;
@@ -256,21 +255,18 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
 
             RTS::Response response_oneof;
             RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
-            response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
             response->mutable_success ();
-            emit sendResponseRoom (response_oneof, session);
+            emit sendResponseRoom (response_oneof, session, request_id);
         } else if (request.role () == RTS::Role::ROLE_SPECTATOR) {
             RTS::Response response_oneof;
             RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
-            response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
             setError (response->mutable_error (), "Spectatorship not implemented", RTS::ERROR_CODE_NOT_IMPLEMENTED);
-            emit sendResponseRoom (response_oneof, session);
+            emit sendResponseRoom (response_oneof, session, request_id);
         } else {
             RTS::Response response_oneof;
             RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
-            response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
             setError (response->mutable_error (), "Invalid role specified", RTS::ERROR_CODE_MALFORMED_MESSAGE);
-            emit sendResponseRoom (response_oneof, session);
+            emit sendResponseRoom (response_oneof, session, request_id);
         }
 
     } break;
@@ -281,7 +277,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
         RTS::Response response_oneof;
         RTS::ReadyResponse* response = response_oneof.mutable_ready ();
         response->mutable_success ();
-        emit sendResponseRoom (response_oneof, session);
+        emit sendResponseRoom (response_oneof, session, request_id);
 
         if (players.size () == 2 && players[0]->ready && players[1]->ready) {
             red_team = players[0];
@@ -294,13 +290,13 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
                 RTS::Response response_oneof;
                 RTS::MatchPreparedResponse* response = response_oneof.mutable_match_prepared ();
                 response->set_team (RTS::Team::TEAM_RED);
-                emit sendResponseRoom (response_oneof, red_team);
+                emit sendResponseRoom (response_oneof, red_team, request_id);
             }
             {
                 RTS::Response response_oneof;
                 RTS::MatchPreparedResponse* response = response_oneof.mutable_match_prepared ();
                 response->set_team (RTS::Team::TEAM_BLUE);
-                emit sendResponseRoom (response_oneof, blue_team);
+                emit sendResponseRoom (response_oneof, blue_team, request_id);
             }
 
             QTimer::singleShot (5000, this, &Room::readyHandler);
@@ -327,7 +323,6 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             type = Unit::Type::Contaminator;
         } break;
         }
-        // qDebug() << "room.cpp" << request.position().x() << request.position().y();
         QHash<quint32, Unit>::iterator unit = match_state->createUnit (type, team, QPointF (request.position ().x (), request.position ().y ()), 0);
         if (*session->current_team == Unit::Team::Red) {
             red_client_to_server[request.id ()] = unit.key ();
@@ -351,14 +346,12 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
                 match_state->setAction (request.unit_id (), MoveAction (QPointF (request.action ().move ().position ().position ().x (),
                                                                                  request.action ().move ().position ().position ().y ())));
             } else if (action.move ().has_unit ()) {
-                // qDebug() << "Moving to unit";
                 match_state->setAction (request.unit_id (), MoveAction (action.move ().unit ().id ()));
             } else {
                 RTS::Response response_oneof;
                 RTS::ErrorResponse* response = response_oneof.mutable_error ();
-                response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
                 setError (response->mutable_error (), "Malformed message", RTS::ERROR_CODE_MALFORMED_MESSAGE);
-                emit sendResponseRoom (response_oneof, session);
+                emit sendResponseRoom (response_oneof, session, request_id);
             }
 
         } break;
@@ -366,17 +359,13 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             if (action.attack ().has_position ()) {
                 match_state->setAction (request.unit_id (), AttackAction (QPointF (request.action ().attack ().position ().position ().x (),
                                                                                    request.action ().attack ().position ().position ().y ())));
-                // qDebug() << "Attacking position";
             } else if (action.attack ().has_unit ()) {
-                // qDebug() << "Moving to unit";
                 match_state->setAction (request.unit_id (), AttackAction (action.attack ().unit ().id ()));
-                // qDebug() << "Attacking unit" << acto;
             } else {
                 RTS::Response response_oneof;
                 RTS::ErrorResponse* response = response_oneof.mutable_error ();
-                response_oneof.mutable_request_token ()->set_value (request_oneof.request_token ().value ());
                 setError (response->mutable_error (), "Malformed message", RTS::ERROR_CODE_MALFORMED_MESSAGE);
-                emit sendResponseRoom (response_oneof, session);
+                emit sendResponseRoom (response_oneof, session, request_id);
             }
 
         } break;
@@ -411,9 +400,8 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
     default: {
         RTS::Response response_oneof;
         RTS::ErrorResponse* response = response_oneof.mutable_error ();
-        // response->mutable_request_token ()->set_value (request.request_token ().value ());
         setError (response->mutable_error (), "Unknown message from client", RTS::ERROR_CODE_MALFORMED_MESSAGE);
-        emit sendResponseRoom (response_oneof, session);
+        emit sendResponseRoom (response_oneof, session, request_id);
     }
     }
 }
@@ -421,13 +409,10 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
 void Room::readyHandler ()
 {
     init_matchstate ();
-    const quint32 TICK_LENGTH = 20;
-    timer->start (TICK_LENGTH);
-    qDebug () << "readyHandler started";
+    timer->start (kTickDurationMs);
     RTS::Response response_oneof;
     RTS::MatchStartResponse* response = response_oneof.mutable_match_start ();
     (void) response;
-    emit sendResponseRoom (response_oneof, red_team);
-    emit sendResponseRoom (response_oneof, blue_team);
-    return;
+    emit sendResponseRoom (response_oneof, red_team, {});
+    emit sendResponseRoom (response_oneof, blue_team, {});
 }

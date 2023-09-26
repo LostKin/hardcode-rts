@@ -35,13 +35,13 @@ private:
     quint32 spectator_count = 0;
 
 signals:
-    void receiveRequest (const RTS::Request& request_oneof, QSharedPointer<Session> session);
-    void sendRequest (const RTS::Request& request_oneof, QSharedPointer<Session> session);
-    void sendResponse (const RTS::Response& response, QSharedPointer<Session> session);
+    void receiveRequest (const RTS::Request& request_oneof, const QSharedPointer<Session>& session, quint64 request_id);
+    void sendRequest (const RTS::Request& request_oneof, const QSharedPointer<Session>& session, quint64 request_id);
+    void sendResponse (const RTS::Response& response, const QSharedPointer<Session>& session, quint64 request_id);
 
 public slots:
-    void receiveRequestHandler (const RTS::Request& request_oneof, QSharedPointer<Session> session);
-    void sendResponseHandler (const RTS::Response& response, QSharedPointer<Session> session);
+    void receiveRequestHandler (const RTS::Request& request_oneof, const QSharedPointer<Session>& session, quint64 request_id);
+    void sendResponseHandler (const RTS::Response& response, const QSharedPointer<Session>& session, quint64 request_id);
 
 private slots:
     void updateStats (quint32 player_count, quint32 ready_player_count, quint32 spectator_count);

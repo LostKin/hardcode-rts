@@ -57,7 +57,7 @@ private slots:
     void loginCallback (const AuthorizationCredentials& credentials);
     void createRoomCallback (const QString& name);
     void joinRoomCallback (quint32 name);
-    void sessionDatagramHandler (QSharedPointer<QNetworkDatagram> datagram);
+    void sessionDatagramHandler (const QSharedPointer<HCCN::ServerToClient::Message>& message);
     void selectRolePlayerCallback ();
     void joinSpectatorCallback ();
     void readinessCallback ();
@@ -76,8 +76,8 @@ private:
     QHostAddress host_address;
     quint16 port;
     QString login;
-    std::optional<quint64> session_token;
-    quint64 request_token = 0;
+    std::optional<quint64> session_id;
+    quint64 request_id = 0;
     QHash<quint32, QSharedPointer<MatchStateCollector>> match_state_collectors;
     quint32 last_tick = 0;
 };

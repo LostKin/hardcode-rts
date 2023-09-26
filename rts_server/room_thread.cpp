@@ -39,13 +39,13 @@ void RoomThread::run ()
 {
     return_code = exec ();
 }
-void RoomThread::receiveRequestHandler (const RTS::Request& request_oneof, QSharedPointer<Session> session)
+void RoomThread::receiveRequestHandler (const RTS::Request& request_oneof, const QSharedPointer<Session>& session, quint64 request_id)
 {
-    emit sendRequest (request_oneof, session);
+    emit sendRequest (request_oneof, session, request_id);
 }
-void RoomThread::sendResponseHandler (const RTS::Response& response, QSharedPointer<Session> session)
+void RoomThread::sendResponseHandler (const RTS::Response& response, const QSharedPointer<Session>& session, quint64 request_id)
 {
-    emit sendResponse (response, session);
+    emit sendResponse (response, session, request_id);
 }
 void RoomThread::updateStats (quint32 player_count, quint32 ready_player_count, quint32 spectator_count)
 {

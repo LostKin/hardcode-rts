@@ -14,7 +14,7 @@ const QString& NetworkThread::errorMessage ()
 {
     return error_message;
 }
-void NetworkThread::sendDatagram (const QNetworkDatagram& datagram)
+void NetworkThread::sendDatagram (const HCCN::ClientToServer::Message& datagram)
 {
     emit sendDatagramSignal (datagram);
 }
@@ -32,7 +32,7 @@ void NetworkThread::run ()
 void NetworkThread::recieveDatagrams ()
 {
     NetworkManager* network_manager = (NetworkManager*) sender ();
-    while (QSharedPointer<QNetworkDatagram> datagram = network_manager->takeDatagram ()) {
-        emit datagramReceived (datagram);
+    while (QSharedPointer<HCCN::ServerToClient::Message> network_message = network_manager->takeDatagram ()) {
+        emit datagramReceived (network_message);
     }
 }
