@@ -305,7 +305,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
     case RTS::Request::MessageCase::kUnitCreate: {
         const RTS::UnitCreateRequest& request = request_oneof.unit_create ();
         Unit::Team team = *session->current_team;
-        Unit::Type type = Unit::Type::Goon;
+        Unit::Type type = Unit::Type::Goon; // TODO: Handle wrong value properly
         switch (request.unit_type ()) {
         case RTS::UnitType::UNIT_TYPE_CRUSADER: {
             type = Unit::Type::Crusader;
@@ -329,7 +329,6 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
         } else if (*session->current_team == Unit::Team::Blue) {
             blue_client_to_server[request.id ()] = unit.key ();
         }
-
     } break;
     case RTS::Request::MessageCase::kUnitAction: {
         const RTS::UnitActionRequest& request = request_oneof.unit_action ();
