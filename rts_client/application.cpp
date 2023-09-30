@@ -10,40 +10,6 @@
 #include <QMessageBox>
 #include <QSettings>
 
-MatchStateCollector::MatchStateCollector (const RTS::MatchStateFragmentResponse& initial_fragment)
-{
-    if (initial_fragment.fragment_count () > 0 && initial_fragment.fragment_count () <= 1024 && initial_fragment.fragment_no () < initial_fragment.fragment_count ()) {
-        fragments_.resize (initial_fragment.fragment_count ());
-        fragments_[initial_fragment.fragment_no ()] = QSharedPointer<RTS::MatchStateFragmentResponse> (new RTS::MatchStateFragmentResponse (initial_fragment));
-        filled_fragment_count = 1;
-    } else {
-        filled_fragment_count = 0;
-    }
-}
-bool MatchStateCollector::addFragment (const RTS::MatchStateFragmentResponse& fragment)
-{
-    if (fragment.fragment_no () >= quint32 (fragments_.size ())) {
-        return false;
-    }
-    if (!fragments_[fragment.fragment_no ()]) {
-        fragments_[fragment.fragment_no ()] = QSharedPointer<RTS::MatchStateFragmentResponse> (new RTS::MatchStateFragmentResponse (fragment));
-        ++filled_fragment_count;
-    }
-    return true;
-}
-bool MatchStateCollector::valid () const
-{
-    return fragments_.size () > 0;
-}
-bool MatchStateCollector::filled () const
-{
-    return filled_fragment_count == quint32 (fragments_.size ());
-}
-const QVector<QSharedPointer<RTS::MatchStateFragmentResponse>>& MatchStateCollector::fragments () const
-{
-    return fragments_;
-}
-
 Application::Application (int& argc, char** argv)
     : QApplication (argc, argv)
 {
@@ -372,56 +338,17 @@ void Application::sessionDatagramHandler (const QSharedPointer<HCCN::ServerToCli
     case RTS::Response::MessageCase::kMatchStart: {
         emit startMatch ();
     } break;
-    case RTS::Response::MessageCase::kMatchStateFragment: {
-        const RTS::MatchStateFragmentResponse& response = response_oneof.match_state_fragment ();
-        if (response.fragment_count () == 1) {
-            QVector<QPair<quint32, Unit>> units;
-            QVector<QPair<quint32, Missile>> missiles;
-            QString error_message;
-            if (!parseMatchStateFragment (response, units, missiles, error_message)) {
-                QMessageBox::critical (nullptr, "Malformed message from server", error_message);
-                return;
-            }
-            emit updateMatchState (units, missiles);
-            last_tick = response.tick ();
-        } else if (response.tick () > last_tick) {
-            QHash<quint32, QSharedPointer<MatchStateCollector>>::iterator it = match_state_collectors.find (response.tick ());
-            if (it == match_state_collectors.end ()) {
-                QSharedPointer<MatchStateCollector> match_state_collector = QSharedPointer<MatchStateCollector> (new MatchStateCollector (response));
-                if (!match_state_collector->valid ()) {
-                    QMessageBox::critical (nullptr, "Malformed message from server", "Invalid 'MatchState' from server: invalid fragment info");
-                    return;
-                }
-                match_state_collectors[response.tick ()] = match_state_collector;
-            } else {
-                if (!(*it)->addFragment (response)) {
-                    QMessageBox::critical (nullptr, "Malformed message from server", "Invalid 'MatchState' from server: invalid fragment info");
-                    return;
-                }
-                if ((*it)->filled ()) {
-                    QVector<QPair<quint32, Unit>> units;
-                    QVector<QPair<quint32, Missile>> missiles;
-                    const QVector<QSharedPointer<RTS::MatchStateFragmentResponse>>& fragments = (*it)->fragments ();
-                    for (const QSharedPointer<RTS::MatchStateFragmentResponse>& fragment: fragments) {
-                        QString error_message;
-                        if (!parseMatchStateFragment (*fragment, units, missiles, error_message)) {
-                            QMessageBox::critical (nullptr, "Malformed message from server", error_message);
-                            return;
-                        }
-                    }
-                    emit updateMatchState (units, missiles);
-                }
-            }
+    case RTS::Response::MessageCase::kMatchState: {
+        const RTS::MatchStateResponse& response = response_oneof.match_state ();
+        QVector<QPair<quint32, Unit>> units;
+        QVector<QPair<quint32, Missile>> missiles;
+        QString error_message;
+        if (!parseMatchState (response, units, missiles, error_message)) {
+            QMessageBox::critical (nullptr, "Malformed message from server", error_message);
+            return;
         }
-        {
-            QHash<quint32, QSharedPointer<MatchStateCollector>>::iterator it = match_state_collectors.begin ();
-            while (it != match_state_collectors.end ()) {
-                if (it.key () <= last_tick)
-                    it = match_state_collectors.erase (it);
-                else
-                    ++it;
-            }
-        }
+        emit updateMatchState (units, missiles);
+        last_tick = response.tick ();
     } break;
     case RTS::Response::MessageCase::kError: {
         const RTS::ErrorResponse& response = response_oneof.error ();
@@ -552,7 +479,7 @@ void Application::startSingleMode (RoomWidget* room_widget)
         units.push_back ({unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Blue, {off * 2.0 / 3.0, 7}, 0}});
     emit updateMatchState (units, {});
 }
-bool Application::parseMatchStateFragment (const RTS::MatchStateFragmentResponse& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message)
+bool Application::parseMatchState (const RTS::MatchStateResponse& response, QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Missile>>& missiles, QString& error_message)
 {
     for (int i = 0; i < response.units_size (); i++) {
         const RTS::Unit& r_unit = response.units (i);

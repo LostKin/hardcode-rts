@@ -259,10 +259,8 @@ message Explosion {
 
 }
 
-message MatchStateFragmentResponse {
+message MatchStateResponse {
     uint32 tick = 1;
-    uint32 fragment_count = 2;
-    uint32 fragment_no = 3;
     repeated Unit units = 4;
     repeated Missile missiles = 5;
 }
@@ -295,7 +293,7 @@ message Response {
         ReadyResponse ready = 11;
         MatchPreparedResponse match_prepared = 12;
         MatchStartResponse match_start = 13;
-        MatchStateFragmentResponse match_state_fragment = 14;
+        MatchStateResponse match_state = 14;
     }
 }
 

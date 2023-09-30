@@ -19,192 +19,164 @@ void Room::tick ()
 {
     quint32 tick_no = match_state->get_tick_no ();
     match_state->tick ();
-    QVector<RTS::Response> responses_for_red, responses_for_blue;
-    QHash<quint32, Unit>::const_iterator u_iter = match_state->unitsRef ().cbegin ();
-    while (u_iter != match_state->unitsRef ().cend ()) {
-        responses_for_red.push_back (RTS::Response ());
-        responses_for_blue.push_back (RTS::Response ());
-        RTS::MatchStateFragmentResponse* response_for_red = responses_for_red.rbegin ()->mutable_match_state_fragment ();
-        RTS::MatchStateFragmentResponse* response_for_blue = responses_for_blue.rbegin ()->mutable_match_state_fragment ();
-        for (int i = 0; i < 16; i++) {
-            if (u_iter == match_state->unitsRef ().cend ()) {
-                break;
-            }
-            RTS::Unit* unit_for_red = response_for_red->add_units ();
-            RTS::Unit* unit_for_blue = response_for_blue->add_units ();
-            if (u_iter->team == Unit::Team::Red) {
-                unit_for_red->set_team (RTS::Team::TEAM_RED);
-                unit_for_blue->set_team (RTS::Team::TEAM_RED);
-                QMap<quint32, quint32>::const_iterator it = red_client_to_server.find (u_iter.key ());
-                if (it != red_client_to_server.cend ()) {
-                    unit_for_red->mutable_client_id ()->set_id (it.key ());
-                }
-            }
-            if (u_iter->team == Unit::Team::Blue) {
-                unit_for_red->set_team (RTS::Team::TEAM_BLUE);
-                unit_for_blue->set_team (RTS::Team::TEAM_BLUE);
-                QMap<quint32, quint32>::const_iterator it = blue_client_to_server.find (u_iter.key ());
-                if (it != blue_client_to_server.cend ()) {
-                    unit_for_blue->mutable_client_id ()->set_id (it.key ());
-                }
-            }
-            switch (u_iter->type) {
-            case Unit::Type::Seal: {
-                unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_SEAL);
-                unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_SEAL);
-            } break;
-            case Unit::Type::Crusader: {
-                unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_CRUSADER);
-                unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_CRUSADER);
-            } break;
-            case Unit::Type::Goon: {
-                unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_GOON);
-                unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_GOON);
-            } break;
-            case Unit::Type::Beetle: {
-                unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_BEETLE);
-                unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_BEETLE);
-            } break;
-            case Unit::Type::Contaminator: {
-                unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_CONTAMINATOR);
-                unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_CONTAMINATOR);
-            } break;
-            }
-            if (std::holds_alternative<StopAction> (u_iter->action)) {
-                if (std::get<StopAction> (u_iter->action).current_target.has_value ()) {
-                    unit_for_red->mutable_current_action ()->mutable_stop ()->mutable_target ()->set_id (std::get<StopAction> (u_iter->action).current_target.value ());
-                    unit_for_blue->mutable_current_action ()->mutable_stop ()->mutable_target ()->set_id (std::get<StopAction> (u_iter->action).current_target.value ());
-                } else {
-                    unit_for_red->mutable_current_action ()->mutable_stop ();
-                    unit_for_blue->mutable_current_action ()->mutable_stop ();
-                }
-            } else if (std::holds_alternative<MoveAction> (u_iter->action)) {
-                if (std::holds_alternative<QPointF> (std::get<MoveAction> (u_iter->action).target)) {
-                    QPointF position = std::get<QPointF> (std::get<MoveAction> (u_iter->action).target);
-                    unit_for_red->mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_x (position.x ());
-                    unit_for_red->mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_y (position.y ());
-                    unit_for_blue->mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_x (position.x ());
-                    unit_for_blue->mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_y (position.y ());
-                } else {
-                    quint32 id = std::get<quint32> (std::get<MoveAction> (u_iter->action).target);
-                    unit_for_red->mutable_current_action ()->mutable_move ()->mutable_unit ()->set_id (id);
-                    unit_for_blue->mutable_current_action ()->mutable_move ()->mutable_unit ()->set_id (id);
-                }
-            } else if (std::holds_alternative<AttackAction> (u_iter->action)) {
-                if (std::holds_alternative<QPointF> (std::get<AttackAction> (u_iter->action).target)) {
-                    QPointF position = std::get<QPointF> (std::get<AttackAction> (u_iter->action).target);
-                    unit_for_red->mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_x (position.x ());
-                    unit_for_red->mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_y (position.y ());
-                    unit_for_blue->mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_x (position.x ());
-                    unit_for_blue->mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_y (position.y ());
-                } else {
-                    quint32 id = std::get<quint32> (std::get<AttackAction> (u_iter->action).target);
-                    unit_for_red->mutable_current_action ()->mutable_attack ()->mutable_unit ()->set_id (id);
-                    unit_for_blue->mutable_current_action ()->mutable_attack ()->mutable_unit ()->set_id (id);
-                }
-            } else if (std::holds_alternative<CastAction> (u_iter->action)) {
-                RTS::CastType type;
-                switch (std::get<CastAction> (u_iter->action).type) {
-                case CastAction::Type::Pestilence: {
-                    type = RTS::CastType::PESTILENCE;
-                } break;
-                case CastAction::Type::SpawnBeetle: {
-                    type = RTS::CastType::SPAWN_BEETLE;
-                } break;
-                }
-                QPointF position = std::get<CastAction> (u_iter->action).target;
-                unit_for_red->mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_x (position.x ());
-                unit_for_red->mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_y (position.y ());
-                unit_for_blue->mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_x (position.x ());
-                unit_for_blue->mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_y (position.y ());
-                unit_for_red->mutable_current_action ()->mutable_cast ()->set_type (type);
-                unit_for_blue->mutable_current_action ()->mutable_cast ()->set_type (type);
-            }
-            unit_for_red->set_attack_remaining_ticks (u_iter->attack_remaining_ticks);
-            unit_for_red->set_cooldown (u_iter->cast_cooldown_left_ticks);
-            unit_for_blue->set_attack_remaining_ticks (u_iter->attack_remaining_ticks);
-            unit_for_blue->set_cooldown (u_iter->cast_cooldown_left_ticks);
+    RTS::Response response_for_red_oneof;
+    RTS::Response response_for_blue_oneof;
+    RTS::MatchStateResponse* response_for_red = response_for_red_oneof.mutable_match_state ();
+    RTS::MatchStateResponse* response_for_blue = response_for_blue_oneof.mutable_match_state ();
+    response_for_red->set_tick (tick_no);
+    response_for_blue->set_tick (tick_no);
 
-            unit_for_red->mutable_position ()->set_x (u_iter->position.x ());
-            unit_for_red->mutable_position ()->set_y (u_iter->position.y ());
-            unit_for_red->set_health (u_iter->hp);
-            unit_for_red->set_orientation (u_iter->orientation);
-            unit_for_red->set_id (u_iter.key ());
-            unit_for_blue->mutable_position ()->set_x (u_iter->position.x ());
-            unit_for_blue->mutable_position ()->set_y (u_iter->position.y ());
-            unit_for_blue->set_health (u_iter->hp);
-            unit_for_blue->set_orientation (u_iter->orientation);
-            unit_for_blue->set_id (u_iter.key ());
-            u_iter++;
+    for (QHash<quint32, Unit>::const_iterator u_iter = match_state->unitsRef ().cbegin (); u_iter != match_state->unitsRef ().cend (); u_iter++) {
+        RTS::Unit* unit_for_red = response_for_red->add_units ();
+        RTS::Unit* unit_for_blue = response_for_blue->add_units ();
+        if (u_iter->team == Unit::Team::Red) {
+            unit_for_red->set_team (RTS::Team::TEAM_RED);
+            unit_for_blue->set_team (RTS::Team::TEAM_RED);
+            QMap<quint32, quint32>::const_iterator it = red_client_to_server.find (u_iter.key ());
+            if (it != red_client_to_server.cend ()) {
+                unit_for_red->mutable_client_id ()->set_id (it.key ());
+            }
+        }
+        if (u_iter->team == Unit::Team::Blue) {
+            unit_for_red->set_team (RTS::Team::TEAM_BLUE);
+            unit_for_blue->set_team (RTS::Team::TEAM_BLUE);
+            QMap<quint32, quint32>::const_iterator it = blue_client_to_server.find (u_iter.key ());
+            if (it != blue_client_to_server.cend ()) {
+                unit_for_blue->mutable_client_id ()->set_id (it.key ());
+            }
+        }
+        switch (u_iter->type) {
+        case Unit::Type::Seal: {
+            unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_SEAL);
+            unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_SEAL);
+        } break;
+        case Unit::Type::Crusader: {
+            unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_CRUSADER);
+            unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_CRUSADER);
+        } break;
+        case Unit::Type::Goon: {
+            unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_GOON);
+            unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_GOON);
+        } break;
+        case Unit::Type::Beetle: {
+            unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_BEETLE);
+            unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_BEETLE);
+        } break;
+        case Unit::Type::Contaminator: {
+            unit_for_red->set_type (RTS::UnitType::UNIT_TYPE_CONTAMINATOR);
+            unit_for_blue->set_type (RTS::UnitType::UNIT_TYPE_CONTAMINATOR);
+        } break;
+        }
+        if (std::holds_alternative<StopAction> (u_iter->action)) {
+            if (std::get<StopAction> (u_iter->action).current_target.has_value ()) {
+                unit_for_red->mutable_current_action ()->mutable_stop ()->mutable_target ()->set_id (std::get<StopAction> (u_iter->action).current_target.value ());
+                unit_for_blue->mutable_current_action ()->mutable_stop ()->mutable_target ()->set_id (std::get<StopAction> (u_iter->action).current_target.value ());
+            } else {
+                unit_for_red->mutable_current_action ()->mutable_stop ();
+                unit_for_blue->mutable_current_action ()->mutable_stop ();
+            }
+        } else if (std::holds_alternative<MoveAction> (u_iter->action)) {
+            if (std::holds_alternative<QPointF> (std::get<MoveAction> (u_iter->action).target)) {
+                QPointF position = std::get<QPointF> (std::get<MoveAction> (u_iter->action).target);
+                unit_for_red->mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_x (position.x ());
+                unit_for_red->mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_y (position.y ());
+                unit_for_blue->mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_x (position.x ());
+                unit_for_blue->mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_y (position.y ());
+            } else {
+                quint32 id = std::get<quint32> (std::get<MoveAction> (u_iter->action).target);
+                unit_for_red->mutable_current_action ()->mutable_move ()->mutable_unit ()->set_id (id);
+                unit_for_blue->mutable_current_action ()->mutable_move ()->mutable_unit ()->set_id (id);
+            }
+        } else if (std::holds_alternative<AttackAction> (u_iter->action)) {
+            if (std::holds_alternative<QPointF> (std::get<AttackAction> (u_iter->action).target)) {
+                QPointF position = std::get<QPointF> (std::get<AttackAction> (u_iter->action).target);
+                unit_for_red->mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_x (position.x ());
+                unit_for_red->mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_y (position.y ());
+                unit_for_blue->mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_x (position.x ());
+                unit_for_blue->mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_y (position.y ());
+            } else {
+                quint32 id = std::get<quint32> (std::get<AttackAction> (u_iter->action).target);
+                unit_for_red->mutable_current_action ()->mutable_attack ()->mutable_unit ()->set_id (id);
+                unit_for_blue->mutable_current_action ()->mutable_attack ()->mutable_unit ()->set_id (id);
+            }
+        } else if (std::holds_alternative<CastAction> (u_iter->action)) {
+            RTS::CastType type;
+            switch (std::get<CastAction> (u_iter->action).type) {
+            case CastAction::Type::Pestilence: {
+                type = RTS::CastType::PESTILENCE;
+            } break;
+            case CastAction::Type::SpawnBeetle: {
+                type = RTS::CastType::SPAWN_BEETLE;
+            } break;
+            }
+            QPointF position = std::get<CastAction> (u_iter->action).target;
+            unit_for_red->mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_x (position.x ());
+            unit_for_red->mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_y (position.y ());
+            unit_for_blue->mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_x (position.x ());
+            unit_for_blue->mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_y (position.y ());
+            unit_for_red->mutable_current_action ()->mutable_cast ()->set_type (type);
+            unit_for_blue->mutable_current_action ()->mutable_cast ()->set_type (type);
+        }
+        unit_for_red->set_attack_remaining_ticks (u_iter->attack_remaining_ticks);
+        unit_for_red->set_cooldown (u_iter->cast_cooldown_left_ticks);
+        unit_for_blue->set_attack_remaining_ticks (u_iter->attack_remaining_ticks);
+        unit_for_blue->set_cooldown (u_iter->cast_cooldown_left_ticks);
+
+        unit_for_red->mutable_position ()->set_x (u_iter->position.x ());
+        unit_for_red->mutable_position ()->set_y (u_iter->position.y ());
+        unit_for_red->set_health (u_iter->hp);
+        unit_for_red->set_orientation (u_iter->orientation);
+        unit_for_red->set_id (u_iter.key ());
+        unit_for_blue->mutable_position ()->set_x (u_iter->position.x ());
+        unit_for_blue->mutable_position ()->set_y (u_iter->position.y ());
+        unit_for_blue->set_health (u_iter->hp);
+        unit_for_blue->set_orientation (u_iter->orientation);
+        unit_for_blue->set_id (u_iter.key ());
+    }
+
+    for (QHash<quint32, Missile>::const_iterator m_iter = match_state->missilesRef ().cbegin (); m_iter != match_state->missilesRef ().cend (); m_iter++) {
+        RTS::Missile* missile_for_red = response_for_red->add_missiles ();
+        RTS::Missile* missile_for_blue = response_for_blue->add_missiles ();
+        switch (m_iter->type) {
+        case Missile::Type::Pestilence: {
+            missile_for_red->set_type (RTS::MissileType::MISSILE_PESTILENCE);
+            missile_for_blue->set_type (RTS::MissileType::MISSILE_PESTILENCE);
+        } break;
+        case Missile::Type::Rocket: {
+            missile_for_blue->set_type (RTS::MissileType::MISSILE_ROCKET);
+            missile_for_red->set_type (RTS::MissileType::MISSILE_ROCKET);
+        } break;
+        }
+        missile_for_blue->mutable_position ()->set_x (m_iter->position.x ());
+        missile_for_blue->mutable_position ()->set_y (m_iter->position.y ());
+
+        if (m_iter->target_unit.has_value ()) {
+            missile_for_blue->mutable_target_unit ()->set_id (*(m_iter->target_unit));
+            missile_for_red->mutable_target_unit ()->set_id (*(m_iter->target_unit));
+        }
+        missile_for_blue->mutable_target_position ()->set_x (m_iter->target_position.x ());
+        missile_for_blue->mutable_target_position ()->set_y (m_iter->target_position.y ());
+        missile_for_red->mutable_target_position ()->set_x (m_iter->target_position.x ());
+        missile_for_red->mutable_target_position ()->set_y (m_iter->target_position.y ());
+
+        missile_for_red->mutable_position ()->set_x (m_iter->position.x ());
+        missile_for_red->mutable_position ()->set_y (m_iter->position.y ());
+
+        missile_for_blue->set_id (m_iter.key ());
+        missile_for_red->set_id (m_iter.key ());
+
+        if (m_iter->sender_team == Unit::Team::Red) {
+            missile_for_red->set_team (RTS::Team::TEAM_RED);
+            missile_for_blue->set_team (RTS::Team::TEAM_RED);
+        }
+        if (m_iter->sender_team == Unit::Team::Blue) {
+            missile_for_red->set_team (RTS::Team::TEAM_BLUE);
+            missile_for_blue->set_team (RTS::Team::TEAM_BLUE);
         }
     }
 
-    QHash<quint32, Missile>::const_iterator m_iter = match_state->missilesRef ().cbegin ();
-
-    while (m_iter != match_state->missilesRef ().cend ()) {
-        responses_for_red.push_back (RTS::Response ());
-        responses_for_blue.push_back (RTS::Response ());
-        RTS::MatchStateFragmentResponse* response_for_red = responses_for_red.rbegin ()->mutable_match_state_fragment ();
-        RTS::MatchStateFragmentResponse* response_for_blue = responses_for_blue.rbegin ()->mutable_match_state_fragment ();
-        for (int i = 0; i < 16; i++) {
-            if (m_iter == match_state->missilesRef ().cend ()) {
-                break;
-            }
-            RTS::Missile* missile_for_red = response_for_red->add_missiles ();
-            RTS::Missile* missile_for_blue = response_for_blue->add_missiles ();
-            switch (m_iter->type) {
-            case Missile::Type::Pestilence: {
-                missile_for_red->set_type (RTS::MissileType::MISSILE_PESTILENCE);
-                missile_for_blue->set_type (RTS::MissileType::MISSILE_PESTILENCE);
-            } break;
-            case Missile::Type::Rocket: {
-                missile_for_blue->set_type (RTS::MissileType::MISSILE_ROCKET);
-                missile_for_red->set_type (RTS::MissileType::MISSILE_ROCKET);
-            } break;
-            }
-            missile_for_blue->mutable_position ()->set_x (m_iter->position.x ());
-            missile_for_blue->mutable_position ()->set_y (m_iter->position.y ());
-
-            if (m_iter->target_unit.has_value ()) {
-                missile_for_blue->mutable_target_unit ()->set_id (*(m_iter->target_unit));
-                missile_for_red->mutable_target_unit ()->set_id (*(m_iter->target_unit));
-            }
-            missile_for_blue->mutable_target_position ()->set_x (m_iter->target_position.x ());
-            missile_for_blue->mutable_target_position ()->set_y (m_iter->target_position.y ());
-            missile_for_red->mutable_target_position ()->set_x (m_iter->target_position.x ());
-            missile_for_red->mutable_target_position ()->set_y (m_iter->target_position.y ());
-
-            missile_for_red->mutable_position ()->set_x (m_iter->position.x ());
-            missile_for_red->mutable_position ()->set_y (m_iter->position.y ());
-
-            missile_for_blue->set_id (m_iter.key ());
-            missile_for_red->set_id (m_iter.key ());
-
-            if (m_iter->sender_team == Unit::Team::Red) {
-                missile_for_red->set_team (RTS::Team::TEAM_RED);
-                missile_for_blue->set_team (RTS::Team::TEAM_RED);
-            }
-            if (m_iter->sender_team == Unit::Team::Blue) {
-                missile_for_red->set_team (RTS::Team::TEAM_BLUE);
-                missile_for_blue->set_team (RTS::Team::TEAM_BLUE);
-            }
-            m_iter++;
-        }
-    }
-    // response->units;
-
-    for (int i = 0; i < responses_for_red.size (); i++) {
-        responses_for_red[i].mutable_match_state_fragment ()->set_fragment_no (i);
-        responses_for_blue[i].mutable_match_state_fragment ()->set_fragment_no (i);
-        responses_for_red[i].mutable_match_state_fragment ()->set_fragment_count (responses_for_red.size ());
-        responses_for_blue[i].mutable_match_state_fragment ()->set_fragment_count (responses_for_blue.size ());
-        responses_for_red[i].mutable_match_state_fragment ()->set_tick (tick_no);
-        responses_for_blue[i].mutable_match_state_fragment ()->set_tick (tick_no);
-        emit sendResponseRoom (responses_for_red[i], red_team, {});
-        emit sendResponseRoom (responses_for_blue[i], blue_team, {});
-    }
-
-    // sampling = 1 - sampling;
+    emit sendResponseRoom (response_for_red_oneof, red_team, {});
+    emit sendResponseRoom (response_for_blue_oneof, blue_team, {});
 }
 
 void Room::setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code)
