@@ -638,6 +638,7 @@ void Application::setCurrentWindow (QWidget* new_window)
 {
     if (current_window)
         current_window->deleteLater ();
+    new_window->setWindowIcon (QIcon (":/images/application-icon.png"));
     new_window->show ();
     current_window = new_window;
 }
