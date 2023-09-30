@@ -236,18 +236,16 @@ void MatchState::trySelectByType (Unit::Team team, const QPointF& point, const Q
         clearSelection ();
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
-        if (unit.team == team && unit.type == type && checkUnitInsideViewport (unit, viewport)) {
+        if (unit.team == team && unit.type == type && checkUnitInsideViewport (unit, viewport))
             unit.selected = true;
-        }
     }
 }
 void MatchState::selectAll (Unit::Team team)
 {
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
-        if (unit.team == team) {
+        if (unit.team == team)
             unit.selected = true;
-        }
     }
 }
 std::optional<QPointF> MatchState::selectionCenter () const
@@ -295,9 +293,10 @@ void MatchState::stop ()
 {
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it.value ();
-        if (unit.selected)
+        if (unit.selected) {
             unit.action = StopAction ();
-        emit unitActionRequested (it.key (), StopAction ());
+            emit unitActionRequested (it.key (), StopAction ());
+        }
     }
 }
 void MatchState::autoAction (Unit::Team attacker_team, const QPointF& point)
