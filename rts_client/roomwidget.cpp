@@ -348,89 +348,89 @@ void RoomWidget::loadTextures ()
     textures.buttons.quit_pressed = loadTexture2DRectangle (":/images/buttons/quit-pressed.png");
 
     {
-        textures.units.seal.red.standing = loadTexture2D (":/images/units/seal/red/standing.png", true);
-        textures.units.seal.red.walking1 = loadTexture2D (":/images/units/seal/red/walking1.png", true);
-        textures.units.seal.red.walking2 = loadTexture2D (":/images/units/seal/red/walking2.png", true);
-        textures.units.seal.red.shooting1 = loadTexture2D (":/images/units/seal/red/attacking1.png", true);
-        textures.units.seal.red.shooting2 = loadTexture2D (":/images/units/seal/red/attacking2.png", true);
+        textures.units.seal.red.standing = loadTexture2D (":/images/units/seal/red/standing.png");
+        textures.units.seal.red.walking1 = loadTexture2D (":/images/units/seal/red/walking1.png");
+        textures.units.seal.red.walking2 = loadTexture2D (":/images/units/seal/red/walking2.png");
+        textures.units.seal.red.shooting1 = loadTexture2D (":/images/units/seal/red/attacking1.png");
+        textures.units.seal.red.shooting2 = loadTexture2D (":/images/units/seal/red/attacking2.png");
 
-        textures.units.seal.blue.standing = loadTexture2D (":/images/units/seal/blue/standing.png", true);
-        textures.units.seal.blue.walking1 = loadTexture2D (":/images/units/seal/blue/walking1.png", true);
-        textures.units.seal.blue.walking2 = loadTexture2D (":/images/units/seal/blue/walking2.png", true);
-        textures.units.seal.blue.shooting1 = loadTexture2D (":/images/units/seal/blue/attacking1.png", true);
-        textures.units.seal.blue.shooting2 = loadTexture2D (":/images/units/seal/blue/attacking2.png", true);
+        textures.units.seal.blue.standing = loadTexture2D (":/images/units/seal/blue/standing.png");
+        textures.units.seal.blue.walking1 = loadTexture2D (":/images/units/seal/blue/walking1.png");
+        textures.units.seal.blue.walking2 = loadTexture2D (":/images/units/seal/blue/walking2.png");
+        textures.units.seal.blue.shooting1 = loadTexture2D (":/images/units/seal/blue/attacking1.png");
+        textures.units.seal.blue.shooting2 = loadTexture2D (":/images/units/seal/blue/attacking2.png");
     }
     {
-        textures.units.crusader.red.standing = loadTexture2D (":/images/units/crusader/red/standing.png", true);
-        textures.units.crusader.red.walking1 = loadTexture2D (":/images/units/crusader/red/walking1.png", true);
-        textures.units.crusader.red.walking2 = loadTexture2D (":/images/units/crusader/red/walking2.png", true);
-        textures.units.crusader.red.shooting1 = loadTexture2D (":/images/units/crusader/red/attacking1.png", true);
-        textures.units.crusader.red.shooting2 = loadTexture2D (":/images/units/crusader/red/attacking2.png", true);
+        textures.units.crusader.red.standing = loadTexture2D (":/images/units/crusader/red/standing.png");
+        textures.units.crusader.red.walking1 = loadTexture2D (":/images/units/crusader/red/walking1.png");
+        textures.units.crusader.red.walking2 = loadTexture2D (":/images/units/crusader/red/walking2.png");
+        textures.units.crusader.red.shooting1 = loadTexture2D (":/images/units/crusader/red/attacking1.png");
+        textures.units.crusader.red.shooting2 = loadTexture2D (":/images/units/crusader/red/attacking2.png");
 
-        textures.units.crusader.blue.standing = loadTexture2D (":/images/units/crusader/blue/standing.png", true);
-        textures.units.crusader.blue.walking1 = loadTexture2D (":/images/units/crusader/blue/walking1.png", true);
-        textures.units.crusader.blue.walking2 = loadTexture2D (":/images/units/crusader/blue/walking2.png", true);
-        textures.units.crusader.blue.shooting1 = loadTexture2D (":/images/units/crusader/blue/attacking1.png", true);
-        textures.units.crusader.blue.shooting2 = loadTexture2D (":/images/units/crusader/blue/attacking2.png", true);
+        textures.units.crusader.blue.standing = loadTexture2D (":/images/units/crusader/blue/standing.png");
+        textures.units.crusader.blue.walking1 = loadTexture2D (":/images/units/crusader/blue/walking1.png");
+        textures.units.crusader.blue.walking2 = loadTexture2D (":/images/units/crusader/blue/walking2.png");
+        textures.units.crusader.blue.shooting1 = loadTexture2D (":/images/units/crusader/blue/attacking1.png");
+        textures.units.crusader.blue.shooting2 = loadTexture2D (":/images/units/crusader/blue/attacking2.png");
     }
     {
-        textures.units.goon.red.standing = loadTexture2D (":/images/units/goon/red/standing.png", true);
-        textures.units.goon.red.walking1 = loadTexture2D (":/images/units/goon/red/walking1.png", true);
-        textures.units.goon.red.walking2 = loadTexture2D (":/images/units/goon/red/walking2.png", true);
-        textures.units.goon.red.shooting1 = loadTexture2D (":/images/units/goon/red/attacking1.png", true);
-        textures.units.goon.red.shooting2 = loadTexture2D (":/images/units/goon/red/attacking2.png", true);
+        textures.units.goon.red.standing = loadTexture2D (":/images/units/goon/red/standing.png");
+        textures.units.goon.red.walking1 = loadTexture2D (":/images/units/goon/red/walking1.png");
+        textures.units.goon.red.walking2 = loadTexture2D (":/images/units/goon/red/walking2.png");
+        textures.units.goon.red.shooting1 = loadTexture2D (":/images/units/goon/red/attacking1.png");
+        textures.units.goon.red.shooting2 = loadTexture2D (":/images/units/goon/red/attacking2.png");
 
-        textures.units.goon.blue.standing = loadTexture2D (":/images/units/goon/blue/standing.png", true);
-        textures.units.goon.blue.walking1 = loadTexture2D (":/images/units/goon/blue/walking1.png", true);
-        textures.units.goon.blue.walking2 = loadTexture2D (":/images/units/goon/blue/walking2.png", true);
-        textures.units.goon.blue.shooting1 = loadTexture2D (":/images/units/goon/blue/attacking1.png", true);
-        textures.units.goon.blue.shooting2 = loadTexture2D (":/images/units/goon/blue/attacking2.png", true);
+        textures.units.goon.blue.standing = loadTexture2D (":/images/units/goon/blue/standing.png");
+        textures.units.goon.blue.walking1 = loadTexture2D (":/images/units/goon/blue/walking1.png");
+        textures.units.goon.blue.walking2 = loadTexture2D (":/images/units/goon/blue/walking2.png");
+        textures.units.goon.blue.shooting1 = loadTexture2D (":/images/units/goon/blue/attacking1.png");
+        textures.units.goon.blue.shooting2 = loadTexture2D (":/images/units/goon/blue/attacking2.png");
     }
     {
-        textures.units.beetle.red.standing = loadTexture2D (":/images/units/beetle/red/standing.png", true);
-        textures.units.beetle.red.walking1 = loadTexture2D (":/images/units/beetle/red/walking1.png", true);
-        textures.units.beetle.red.walking2 = loadTexture2D (":/images/units/beetle/red/walking2.png", true);
-        textures.units.beetle.red.shooting1 = loadTexture2D (":/images/units/beetle/red/attacking1.png", true);
-        textures.units.beetle.red.shooting2 = loadTexture2D (":/images/units/beetle/red/attacking2.png", true);
+        textures.units.beetle.red.standing = loadTexture2D (":/images/units/beetle/red/standing.png");
+        textures.units.beetle.red.walking1 = loadTexture2D (":/images/units/beetle/red/walking1.png");
+        textures.units.beetle.red.walking2 = loadTexture2D (":/images/units/beetle/red/walking2.png");
+        textures.units.beetle.red.shooting1 = loadTexture2D (":/images/units/beetle/red/attacking1.png");
+        textures.units.beetle.red.shooting2 = loadTexture2D (":/images/units/beetle/red/attacking2.png");
 
-        textures.units.beetle.blue.standing = loadTexture2D (":/images/units/beetle/blue/standing.png", true);
-        textures.units.beetle.blue.walking1 = loadTexture2D (":/images/units/beetle/blue/walking1.png", true);
-        textures.units.beetle.blue.walking2 = loadTexture2D (":/images/units/beetle/blue/walking2.png", true);
-        textures.units.beetle.blue.shooting1 = loadTexture2D (":/images/units/beetle/blue/attacking1.png", true);
-        textures.units.beetle.blue.shooting2 = loadTexture2D (":/images/units/beetle/blue/attacking2.png", true);
+        textures.units.beetle.blue.standing = loadTexture2D (":/images/units/beetle/blue/standing.png");
+        textures.units.beetle.blue.walking1 = loadTexture2D (":/images/units/beetle/blue/walking1.png");
+        textures.units.beetle.blue.walking2 = loadTexture2D (":/images/units/beetle/blue/walking2.png");
+        textures.units.beetle.blue.shooting1 = loadTexture2D (":/images/units/beetle/blue/attacking1.png");
+        textures.units.beetle.blue.shooting2 = loadTexture2D (":/images/units/beetle/blue/attacking2.png");
     }
     {
-        textures.units.contaminator.red.standing = loadTexture2D (":/images/units/contaminator/red/standing.png", true);
-        textures.units.contaminator.red.walking1 = loadTexture2D (":/images/units/contaminator/red/walking1.png", true);
-        textures.units.contaminator.red.walking2 = loadTexture2D (":/images/units/contaminator/red/walking2.png", true);
-        textures.units.contaminator.red.shooting1 = loadTexture2D (":/images/units/contaminator/red/attacking1.png", true);
-        textures.units.contaminator.red.shooting2 = loadTexture2D (":/images/units/contaminator/red/attacking2.png", true);
+        textures.units.contaminator.red.standing = loadTexture2D (":/images/units/contaminator/red/standing.png");
+        textures.units.contaminator.red.walking1 = loadTexture2D (":/images/units/contaminator/red/walking1.png");
+        textures.units.contaminator.red.walking2 = loadTexture2D (":/images/units/contaminator/red/walking2.png");
+        textures.units.contaminator.red.shooting1 = loadTexture2D (":/images/units/contaminator/red/attacking1.png");
+        textures.units.contaminator.red.shooting2 = loadTexture2D (":/images/units/contaminator/red/attacking2.png");
 
-        textures.units.contaminator.blue.standing = loadTexture2D (":/images/units/contaminator/blue/standing.png", true);
-        textures.units.contaminator.blue.walking1 = loadTexture2D (":/images/units/contaminator/blue/walking1.png", true);
-        textures.units.contaminator.blue.walking2 = loadTexture2D (":/images/units/contaminator/blue/walking2.png", true);
-        textures.units.contaminator.blue.shooting1 = loadTexture2D (":/images/units/contaminator/blue/attacking1.png", true);
-        textures.units.contaminator.blue.shooting2 = loadTexture2D (":/images/units/contaminator/blue/attacking2.png", true);
+        textures.units.contaminator.blue.standing = loadTexture2D (":/images/units/contaminator/blue/standing.png");
+        textures.units.contaminator.blue.walking1 = loadTexture2D (":/images/units/contaminator/blue/walking1.png");
+        textures.units.contaminator.blue.walking2 = loadTexture2D (":/images/units/contaminator/blue/walking2.png");
+        textures.units.contaminator.blue.shooting1 = loadTexture2D (":/images/units/contaminator/blue/attacking1.png");
+        textures.units.contaminator.blue.shooting2 = loadTexture2D (":/images/units/contaminator/blue/attacking2.png");
 
-        textures.units.contaminator_cooldown_shade = loadTexture2D (":/images/units/contaminator/cooldown-shade.png", true);
+        textures.units.contaminator_cooldown_shade = loadTexture2D (":/images/units/contaminator/cooldown-shade.png");
     }
     {
-        textures.effects.explosion.explosion1 = loadTexture2D (":/images/effects/explosion/explosion1.png", true);
-        textures.effects.explosion.explosion2 = loadTexture2D (":/images/effects/explosion/explosion2.png", true);
-        textures.effects.goon_rocket.rocket1 = loadTexture2D (":/images/effects/goon-rocket/rocket1.png", true);
-        textures.effects.goon_rocket.rocket2 = loadTexture2D (":/images/effects/goon-rocket/rocket2.png", true);
-        textures.effects.pestilence_missile.missile1 = loadTexture2D (":/images/effects/pestilence-missile/missile1.png", true);
-        textures.effects.pestilence_missile.missile2 = loadTexture2D (":/images/effects/pestilence-missile/missile2.png", true);
-        textures.effects.pestilence_splash.splash = loadTexture2D (":/images/effects/pestilence-splash/splash.png", true);
+        textures.effects.explosion.explosion1 = loadTexture2D (":/images/effects/explosion/explosion1.png");
+        textures.effects.explosion.explosion2 = loadTexture2D (":/images/effects/explosion/explosion2.png");
+        textures.effects.goon_rocket.rocket1 = loadTexture2D (":/images/effects/goon-rocket/rocket1.png");
+        textures.effects.goon_rocket.rocket2 = loadTexture2D (":/images/effects/goon-rocket/rocket2.png");
+        textures.effects.pestilence_missile.missile1 = loadTexture2D (":/images/effects/pestilence-missile/missile1.png");
+        textures.effects.pestilence_missile.missile2 = loadTexture2D (":/images/effects/pestilence-missile/missile2.png");
+        textures.effects.pestilence_splash.splash = loadTexture2D (":/images/effects/pestilence-splash/splash.png");
     }
 
-    textures.unit_icons.seal = loadTexture2D (":/images/units/seal/icon.png", true);
-    textures.unit_icons.crusader = loadTexture2D (":/images/units/crusader/icon.png", true);
-    textures.unit_icons.goon = loadTexture2D (":/images/units/goon/icon.png", true);
-    textures.unit_icons.beetle = loadTexture2D (":/images/units/beetle/icon.png", true);
-    textures.unit_icons.contaminator = loadTexture2D (":/images/units/contaminator/icon.png", true);
-    textures.unit_icons.frame = loadTexture2D (":/images/icons/frame.png", true);
-    textures.unit_icons.tabs = loadTexture2D (":/images/icons/tabs.png", true);
+    textures.unit_icons.seal = loadTexture2D (":/images/units/seal/icon.png");
+    textures.unit_icons.crusader = loadTexture2D (":/images/units/crusader/icon.png");
+    textures.unit_icons.goon = loadTexture2D (":/images/units/goon/icon.png");
+    textures.unit_icons.beetle = loadTexture2D (":/images/units/beetle/icon.png");
+    textures.unit_icons.contaminator = loadTexture2D (":/images/units/contaminator/icon.png");
+    textures.unit_icons.frame = loadTexture2D (":/images/icons/frame.png");
+    textures.unit_icons.tabs = loadTexture2D (":/images/icons/tabs.png");
 
     textures.actions.basic.move = loadTexture2D (":/images/actions/move.png");
     textures.actions.basic.stop = loadTexture2D (":/images/actions/stop.png");
@@ -1613,28 +1613,27 @@ void RoomWidget::drawUnit (const Unit& unit)
     qreal sprite_scale;
     UnitTextureSet* texture_set;
     switch (unit.type) {
-    case Unit::Type::Seal: {
-        sprite_scale = 1.6;
+    case Unit::Type::Seal:
+        sprite_scale = 0.8;
         texture_set = &textures.units.seal;
-    } break;
-    case Unit::Type::Crusader: {
-        sprite_scale = 2.0;
+        break;
+    case Unit::Type::Crusader:
+        sprite_scale = 1.0;
         texture_set = &textures.units.crusader;
-    } break;
-    case Unit::Type::Goon: {
-        sprite_scale = 1.6;
+        break;
+    case Unit::Type::Goon:
+        sprite_scale = 0.8;
         texture_set = &textures.units.goon;
-    } break;
-    case Unit::Type::Beetle: {
-        sprite_scale = 1.6;
+        break;
+    case Unit::Type::Beetle:
+        sprite_scale = 0.8;
         texture_set = &textures.units.beetle;
-    } break;
-    case Unit::Type::Contaminator: {
-        sprite_scale = 1.6;
+        break;
+    case Unit::Type::Contaminator:
+        sprite_scale = 0.8;
         texture_set = &textures.units.contaminator;
-    } break;
-    default: {
-    }
+        break;
+    default:
         return;
     }
 
@@ -1805,7 +1804,7 @@ void RoomWidget::drawUnit (const Unit& unit)
     }
 
     if (unit.selected)
-        drawCircle (center.x (), center.y (), scale * 0.25, {0, 255, 0});
+        drawCircle (center.x (), center.y (), scale * 0.5, {0, 255, 0});
 }
 void RoomWidget::drawTabs (int x, int y, int w, int h)
 {
@@ -1830,14 +1829,14 @@ void RoomWidget::drawTabs (int x, int y, int w, int h)
     };
 
     static const GLfloat texture_coords[] = {
-        0.25,
-        0.25,
-        0.75,
-        0.25,
-        0.75,
-        0.75,
-        0.25,
-        0.75,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        1.0,
     };
 
     QColor color = QColor::fromRgbF (1.0, 1.0, 1.0, 1.0);
@@ -1866,28 +1865,27 @@ void RoomWidget::drawIcon (const Unit& unit, int x, int y, int w, int h, bool fr
     qreal sprite_scale;
     QOpenGLTexture* texture;
     switch (unit.type) {
-    case Unit::Type::Seal: {
-        sprite_scale = 1.6;
+    case Unit::Type::Seal:
+        sprite_scale = 0.8;
         texture = textures.unit_icons.seal.get ();
-    } break;
-    case Unit::Type::Crusader: {
-        sprite_scale = 2.2;
+        break;
+    case Unit::Type::Crusader:
+        sprite_scale = 1.1;
         texture = textures.unit_icons.crusader.get ();
-    } break;
-    case Unit::Type::Goon: {
-        sprite_scale = 1.8;
+        break;
+    case Unit::Type::Goon:
+        sprite_scale = 0.9;
         texture = textures.unit_icons.goon.get ();
-    } break;
-    case Unit::Type::Beetle: {
-        sprite_scale = 1.2;
+        break;
+    case Unit::Type::Beetle:
+        sprite_scale = 0.6;
         texture = textures.unit_icons.beetle.get ();
-    } break;
-    case Unit::Type::Contaminator: {
-        sprite_scale = 2.4;
+        break;
+    case Unit::Type::Contaminator:
+        sprite_scale = 1.2;
         texture = textures.unit_icons.contaminator.get ();
-    } break;
-    default: {
-    }
+        break;
+    default:
         return;
     }
 
@@ -2037,7 +2035,7 @@ void RoomWidget::drawUnitHPBar (const Unit& unit)
                 GLfloat (center.y () - radius - hitbar_height),
             };
 
-            const GLfloat colors[] = {
+            static const GLfloat colors[] = {
                 0,
                 0.8,
                 0.8,
@@ -2063,7 +2061,7 @@ void RoomWidget::drawUnitHPBar (const Unit& unit)
 void RoomWidget::drawMissile (const Missile& missile)
 {
     quint64 clock_ns = match_state->clockNS ();
-    qreal sprite_scale = 1.0;
+    qreal sprite_scale = 0.5;
 
     quint64 period = missileAnimationPeriodNS (Missile::Type::Rocket);
     quint64 phase = clock_ns % period;
@@ -2130,10 +2128,10 @@ void RoomWidget::drawExplosion (const Explosion& explosion)
     qreal sprite_scale;
     switch (explosion.type) {
     case Explosion::Type::Fire:
-        sprite_scale = 1.7;
+        sprite_scale = 0.85;
         break;
     case Explosion::Type::Pestilence:
-        sprite_scale = 1.2;
+        sprite_scale = 0.6;
         break;
     default:
         return;

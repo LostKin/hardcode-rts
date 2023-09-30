@@ -124,26 +124,12 @@ QSize OpenGLWidget::pixelsSize ()
 {
     return QSize (pixels_w, pixels_h);
 }
-QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2D (const QString& path, bool autogenerate_margin)
+QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2D (const QString& path)
 {
-    if (autogenerate_margin) {
-        QImage source_image (path);
-        QImage image (source_image.width () * 2, source_image.height () * 2, QImage::Format_ARGB32);
-        image.fill (QColor (0, 0, 0, 0));
-        {
-            QPainter p (&image);
-            p.drawImage (source_image.width () / 2, source_image.height () / 2, source_image);
-        }
-        QOpenGLTexture* texture = new QOpenGLTexture (image);
-        texture->setMinificationFilter (QOpenGLTexture::LinearMipMapLinear);
-        texture->setMagnificationFilter (QOpenGLTexture::LinearMipMapLinear);
-        return QSharedPointer<QOpenGLTexture> (texture);
-    } else {
-        QOpenGLTexture* texture = new QOpenGLTexture (QImage (path));
-        texture->setMinificationFilter (QOpenGLTexture::LinearMipMapLinear);
-        texture->setMagnificationFilter (QOpenGLTexture::LinearMipMapLinear);
-        return QSharedPointer<QOpenGLTexture> (texture);
-    }
+    QOpenGLTexture* texture = new QOpenGLTexture (QImage (path));
+    texture->setMinificationFilter (QOpenGLTexture::LinearMipMapLinear);
+    texture->setMagnificationFilter (QOpenGLTexture::LinearMipMapLinear);
+    return QSharedPointer<QOpenGLTexture> (texture);
 }
 QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2DRectangle (const QString& path)
 {
