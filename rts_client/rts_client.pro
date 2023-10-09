@@ -1,4 +1,4 @@
-QT += core gui widgets network multimedia
+QT += core gui widgets network multimedia svg
 !lessThan (QT_MAJOR_VERSION, 6) {
     QT += opengl openglwidgets
 }

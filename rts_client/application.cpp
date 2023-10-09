@@ -394,6 +394,9 @@ void Application::startSingleMode (RoomWidget* room_widget)
     quint32 unit_id = 0;
     std::mt19937 random_generator;
     QVector<QPair<quint32, Unit>> units = {
+        {unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Red, {-20, -15}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Goon, random_generator (), Unit::Team::Red, {-22, -15}, M_PI * 0.5}},
+        {unit_id++, {Unit::Type::Contaminator, random_generator (), Unit::Team::Red, {-24, -15}, M_PI * 0.5}},
         {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
         {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},
         {unit_id++, {Unit::Type::Crusader, random_generator (), Unit::Team::Red, {-15, -7}, M_PI * 0.5}},

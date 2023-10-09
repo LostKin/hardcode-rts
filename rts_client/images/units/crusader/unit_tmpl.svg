@@ -1,0 +1,103 @@
+<?xml version="1.0" standalone="no"?>
+<svg width="256" height="256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style rel="stylesheet" type="text/css">
+.unit-colored {
+    fill: &player_color;;
+}
+.stroked {
+    stroke: #000000;
+    stroke-width: 4;
+}
+.stroke {
+    fill: #000000;
+    stroke: transparent;
+}
+.blade {
+    fill: #65e6df;
+    stroke: #2c5e5b;
+    stroke-width: 4;
+}
+.blade-dim {
+    fill: #5a8481;
+    stroke: #062223;
+    stroke-width: 4;
+}
+    </style>
+
+    <defs>
+    	<g id="feet-centered">
+    	    <ellipse id="left-foot-centered" cx="100" cy="140" rx="18" ry="36" class="unit-colored stroked" />
+    	    <ellipse id="right-foot-centered" cx="156" cy="140" rx="18" ry="36" class="unit-colored stroked" />
+    	</g>
+    	<g id="feet-walk1">
+    	    <ellipse id="left-foot-forward" cx="100" cy="124" rx="18" ry="36" class="unit-colored stroked" />
+    	    <ellipse id="right-foot-back" cx="156" cy="156" rx="18" ry="36" class="unit-colored stroked" />
+    	</g>
+    	<g id="feet-walk2">
+    	    <ellipse id="left-foot-forward" cx="100" cy="156" rx="18" ry="36" class="unit-colored stroked" />
+    	    <ellipse id="right-foot-back" cx="156" cy="124" rx="18" ry="36" class="unit-colored stroked" />
+    	</g>
+    	<g id="hands-neutral">
+    	    <polygon id="left-hand" points="116,128 96,170 71,100 81,50 91,100" class="unit-colored stroked" />
+    	    <polygon id="right-hand" points="140,128 160,170 185,100 175,50 165,100" class="unit-colored stroked" />
+    	    <polygon id="left-hand-blade-centered" points="71,100 81,50 91,100" class="blade-dim" />
+    	    <polygon id="right-hand-blade-centeredforward" points="185,100 175,50 165,100" class="blade-dim" />
+    	</g>
+    	<g id="hands-attack1">
+    	    <polygon id="left-hand-forward" points="116,128 96,170 85,75 110,30 105,80" class="unit-colored stroked" />
+    	    <polygon id="right-hand-back" points="140,128 160,170 181,105 156,60 161,110" class="unit-colored stroked" />
+
+    	    <polygon id="left-hand-blade-forward" points="85,75 110,30 105,80" class="blade" />
+    	    <polygon id="right-hand-blade-back" points="181,105 156,60 161,110" class="blade" />
+    	</g>
+    	<g id="hands-attack2">
+    	    <polygon id="left-hand-back" points="116,128 96,170 75,105 100,60 95,110" class="unit-colored stroked" />
+    	    <polygon id="right-hand-forward" points="140,128 160,170 171,75 146,30 151,80" class="unit-colored stroked" />
+
+    	    <polygon id="left-hand-blade-back" points="75,105 100,60 95,110" class="blade" />
+    	    <polygon id="right-hand-blade-forward" points="171,75 146,30 151,80" class="blade" />
+    	</g>
+    	<polygon id="body" points="128,40 70,200 128,170 186,200" class="unit-colored stroked" />
+    	<g id="head">
+    	    <ellipse cx="114" cy="108" rx="3" ry="6" class="stroke" />
+    	    <ellipse cx="128" cy="105" rx="2" ry="4" class="stroke" />
+    	    <ellipse cx="142" cy="108" rx="3" ry="6" class="stroke" />
+    	    <circle cx="128" cy="128" r="24" class="unit-colored stroked" />
+    	</g>
+    </defs>
+
+    <defs>
+	<g id="standing">
+	    <use xlink:href="#feet-centered" />
+	    <use xlink:href="#hands-neutral" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	</g>
+	<g id="walking1">
+	    <use xlink:href="#feet-walk1" />
+	    <use xlink:href="#hands-neutral" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	</g>
+	<g id="walking2">
+	    <use xlink:href="#feet-walk2" />
+	    <use xlink:href="#hands-neutral" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	</g>
+	<g id="attacking1">
+	    <use xlink:href="#feet-centered" />
+	    <use xlink:href="#hands-attack1" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	</g>
+	<g id="attacking2">
+	    <use xlink:href="#feet-centered" />
+	    <use xlink:href="#hands-attack2" />
+	    <use xlink:href="#body" />
+	    <use xlink:href="#head" />
+	</g>
+    </defs>
+
+    <use xlink:href="#&animation;" />
+</svg>

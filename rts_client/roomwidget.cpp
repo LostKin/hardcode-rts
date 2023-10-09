@@ -9,6 +9,8 @@
 #include <QMouseEvent>
 #include <QDebug>
 #include <QPainter>
+#include <QFile>
+#include <QSvgRenderer>
 #if QT_VERSION >= 0x060000
 #include <QSoundEffect>
 #else
@@ -197,36 +199,6 @@ void RoomWidget::startMatch (Unit::Team team)
     connect (&*match_state, &MatchState::unitActionRequested, this, &RoomWidget::unitActionCallback);
     connect (&*match_state, &MatchState::unitCreateRequested, this, &RoomWidget::unitCreateCallback);
     connect (&*match_state, SIGNAL (soundEventEmitted (SoundEvent)), this, SLOT (playSound (SoundEvent)));
-    /*{
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-15, -7), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-10, -5), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-12, -3), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-11, -2), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-9, -1), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Red, QPointF (-8, -0), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (1, 3), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 3), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 6), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 9), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (10, 5), 0);
-        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (3, 2), 0);
-        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (5, 2), 0);
-        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (7, 2), 0);
-        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (9, 2), 0);
-        match_state->createUnit (Unit::Type::Goon, Unit::Team::Red, QPointF (10, 2), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-20, -8), 0);
-    }*/
-    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-4, 5), 0);
-    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-3, 5), 0);
-    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-2, 5), 0);
-    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-1, 5), 0);
-    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (0, 5), 0);
-    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (1, 5), 0);
-    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (2, 5), 0);
-    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (3, 5), 0);
-    // match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (4, 5), 0);
-    // for (int off = -4; off <= 4; ++off)
-    //     match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (off*2.0/3.0, 7), 0);
     viewport_scale_power = 0;
     viewport_scale = 1.0;
     viewport_center = {};
@@ -320,6 +292,97 @@ RoomWidget::ActionButtonId RoomWidget::getActionButtonFromGrid (int row, int col
     }
     return ActionButtonId::None;
 }
+QImage RoomWidget::loadUnitFromSVGTemplate (const QString& path, const QByteArray& animation_name, const QColor& player_color)
+{
+    static constexpr QSize texture_size (256, 256);
+    QImage image (texture_size, QImage::Format_ARGB32);
+    image.fill (QColor (0, 0, 0, 0));
+    QFile svg_fh (path);
+    if (!svg_fh.open (QIODevice::ReadOnly))
+        return image;
+    QByteArray svg_data = svg_fh.readAll ();
+    svg_data.replace ("&animation;", animation_name);
+    svg_data.replace ("&player_color;", player_color.name ().toUtf8 ());
+    QSvgRenderer svg_renderer (svg_data);
+    {
+        QPainter p (&image);
+        p.translate (texture_size.width ()*0.5, texture_size.height ()*0.5);
+        p.rotate (90.0);
+        p.translate (-texture_size.width ()*0.5, -texture_size.height ()*0.5);
+        svg_renderer.render (&p, QRectF (QPointF (0, 0), QSizeF (texture_size)));
+    }
+    return image;
+}
+void RoomWidget::loadUnitTextures ()
+{
+    QColor red_player_color (0xe2, 0x47, 0x47);
+    QColor blue_player_color (0x53, 0x53, 0xff);
+    {
+        textures.units.seal.red.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "standing", red_player_color));
+        textures.units.seal.red.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "walking1", red_player_color));
+        textures.units.seal.red.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "walking2", red_player_color));
+        textures.units.seal.red.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "attacking1", red_player_color));
+        textures.units.seal.red.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "attacking2", red_player_color));
+
+        textures.units.seal.blue.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "standing", blue_player_color));
+        textures.units.seal.blue.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "walking1", blue_player_color));
+        textures.units.seal.blue.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "walking2", blue_player_color));
+        textures.units.seal.blue.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "attacking1", blue_player_color));
+        textures.units.seal.blue.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "attacking2", blue_player_color));
+    }
+    {
+        textures.units.crusader.red.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "standing", red_player_color));
+        textures.units.crusader.red.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "walking1", red_player_color));
+        textures.units.crusader.red.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "walking2", red_player_color));
+        textures.units.crusader.red.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "attacking1", red_player_color));
+        textures.units.crusader.red.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "attacking2", red_player_color));
+
+        textures.units.crusader.blue.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "standing", blue_player_color));
+        textures.units.crusader.blue.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "walking1", blue_player_color));
+        textures.units.crusader.blue.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "walking2", blue_player_color));
+        textures.units.crusader.blue.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "attacking1", blue_player_color));
+        textures.units.crusader.blue.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "attacking2", blue_player_color));
+    }
+    {
+        textures.units.goon.red.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "standing", red_player_color));
+        textures.units.goon.red.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "walking1", red_player_color));
+        textures.units.goon.red.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "walking2", red_player_color));
+        textures.units.goon.red.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "attacking1", red_player_color));
+        textures.units.goon.red.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "attacking2", red_player_color));
+
+        textures.units.goon.blue.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "standing", blue_player_color));
+        textures.units.goon.blue.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "walking1", blue_player_color));
+        textures.units.goon.blue.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "walking2", blue_player_color));
+        textures.units.goon.blue.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "attacking1", blue_player_color));
+        textures.units.goon.blue.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "attacking2", blue_player_color));
+    }
+    {
+        textures.units.beetle.red.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "standing", red_player_color));
+        textures.units.beetle.red.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "walking1", red_player_color));
+        textures.units.beetle.red.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "walking2", red_player_color));
+        textures.units.beetle.red.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "attacking1", red_player_color));
+        textures.units.beetle.red.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "attacking2", red_player_color));
+
+        textures.units.beetle.blue.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "standing", blue_player_color));
+        textures.units.beetle.blue.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "walking1", blue_player_color));
+        textures.units.beetle.blue.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "walking2", blue_player_color));
+        textures.units.beetle.blue.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "attacking1", blue_player_color));
+        textures.units.beetle.blue.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "attacking2", blue_player_color));
+    }
+    {
+        textures.units.contaminator.red.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "standing", red_player_color));
+        textures.units.contaminator.red.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "walking1", red_player_color));
+        textures.units.contaminator.red.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "walking2", red_player_color));
+        textures.units.contaminator.red.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "attacking1", red_player_color));
+        textures.units.contaminator.red.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "attacking2", red_player_color));
+
+        textures.units.contaminator.blue.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "standing", blue_player_color));
+        textures.units.contaminator.blue.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "walking1", blue_player_color));
+        textures.units.contaminator.blue.walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "walking2", blue_player_color));
+        textures.units.contaminator.blue.shooting1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "attacking1", blue_player_color));
+        textures.units.contaminator.blue.shooting2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "attacking2", blue_player_color));
+    }
+}
 void RoomWidget::loadTextures ()
 {
     textures.grass = loadTexture2DRectangle (":/images/grass.png");
@@ -347,71 +410,9 @@ void RoomWidget::loadTextures ()
     textures.buttons.cancel_pressed = loadTexture2DRectangle (":/images/buttons/cancel-pressed.png");
     textures.buttons.quit_pressed = loadTexture2DRectangle (":/images/buttons/quit-pressed.png");
 
+    loadUnitTextures ();
+
     {
-        textures.units.seal.red.standing = loadTexture2D (":/images/units/seal/red/standing.png");
-        textures.units.seal.red.walking1 = loadTexture2D (":/images/units/seal/red/walking1.png");
-        textures.units.seal.red.walking2 = loadTexture2D (":/images/units/seal/red/walking2.png");
-        textures.units.seal.red.shooting1 = loadTexture2D (":/images/units/seal/red/attacking1.png");
-        textures.units.seal.red.shooting2 = loadTexture2D (":/images/units/seal/red/attacking2.png");
-
-        textures.units.seal.blue.standing = loadTexture2D (":/images/units/seal/blue/standing.png");
-        textures.units.seal.blue.walking1 = loadTexture2D (":/images/units/seal/blue/walking1.png");
-        textures.units.seal.blue.walking2 = loadTexture2D (":/images/units/seal/blue/walking2.png");
-        textures.units.seal.blue.shooting1 = loadTexture2D (":/images/units/seal/blue/attacking1.png");
-        textures.units.seal.blue.shooting2 = loadTexture2D (":/images/units/seal/blue/attacking2.png");
-    }
-    {
-        textures.units.crusader.red.standing = loadTexture2D (":/images/units/crusader/red/standing.png");
-        textures.units.crusader.red.walking1 = loadTexture2D (":/images/units/crusader/red/walking1.png");
-        textures.units.crusader.red.walking2 = loadTexture2D (":/images/units/crusader/red/walking2.png");
-        textures.units.crusader.red.shooting1 = loadTexture2D (":/images/units/crusader/red/attacking1.png");
-        textures.units.crusader.red.shooting2 = loadTexture2D (":/images/units/crusader/red/attacking2.png");
-
-        textures.units.crusader.blue.standing = loadTexture2D (":/images/units/crusader/blue/standing.png");
-        textures.units.crusader.blue.walking1 = loadTexture2D (":/images/units/crusader/blue/walking1.png");
-        textures.units.crusader.blue.walking2 = loadTexture2D (":/images/units/crusader/blue/walking2.png");
-        textures.units.crusader.blue.shooting1 = loadTexture2D (":/images/units/crusader/blue/attacking1.png");
-        textures.units.crusader.blue.shooting2 = loadTexture2D (":/images/units/crusader/blue/attacking2.png");
-    }
-    {
-        textures.units.goon.red.standing = loadTexture2D (":/images/units/goon/red/standing.png");
-        textures.units.goon.red.walking1 = loadTexture2D (":/images/units/goon/red/walking1.png");
-        textures.units.goon.red.walking2 = loadTexture2D (":/images/units/goon/red/walking2.png");
-        textures.units.goon.red.shooting1 = loadTexture2D (":/images/units/goon/red/attacking1.png");
-        textures.units.goon.red.shooting2 = loadTexture2D (":/images/units/goon/red/attacking2.png");
-
-        textures.units.goon.blue.standing = loadTexture2D (":/images/units/goon/blue/standing.png");
-        textures.units.goon.blue.walking1 = loadTexture2D (":/images/units/goon/blue/walking1.png");
-        textures.units.goon.blue.walking2 = loadTexture2D (":/images/units/goon/blue/walking2.png");
-        textures.units.goon.blue.shooting1 = loadTexture2D (":/images/units/goon/blue/attacking1.png");
-        textures.units.goon.blue.shooting2 = loadTexture2D (":/images/units/goon/blue/attacking2.png");
-    }
-    {
-        textures.units.beetle.red.standing = loadTexture2D (":/images/units/beetle/red/standing.png");
-        textures.units.beetle.red.walking1 = loadTexture2D (":/images/units/beetle/red/walking1.png");
-        textures.units.beetle.red.walking2 = loadTexture2D (":/images/units/beetle/red/walking2.png");
-        textures.units.beetle.red.shooting1 = loadTexture2D (":/images/units/beetle/red/attacking1.png");
-        textures.units.beetle.red.shooting2 = loadTexture2D (":/images/units/beetle/red/attacking2.png");
-
-        textures.units.beetle.blue.standing = loadTexture2D (":/images/units/beetle/blue/standing.png");
-        textures.units.beetle.blue.walking1 = loadTexture2D (":/images/units/beetle/blue/walking1.png");
-        textures.units.beetle.blue.walking2 = loadTexture2D (":/images/units/beetle/blue/walking2.png");
-        textures.units.beetle.blue.shooting1 = loadTexture2D (":/images/units/beetle/blue/attacking1.png");
-        textures.units.beetle.blue.shooting2 = loadTexture2D (":/images/units/beetle/blue/attacking2.png");
-    }
-    {
-        textures.units.contaminator.red.standing = loadTexture2D (":/images/units/contaminator/red/standing.png");
-        textures.units.contaminator.red.walking1 = loadTexture2D (":/images/units/contaminator/red/walking1.png");
-        textures.units.contaminator.red.walking2 = loadTexture2D (":/images/units/contaminator/red/walking2.png");
-        textures.units.contaminator.red.shooting1 = loadTexture2D (":/images/units/contaminator/red/attacking1.png");
-        textures.units.contaminator.red.shooting2 = loadTexture2D (":/images/units/contaminator/red/attacking2.png");
-
-        textures.units.contaminator.blue.standing = loadTexture2D (":/images/units/contaminator/blue/standing.png");
-        textures.units.contaminator.blue.walking1 = loadTexture2D (":/images/units/contaminator/blue/walking1.png");
-        textures.units.contaminator.blue.walking2 = loadTexture2D (":/images/units/contaminator/blue/walking2.png");
-        textures.units.contaminator.blue.shooting1 = loadTexture2D (":/images/units/contaminator/blue/attacking1.png");
-        textures.units.contaminator.blue.shooting2 = loadTexture2D (":/images/units/contaminator/blue/attacking2.png");
-
         textures.units.contaminator_cooldown_shade = loadTexture2D (":/images/units/contaminator/cooldown-shade.png");
     }
     {
@@ -424,13 +425,15 @@ void RoomWidget::loadTextures ()
         textures.effects.pestilence_splash.splash = loadTexture2D (":/images/effects/pestilence-splash/splash.png");
     }
 
-    textures.unit_icons.seal = loadTexture2D (":/images/units/seal/icon.png");
-    textures.unit_icons.crusader = loadTexture2D (":/images/units/crusader/icon.png");
-    textures.unit_icons.goon = loadTexture2D (":/images/units/goon/icon.png");
-    textures.unit_icons.beetle = loadTexture2D (":/images/units/beetle/icon.png");
-    textures.unit_icons.contaminator = loadTexture2D (":/images/units/contaminator/icon.png");
-    textures.unit_icons.frame = loadTexture2D (":/images/icons/frame.png");
-    textures.unit_icons.tabs = loadTexture2D (":/images/icons/tabs.png");
+    static constexpr QColor icon_color (0xdd, 0xdd, 0xdd);
+
+    textures.unit_icons.seal = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.crusader = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.goon = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.beetle = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.contaminator = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.frame = loadTexture2D (":/images/icons/frame.png"); // TODO: Refine drawing
+    textures.unit_icons.tabs = loadTexture2D (":/images/icons/tabs.png"); // TODO: Refine drawing
 
     textures.actions.basic.move = loadTexture2D (":/images/actions/move.png");
     textures.actions.basic.stop = loadTexture2D (":/images/actions/stop.png");
@@ -1890,25 +1893,25 @@ void RoomWidget::drawIcon (const Unit& unit, int x, int y, int w, int h, bool fr
     }
 
     const GLfloat vertices[] = {
-        GLfloat (x),
-        GLfloat (y + h),
-        GLfloat (x),
-        GLfloat (y),
-        GLfloat (x + w),
-        GLfloat (y),
-        GLfloat (x + w),
-        GLfloat (y + h),
+        GLfloat (x + w*(0.5 - 0.5*sprite_scale)),
+        GLfloat (y + h*(0.5 + 0.5*sprite_scale)),
+        GLfloat (x + w*(0.5 - 0.5*sprite_scale)),
+        GLfloat (y + h*(0.5 - 0.5*sprite_scale)),
+        GLfloat (x + w*(0.5 + 0.5*sprite_scale)),
+        GLfloat (y + h*(0.5 - 0.5*sprite_scale)),
+        GLfloat (x + w*(0.5 + 0.5*sprite_scale)),
+        GLfloat (y + h*(0.5 + 0.5*sprite_scale)),
     };
 
-    const GLfloat texture_coords[] = {
-        GLfloat (0.5 - 0.5 / sprite_scale),
-        GLfloat (0.5 - 0.5 / sprite_scale),
-        GLfloat (0.5 + 0.5 / sprite_scale),
-        GLfloat (0.5 - 0.5 / sprite_scale),
-        GLfloat (0.5 + 0.5 / sprite_scale),
-        GLfloat (0.5 + 0.5 / sprite_scale),
-        GLfloat (0.5 - 0.5 / sprite_scale),
-        GLfloat (0.5 + 0.5 / sprite_scale),
+    static const GLfloat texture_coords[] = {
+        GLfloat (0),
+        GLfloat (0),
+        GLfloat (1),
+        GLfloat (0),
+        GLfloat (1),
+        GLfloat (1),
+        GLfloat (0),
+        GLfloat (1),
     };
 
     qreal hp_ratio = qreal (unit.hp) / match_state->unitMaxHP (unit.type);
@@ -1944,15 +1947,25 @@ void RoomWidget::drawIcon (const Unit& unit, int x, int y, int w, int h, bool fr
     };
 
     if (framed) {
+        const GLfloat vertices[] = {
+            GLfloat (x),
+            GLfloat (y + h),
+            GLfloat (x),
+            GLfloat (y),
+            GLfloat (x + w),
+            GLfloat (y),
+            GLfloat (x + w),
+            GLfloat (y + h),
+        };
         static const GLfloat texture_coords[] = {
-            0.25,
-            0.25,
-            0.75,
-            0.25,
-            0.75,
-            0.75,
-            0.25,
-            0.75,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            1,
         };
         QColor color = QColor::fromRgbF (1.0, 1.0, 1.0, 1.0);
         const GLfloat colors[] = {

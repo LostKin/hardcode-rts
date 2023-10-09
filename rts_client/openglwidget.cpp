@@ -131,6 +131,13 @@ QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2D (const QString& path)
     texture->setMagnificationFilter (QOpenGLTexture::LinearMipMapLinear);
     return QSharedPointer<QOpenGLTexture> (texture);
 }
+QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2D (const QImage& image)
+{
+    QOpenGLTexture* texture = new QOpenGLTexture (image);
+    texture->setMinificationFilter (QOpenGLTexture::LinearMipMapLinear);
+    texture->setMagnificationFilter (QOpenGLTexture::LinearMipMapLinear);
+    return QSharedPointer<QOpenGLTexture> (texture);
+}
 QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2DRectangle (const QString& path)
 {
     QOpenGLTexture* texture = new QOpenGLTexture (QOpenGLTexture::TargetRectangle);

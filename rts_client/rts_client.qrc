@@ -40,71 +40,12 @@
         <file>images/buttons/cancel-pressed.png</file>
         <file>images/buttons/quit-pressed.png</file>
 
-        <file>images/units/seal/red/attacking1.png</file>
-        <file>images/units/seal/red/attacking2.png</file>
-        <file>images/units/seal/red/walking2.png</file>
-        <file>images/units/seal/red/walking1.png</file>
-        <file>images/units/seal/red/standing.png</file>
+        <file>images/units/seal/unit_tmpl.svg</file>
+        <file>images/units/crusader/unit_tmpl.svg</file>
+        <file>images/units/goon/unit_tmpl.svg</file>
+        <file>images/units/contaminator/unit_tmpl.svg</file>
+        <file>images/units/beetle/unit_tmpl.svg</file>
 
-        <file>images/units/seal/blue/attacking1.png</file>
-        <file>images/units/seal/blue/attacking2.png</file>
-        <file>images/units/seal/blue/walking2.png</file>
-        <file>images/units/seal/blue/walking1.png</file>
-        <file>images/units/seal/blue/standing.png</file>
-
-        <file>images/units/crusader/red/attacking1.png</file>
-        <file>images/units/crusader/red/attacking2.png</file>
-        <file>images/units/crusader/red/walking2.png</file>
-        <file>images/units/crusader/red/walking1.png</file>
-        <file>images/units/crusader/red/standing.png</file>
-
-        <file>images/units/crusader/blue/attacking1.png</file>
-        <file>images/units/crusader/blue/attacking2.png</file>
-        <file>images/units/crusader/blue/walking2.png</file>
-        <file>images/units/crusader/blue/walking1.png</file>
-        <file>images/units/crusader/blue/standing.png</file>
-
-        <file>images/units/goon/red/attacking1.png</file>
-        <file>images/units/goon/red/attacking2.png</file>
-        <file>images/units/goon/red/walking2.png</file>
-        <file>images/units/goon/red/walking1.png</file>
-        <file>images/units/goon/red/standing.png</file>
-
-        <file>images/units/goon/blue/attacking1.png</file>
-        <file>images/units/goon/blue/attacking2.png</file>
-        <file>images/units/goon/blue/walking2.png</file>
-        <file>images/units/goon/blue/walking1.png</file>
-        <file>images/units/goon/blue/standing.png</file>
-
-        <file>images/units/contaminator/red/attacking1.png</file>
-        <file>images/units/contaminator/red/attacking2.png</file>
-        <file>images/units/contaminator/red/walking2.png</file>
-        <file>images/units/contaminator/red/walking1.png</file>
-        <file>images/units/contaminator/red/standing.png</file>
-
-        <file>images/units/contaminator/blue/attacking1.png</file>
-        <file>images/units/contaminator/blue/attacking2.png</file>
-        <file>images/units/contaminator/blue/walking2.png</file>
-        <file>images/units/contaminator/blue/walking1.png</file>
-        <file>images/units/contaminator/blue/standing.png</file>
-
-        <file>images/units/beetle/red/attacking1.png</file>
-        <file>images/units/beetle/red/attacking2.png</file>
-        <file>images/units/beetle/red/walking2.png</file>
-        <file>images/units/beetle/red/walking1.png</file>
-        <file>images/units/beetle/red/standing.png</file>
-
-        <file>images/units/beetle/blue/attacking1.png</file>
-        <file>images/units/beetle/blue/attacking2.png</file>
-        <file>images/units/beetle/blue/walking2.png</file>
-        <file>images/units/beetle/blue/walking1.png</file>
-        <file>images/units/beetle/blue/standing.png</file>
-
-        <file>images/units/seal/icon.png</file>
-        <file>images/units/crusader/icon.png</file>
-        <file>images/units/goon/icon.png</file>
-        <file>images/units/beetle/icon.png</file>
-        <file>images/units/contaminator/icon.png</file>
         <file>images/units/contaminator/cooldown-shade.png</file>
 
         <file>images/effects/explosion/explosion1.png</file>

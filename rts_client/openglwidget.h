@@ -31,6 +31,7 @@ protected:
 protected:
     QSize pixelsSize ();
     QSharedPointer<QOpenGLTexture> loadTexture2D (const QString& path);
+    QSharedPointer<QOpenGLTexture> loadTexture2D (const QImage& image);
     QSharedPointer<QOpenGLTexture> loadTexture2DRectangle (const QString& path);
     void drawColored (GLenum mode, GLsizei vertex_count, const GLfloat* vertex_positions, const GLfloat* colors);
     void drawColored (GLenum mode, const GLfloat* vertex_positions, const GLfloat* colors, GLsizei index_count, const GLuint* indices);
