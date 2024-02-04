@@ -146,6 +146,7 @@ private:
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
     void groupEvent (quint64 group_num);
+    void zoom (int delta);
     QVector<QPair<quint32, const Unit*>> buildOrderedSelection ();
 
 private slots:

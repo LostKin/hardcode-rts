@@ -918,10 +918,7 @@ void RoomWidget::matchMouseReleaseEvent (QMouseEvent* event)
 }
 void RoomWidget::matchWheelEvent (QWheelEvent* event)
 {
-    int dy = (event->angleDelta ().y () > 0) ? 1 : -1;
-    viewport_scale_power += dy;
-    viewport_scale_power = qBound (-10, viewport_scale_power, 10);
-    viewport_scale = pow (1.125, viewport_scale_power);
+    zoom ((event->angleDelta ().y () > 0) ? 1 : -1);
 }
 void RoomWidget::drawRoleSelection ()
 {
@@ -988,7 +985,7 @@ void RoomWidget::drawMatchStarted ()
 
     {
         qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
-        QPointF center = arena_viewport_center - viewport_center;
+        QPointF center = arena_viewport_center - viewport_center*scale;
         const GLfloat vertices[] = {
             GLfloat (center.x () + scale * area.left ()),
             GLfloat (center.y () + scale * area.top ()),
@@ -1100,22 +1097,22 @@ void RoomWidget::matchFrameUpdate (qreal dt)
     qreal off = 4000.0;
     if (dx && dy)
         off *= SQRT_1_2;
-    viewport_center += QPointF (dx * off * dt, dy * off * dt);
-    const QRectF& area = match_state->areaRef ();
     qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
-    if (viewport_center.x () < area.left () * scale)
-        viewport_center.setX (area.left () * scale);
-    else if (viewport_center.x () > area.right () * scale)
-        viewport_center.setX (area.right () * scale);
-    if (viewport_center.y () < area.top () * scale)
-        viewport_center.setY (area.top () * scale);
-    else if (viewport_center.y () > area.bottom () * scale)
-        viewport_center.setY (area.bottom () * scale);
+    viewport_center += QPointF (dx * off * dt, dy * off * dt)/scale;
+    const QRectF& area = match_state->areaRef ();
+    if (viewport_center.x () < area.left ())
+        viewport_center.setX (area.left ());
+    else if (viewport_center.x () > area.right ())
+        viewport_center.setX (area.right ());
+    if (viewport_center.y () < area.top ())
+        viewport_center.setY (area.top ());
+    else if (viewport_center.y () > area.bottom ())
+        viewport_center.setY (area.bottom ());
 }
 QPointF RoomWidget::toMapCoords (const QPointF& point) const
 {
     qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
-    return (viewport_center - arena_viewport_center + point) / scale;
+    return viewport_center + (point - arena_viewport_center) / scale;
 }
 QRectF RoomWidget::toMapCoords (const QRectF& rect) const
 {
@@ -1124,7 +1121,7 @@ QRectF RoomWidget::toMapCoords (const QRectF& rect) const
 QPointF RoomWidget::toScreenCoords (const QPointF& point) const
 {
     qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
-    return arena_viewport_center - viewport_center + scale * point;
+    return arena_viewport_center - viewport_center*MAP_TO_SCREEN_FACTOR*viewport_scale + scale * point;
 }
 bool RoomWidget::pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const
 {
@@ -1177,8 +1174,7 @@ bool RoomWidget::cursorIsAboveMajorMap (const QPoint& cursor_pos) const
 }
 void RoomWidget::centerViewportAt (const QPointF& point)
 {
-    qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
-    viewport_center = point * scale;
+    viewport_center = point;
 }
 void RoomWidget::centerViewportAtSelected ()
 {
@@ -1570,7 +1566,7 @@ void RoomWidget::drawMinimap ()
     }
     QColor color (0xdf, 0xdf, 0xff);
     qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
-    QPointF viewport_center_minimap = (viewport_center / scale - area.topLeft ()) * area_to_minimap_scale + hud.minimap_screen_area.topLeft ();
+    QPointF viewport_center_minimap = (viewport_center - area.topLeft ()) * area_to_minimap_scale + hud.minimap_screen_area.topLeft ();
     QPointF s = QPointF (arena_viewport.width (), arena_viewport.height ()) / scale * area_to_minimap_scale;
     glScissor (hud.minimap_screen_area.x (), h - (hud.minimap_screen_area.y () + hud.minimap_screen_area.height ()), hud.minimap_screen_area.width (), hud.minimap_screen_area.height ());
     glEnable (GL_SCISSOR_TEST);
@@ -2747,6 +2743,16 @@ void RoomWidget::groupEvent (quint64 group_num)
         else
             match_state->selectGroup (group_num);
     }
+}
+void RoomWidget::zoom (int delta)
+{
+    viewport_scale_power += delta;
+    viewport_scale_power = qBound (-10, viewport_scale_power, 10);
+    QPointF offset_before = toMapCoords (cursor_position) - viewport_center;
+    viewport_scale = pow (1.125, viewport_scale_power);
+    QPointF offset_after = toMapCoords (cursor_position) - viewport_center;
+
+    viewport_center -= offset_after - offset_before;
 }
 QVector<QPair<quint32, const Unit*>> RoomWidget::buildOrderedSelection ()
 {
