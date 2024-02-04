@@ -9,11 +9,12 @@ class Unit
 {
 public:
     enum class Type {
-        Seal,
-        Crusader,
-        Goon,
-        Beetle,
-        Contaminator,
+        Beetle = 0,
+        Seal = 1,
+        Crusader = 2,
+        Goon = 3,
+        Contaminator = 4,
+        Count = 5,
     };
 
     enum class Team {

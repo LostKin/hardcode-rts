@@ -25,6 +25,7 @@ static constexpr qreal SQRT_1_2 = 0.70710678118655;
 static constexpr qreal PI_X_3_4 = 3.0 / 4.0 * M_PI;
 static constexpr qreal PI_X_1_4 = 1.0 / 4.0 * M_PI;
 
+static constexpr qint64 group_count = 20;
 static constexpr qreal POINTS_PER_VIEWPORT_VERTICALLY = 20.0; // At zoom x1.0
 #define POINTS_VIEWPORT_HEIGHT 20
 #define MAP_TO_SCREEN_FACTOR (arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY)
@@ -98,6 +99,8 @@ static QPointF operator* (const QPointF& a, const QPointF& b)
 RoomWidget::RoomWidget (QWidget* parent)
     : OpenGLWidget (parent)
     , font ("NotCourier", 16)
+    , group_number_font ("NotCourier", 10)
+    , group_size_font ("NotCourier", 8)
 {
     setAttribute (Qt::WA_KeyCompression, false);
     font.setStyleHint (QFont::TypeWriter);
@@ -482,15 +485,18 @@ void RoomWidget::updateSize (int w, int h)
         hud.action_panel_rect = {w - area_w - hud.margin, h - area_h - hud.margin, area_w, area_h};
     }
     {
+        static constexpr int icon_column_count = 10;
+        static constexpr int icon_row_count = 3;
+
         int area_w = w - hud.minimap_panel_rect.width () - hud.action_panel_rect.width () - hud.margin * 4;
         int area_h = h * 0.18;
         hud.selection_panel_rect = {hud.margin * 2 + hud.minimap_panel_rect.width (), h - area_h - hud.margin, area_w, area_h};
 
         int icon_rib1 = hud.selection_panel_rect.height () * 0.3;
-        int icon_rib2 = (hud.selection_panel_rect.width () - (hud.selection_panel_rect.height () - icon_rib1 * 3) / 2 * 2) / 10;
+        int icon_rib2 = (hud.selection_panel_rect.width () - (hud.selection_panel_rect.height () - icon_rib1 * icon_row_count) / 2 * 2) / icon_column_count;
         int icon_rib = qMin (icon_rib1, icon_rib2);
-        int hmargin = (hud.selection_panel_rect.width () - icon_rib * 10) / 2;
-        int vmargin = (hud.selection_panel_rect.height () - icon_rib * 3) / 2;
+        int hmargin = (hud.selection_panel_rect.width () - icon_rib * icon_column_count) / 2;
+        int vmargin = (hud.selection_panel_rect.height () - icon_rib * icon_row_count) / 2;
 
         hud.selection_panel_icon_rib = icon_rib;
         hud.selection_panel_icon_grid_pos = {hud.selection_panel_rect.x () + hmargin, hud.selection_panel_rect.y () + vmargin};
@@ -1506,6 +1512,7 @@ void RoomWidget::drawHUD ()
     }
 
     drawSelectionPanel (hud.selection_panel_rect, selected_count, last_selected_unit);
+    drawGroupsOverlay ();
 
     {
         int area_w = hud.action_panel_rect.width ();
@@ -1608,6 +1615,74 @@ void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, c
             size_t row = i / 10;
             size_t col = i % 10;
             drawIcon (*unit, hud.selection_panel_icon_grid_pos.x () + icon_rib * col, hud.selection_panel_icon_grid_pos.y () + icon_rib * row, icon_rib, icon_rib, true);
+        }
+    }
+}
+void RoomWidget::drawGroupsOverlay ()
+{
+    qint64 group_sizes[group_count] = {};
+    Unit::Type group_unit_counts[group_count];
+    for (qint64 i = 0; i < group_count; ++i)
+        group_unit_counts[i] = Unit::Type::Beetle;
+    const QHash<quint32, Unit>& units = match_state->unitsRef ();
+    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
+        quint64 groups = it->groups;
+        for (qint64 i = 0; i < group_count; ++i) {
+            if (groups & (1 << (i + 1))) {
+                group_sizes[i]++;
+                group_unit_counts[i] = qMax (group_unit_counts[i], it->type);
+            }
+        }
+    }
+    static constexpr QColor group_info_rect_color (0, 0x44, 0);
+    static constexpr QColor group_number_rect_color (0x44, 0, 0);
+    static constexpr QColor group_border_color (0, 0xff, 0);
+    static constexpr QColor group_shade_color (0, 0, 0, 0x22);
+    static constexpr QColor group_text_color (0xdf, 0xdf, 0xff);
+    int icon_rib = hud.selection_panel_icon_rib;
+    QSizeF info_rect_size (icon_rib*0.8, icon_rib*0.4);
+    QSizeF number_rect_size (icon_rib*0.6, icon_rib*0.3);
+    int group_icon_rib = hud.margin*5/3;
+    QSize group_icon_size (group_icon_rib, group_icon_rib);
+    {
+        for (qint64 col = 0; col < group_count; ++col) {
+            qreal number_rect_y = hud.selection_panel_rect.y () - hud.margin*0.5;
+            qreal x_center = hud.selection_panel_icon_grid_pos.x () + icon_rib*(col - 5 + 0.5);
+            qreal number_rect_y_center = number_rect_y - number_rect_size.height ()*0.5;
+            QRectF info_rect = {x_center - info_rect_size.width ()*0.5, number_rect_y_center - info_rect_size.height () + 1, info_rect_size.width (), info_rect_size.height ()};
+            QRectF number_rect = {x_center - number_rect_size.width ()*0.5, number_rect_y_center, number_rect_size.width (), number_rect_size.height ()};
+            if (group_sizes[col]) {
+                fillRectangle (info_rect, group_info_rect_color);
+                fillRectangle (number_rect, group_number_rect_color);
+                drawRectangle (info_rect, group_border_color);
+                drawRectangle (number_rect, group_border_color);
+                drawIcon (group_unit_counts[col], 1.0, info_rect.x (), info_rect.y (), group_icon_size.width (), group_icon_size.height ());
+            } else {
+                fillRectangle (info_rect, group_shade_color);
+            }
+        }
+    }
+    {
+        int icon_rib = hud.selection_panel_icon_rib;
+
+        QPainter p (this);
+        p.setPen (group_text_color);
+        for (qint64 col = 0; col < group_count; ++col) {
+            if (group_sizes[col]) {
+                qreal number_rect_y = hud.selection_panel_rect.y () - hud.margin*0.5;
+                qreal info_rect_w = icon_rib*0.8;
+                qreal info_rect_h = info_rect_w*0.5;
+                qreal number_rect_w = icon_rib*0.6;
+                qreal number_rect_h = number_rect_w*0.5;
+                qreal x_center = hud.selection_panel_icon_grid_pos.x () + icon_rib * (col - 5 + 0.5);
+                qreal number_rect_y_center = number_rect_y - number_rect_h*0.5;
+                QRectF info_rect = QRectF (x_center - info_rect_w*0.5, number_rect_y_center - info_rect_h + 1, info_rect_w, info_rect_h).marginsRemoved ({3, 3, 3, 3});
+                QRectF number_rect = {x_center - number_rect_w*0.5, number_rect_y_center, number_rect_w, number_rect_h};
+                p.setFont (group_size_font);
+                p.drawText (info_rect, Qt::AlignRight | Qt::AlignVCenter, QString::number (group_sizes[col]));
+                p.setFont (group_number_font);
+                p.drawText (number_rect, Qt::AlignHCenter | Qt::AlignVCenter, QString::number (col + 1));
+            }
         }
     }
 }
@@ -1863,11 +1938,11 @@ void RoomWidget::drawTabs (int x, int y, int w, int h)
     };
     drawColoredTextured (GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, textures.unit_icons.tabs.get ());
 }
-void RoomWidget::drawIcon (const Unit& unit, int x, int y, int w, int h, bool framed)
+void RoomWidget::drawIcon (const Unit::Type& unit_type, qreal hp_ratio, qreal x, qreal y, qreal w, qreal h, bool framed)
 {
     qreal sprite_scale;
     QOpenGLTexture* texture;
-    switch (unit.type) {
+    switch (unit_type) {
     case Unit::Type::Seal:
         sprite_scale = 0.8;
         texture = textures.unit_icons.seal.get ();
@@ -1913,8 +1988,6 @@ void RoomWidget::drawIcon (const Unit& unit, int x, int y, int w, int h, bool fr
         GLfloat (0),
         GLfloat (1),
     };
-
-    qreal hp_ratio = qreal (unit.hp) / match_state->unitMaxHP (unit.type);
 
     QColor color = getHPColor (hp_ratio);
 
@@ -1990,6 +2063,11 @@ void RoomWidget::drawIcon (const Unit& unit, int x, int y, int w, int h, bool fr
     }
 
     drawColoredTextured (GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, texture);
+}
+void RoomWidget::drawIcon (const Unit& unit, qreal x, qreal y, qreal w, qreal h, bool framed)
+{
+    qreal hp_ratio = qreal (unit.hp) / match_state->unitMaxHP (unit.type);
+    drawIcon (unit.type, hp_ratio, x, y, w, h, framed);
 }
 void RoomWidget::drawUnitHPBar (const Unit& unit)
 {

@@ -40,6 +40,7 @@ protected:
     void drawTextured (GLenum mode, GLsizei vertex_count, const GLfloat* vertex_positions, const GLfloat* texture_coords, QOpenGLTexture* texture);
     void drawTextured (GLenum mode, const GLfloat* vertex_positions, const GLfloat* texture_coords, GLsizei index_count, const GLuint* indices, QOpenGLTexture* texture);
     void drawRectangle (int x, int y, int w, int h, const QColor& color);
+    void drawRectangle (const QRectF& rect, const QColor& color);
     void fillRectangle (int x, int y, QOpenGLTexture* texture);
     void fillRectangle (int x, int y, int w, int h, QOpenGLTexture* texture);
     void fillRectangle (int x, int y, int w, int h, const QColor& color);

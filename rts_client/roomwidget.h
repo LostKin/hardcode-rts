@@ -132,8 +132,10 @@ private:
     void drawHUD ();
     void drawMinimap ();
     void drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit);
+    void drawGroupsOverlay ();
     void drawUnit (const Unit& unit);
-    void drawIcon (const Unit& unit, int x, int y, int w, int h, bool framed = false);
+    void drawIcon (const Unit& unit, qreal x, qreal y, qreal w, qreal h, bool framed = false);
+    void drawIcon (const Unit::Type& unit_type, qreal hp_ratio, qreal x, qreal y, qreal w, qreal h, bool framed = false);
     void drawTabs (int x, int y, int w, int h);
     void drawUnitHPBar (const Unit& unit);
     void drawMissile (const Missile& missile);
@@ -168,6 +170,8 @@ private:
 
 private:
     QFont font;
+    QFont group_number_font;
+    QFont group_size_font;
 
     struct {
         QSharedPointer<QOpenGLTexture> grass;

@@ -323,12 +323,55 @@ void OpenGLWidget::drawRectangle (int x, int y, int w, int h, const QColor& colo
     const GLfloat vertices[] = {
         GLfloat (x + 0.5),
         GLfloat (y + 0.5),
-        GLfloat (x + 0.5 + w),
+        GLfloat (x - 0.5 + w),
         GLfloat (y + 0.5),
-        GLfloat (x + 0.5 + w),
-        GLfloat (y + 0.5 + h),
+        GLfloat (x - 0.5 + w),
+        GLfloat (y - 0.5 + h),
         GLfloat (x + 0.5),
-        GLfloat (y + 0.5 + h),
+        GLfloat (y - 0.5 + h),
+    };
+
+    GLfloat r = color.redF ();
+    GLfloat g = color.greenF ();
+    GLfloat b = color.blueF ();
+    GLfloat a = color.alphaF ();
+
+    const GLfloat colors[] = {
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
+        r,
+        g,
+        b,
+        a,
+    };
+
+    drawColored (GL_LINE_LOOP, 4, vertices, colors);
+}
+void OpenGLWidget::drawRectangle (const QRectF& rect, const QColor& color)
+{
+    qreal x = rect.x ();
+    qreal y = rect.y ();
+    qreal w = rect.width ();
+    qreal h = rect.height ();
+    const GLfloat vertices[] = {
+        GLfloat (x + 0.5),
+        GLfloat (y + 0.5),
+        GLfloat (x - 0.5 + w),
+        GLfloat (y + 0.5),
+        GLfloat (x - 0.5 + w),
+        GLfloat (y - 0.5 + h),
+        GLfloat (x + 0.5),
+        GLfloat (y - 0.5 + h),
     };
 
     GLfloat r = color.redF ();
