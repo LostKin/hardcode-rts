@@ -140,8 +140,13 @@ QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2D (const QImage& image)
 }
 QSharedPointer<QOpenGLTexture> OpenGLWidget::loadTexture2DRectangle (const QString& path)
 {
+    QImage image = QImage (path).convertToFormat (QImage::Format_RGBA8888);
     QOpenGLTexture* texture = new QOpenGLTexture (QOpenGLTexture::TargetRectangle);
-    texture->setData (QImage (path), QOpenGLTexture::DontGenerateMipMaps);
+    texture->setFormat (QOpenGLTexture::QOpenGLTexture::RGBAFormat);
+    texture->setSize (image.width (), image.height ());
+    texture->allocateStorage ();
+    texture->setData (QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, image.bits ());
+    texture->setLevelOfDetailRange (0, 0);
     texture->setMinificationFilter (QOpenGLTexture::Nearest);
     texture->setMagnificationFilter (QOpenGLTexture::Nearest);
     return QSharedPointer<QOpenGLTexture> (texture);
