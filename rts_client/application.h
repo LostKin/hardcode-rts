@@ -10,8 +10,6 @@
 #include <QSharedPointer>
 
 class QNetworkDatagram;
-// class MatchState;
-// class Unit;
 
 class Application: public QApplication
 {

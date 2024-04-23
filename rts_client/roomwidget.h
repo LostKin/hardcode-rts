@@ -8,6 +8,8 @@
 #include <QTimer>
 
 class Unit;
+class ColoredRenderer;
+
 
 class RoomWidget: public OpenGLWidget
 {
@@ -293,4 +295,5 @@ private:
     bool alt_pressed = false;
     bool shift_pressed = false;
     std::mt19937 random_generator;
+    QSharedPointer<ColoredRenderer> colored_renderer;
 };

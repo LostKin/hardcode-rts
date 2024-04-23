@@ -1,6 +1,7 @@
 #include "roomwidget.h"
 
 #include "matchstate.h"
+#include "coloredrenderer.h"
 
 #include <QLabel>
 #include <QFrame>
@@ -318,8 +319,10 @@ QImage RoomWidget::loadUnitFromSVGTemplate (const QString& path, const QByteArra
 }
 void RoomWidget::loadUnitTextures ()
 {
-    QColor red_player_color (0xe2, 0x47, 0x47);
-    QColor blue_player_color (0x53, 0x53, 0xff);
+    QColor red_player_color (0xf1, 0x4b, 0x2c);
+    QColor blue_player_color (0x48, 0xc0, 0xbb);
+    // QColor red_player_color (0xe2, 0x47, 0x47);
+    // QColor blue_player_color (0x53, 0x53, 0xff);
     {
         textures.units.seal.red.standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "standing", red_player_color));
         textures.units.seal.red.walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "walking1", red_player_color));
@@ -454,6 +457,10 @@ void RoomWidget::loadTextures ()
 }
 void RoomWidget::initResources ()
 {
+    if (!(colored_renderer = ColoredRenderer::Create ())) {
+        qDebug () << "TODO: Handle error";
+    }
+
     loadTextures ();
 
     cursor = textures.cursors.crosshair;
@@ -1041,10 +1048,12 @@ void RoomWidget::drawMatchStarted ()
     glDisable (GL_LINE_SMOOTH);
 
     if (selection_start.has_value () && *selection_start != cursor_position) {
-        drawRectangle (
+        colored_renderer->drawRectangle (
+            *this,
             qMin (selection_start->x (), cursor_position.x ()), qMin (selection_start->y (), cursor_position.y ()),
             qAbs (selection_start->x () - cursor_position.x ()), qAbs (selection_start->y () - cursor_position.y ()),
-            QColor (0, 255, 0, 255));
+            QColor (0, 255, 0, 255),
+            ortho_matrix);
     }
 
     drawHUD ();
@@ -1194,21 +1203,22 @@ void RoomWidget::drawHUD ()
     {
         int area_w = hud.minimap_panel_rect.width () + margin * 2;
         int area_h = hud.minimap_panel_rect.height () + margin * 2;
-        fillRectangle (0, h - area_h, area_w, area_h, margin_color);
+        colored_renderer->fillRectangle (*this, 0, h - area_h, area_w, area_h, margin_color, ortho_matrix);
     }
     {
         int area_w = hud.action_panel_rect.width () + margin * 2;
         int area_h = hud.action_panel_rect.height () + margin * 2;
-        fillRectangle (w - area_w, h - area_h, area_w, area_h, margin_color);
+        colored_renderer->fillRectangle (*this, w - area_w, h - area_h, area_w, area_h, margin_color, ortho_matrix);
     }
     {
-        fillRectangle (hud.minimap_panel_rect.width () + margin * 2, h - hud.selection_panel_rect.height () - margin * 2,
-                       w - hud.minimap_panel_rect.width () - hud.action_panel_rect.width () - margin * 4, hud.selection_panel_rect.height () + margin * 2,
-                       margin_color);
+        colored_renderer->fillRectangle (*this,
+                                         hud.minimap_panel_rect.width () + margin * 2, h - hud.selection_panel_rect.height () - margin * 2,
+                                         w - hud.minimap_panel_rect.width () - hud.action_panel_rect.width () - margin * 4, hud.selection_panel_rect.height () + margin * 2,
+                                         margin_color, ortho_matrix);
     }
-    fillRectangle (hud.minimap_panel_rect, panel_color);
+    colored_renderer->fillRectangle (*this, hud.minimap_panel_rect, panel_color, ortho_matrix);
     drawMinimap ();
-    fillRectangle (hud.selection_panel_rect, panel_color);
+    colored_renderer->fillRectangle (*this, hud.selection_panel_rect, panel_color, ortho_matrix);
     {
         const qreal half_stroke_width = hud.stroke_width * 0.5;
 
@@ -1466,7 +1476,7 @@ void RoomWidget::drawHUD ()
             GLfloat (1),
         };
 
-        drawColored (GL_LINES, 40, vertices, colors);
+        colored_renderer->draw (*this, GL_LINES, 40, vertices, colors, ortho_matrix);
 
         glLineWidth (1);
     }
@@ -1513,7 +1523,7 @@ void RoomWidget::drawHUD ()
     {
         int area_w = hud.action_panel_rect.width ();
         int area_h = hud.action_panel_rect.height ();
-        fillRectangle (w - area_w - margin, h - area_h - margin, area_w, area_h, QColor (panel_color));
+        colored_renderer->fillRectangle (*this, w - area_w - margin, h - area_h - margin, area_w, area_h, QColor (panel_color), ortho_matrix);
 
         if (selected_count > 0) {
             drawActionButton ({w - area_w - margin, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
@@ -1553,16 +1563,16 @@ void RoomWidget::drawMinimap ()
 {
     const QRectF& area = match_state->areaRef ();
     QPointF area_to_minimap_scale = {hud.minimap_screen_area.width () / area.width (), hud.minimap_screen_area.height () / area.height ()};
-    fillRectangle (hud.minimap_screen_area, QColor ());
+    colored_renderer->fillRectangle (*this, hud.minimap_screen_area, QColor (), ortho_matrix);
     const QHash<quint32, Unit>& units = match_state->unitsRef ();
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
         const Unit& unit = *it;
         QPointF pos = hud.minimap_screen_area.topLeft () + (unit.position - area.topLeft ()) * area_to_minimap_scale;
         QColor color = (team == unit.team) ? QColor (0, 0xff, 0) : QColor (0xff, 0, 0);
         if (unit.type == Unit::Type::Contaminator)
-            fillRectangle (pos.x () - 1.5, pos.y () - 1.5, 3.0, 3.0, color);
+            colored_renderer->fillRectangle (*this, pos.x () - 1.5, pos.y () - 1.5, 3.0, 3.0, color, ortho_matrix);
         else
-            fillRectangle (pos.x () - 1.0, pos.y () - 1.0, 2.0, 2.0, color);
+            colored_renderer->fillRectangle (*this, pos.x () - 1.0, pos.y () - 1.0, 2.0, 2.0, color, ortho_matrix);
     }
     QColor color (0xdf, 0xdf, 0xff);
     qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
@@ -1570,7 +1580,7 @@ void RoomWidget::drawMinimap ()
     QPointF s = QPointF (arena_viewport.width (), arena_viewport.height ()) / scale * area_to_minimap_scale;
     glScissor (hud.minimap_screen_area.x (), h - (hud.minimap_screen_area.y () + hud.minimap_screen_area.height ()), hud.minimap_screen_area.width (), hud.minimap_screen_area.height ());
     glEnable (GL_SCISSOR_TEST);
-    drawRectangle (viewport_center_minimap.x () - s.x () * 0.5, viewport_center_minimap.y () - s.y () * 0.5, s.x (), s.y (), color);
+    colored_renderer->drawRectangle (*this, viewport_center_minimap.x () - s.x () * 0.5, viewport_center_minimap.y () - s.y () * 0.5, s.x (), s.y (), color, ortho_matrix);
     glDisable (GL_SCISSOR_TEST);
 }
 void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit)
@@ -1648,13 +1658,13 @@ void RoomWidget::drawGroupsOverlay ()
             QRectF info_rect = {x_center - info_rect_size.width ()*0.5, number_rect_y_center - info_rect_size.height () + 1, info_rect_size.width (), info_rect_size.height ()};
             QRectF number_rect = {x_center - number_rect_size.width ()*0.5, number_rect_y_center, number_rect_size.width (), number_rect_size.height ()};
             if (group_sizes[col]) {
-                fillRectangle (info_rect, group_info_rect_color);
-                fillRectangle (number_rect, group_number_rect_color);
-                drawRectangle (info_rect, group_border_color);
-                drawRectangle (number_rect, group_border_color);
+                colored_renderer->fillRectangle (*this, info_rect, group_info_rect_color, ortho_matrix);
+                colored_renderer->fillRectangle (*this, number_rect, group_number_rect_color, ortho_matrix);
+                colored_renderer->drawRectangle (*this, info_rect, group_border_color, ortho_matrix);
+                colored_renderer->drawRectangle (*this, number_rect, group_border_color, ortho_matrix);
                 drawIcon (group_unit_counts[col], 1.0, info_rect.x (), info_rect.y (), group_icon_size.width (), group_icon_size.height ());
             } else {
-                fillRectangle (info_rect, group_shade_color);
+                colored_renderer->fillRectangle (*this, info_rect, group_shade_color, ortho_matrix);
             }
         }
     }
@@ -1878,7 +1888,7 @@ void RoomWidget::drawUnit (const Unit& unit)
     }
 
     if (unit.selected)
-        drawCircle (center.x (), center.y (), scale * 0.5, {0, 255, 0});
+        colored_renderer->drawCircle (*this, center.x (), center.y (), scale * 0.5, {0, 255, 0}, ortho_matrix);
 }
 void RoomWidget::drawTabs (int x, int y, int w, int h)
 {
@@ -2107,7 +2117,7 @@ void RoomWidget::drawUnitHPBar (const Unit& unit)
                 GLfloat (color.alphaF ()),
             };
 
-            drawColored (GL_TRIANGLE_FAN, 4, vertices, colors);
+            colored_renderer->draw (*this, GL_TRIANGLE_FAN, 4, vertices, colors, ortho_matrix);
         }
 
         {
@@ -2141,7 +2151,7 @@ void RoomWidget::drawUnitHPBar (const Unit& unit)
                 1,
             };
 
-            drawColored (GL_LINE_LOOP, 4, vertices, colors);
+            colored_renderer->draw (*this, GL_LINE_LOOP, 4, vertices, colors, ortho_matrix);
         }
     }
 }
@@ -2372,7 +2382,7 @@ void RoomWidget::drawUnitPathToTarget (const Unit& unit)
         1,
     };
 
-    drawColored (GL_LINES, 2, vertices, std::holds_alternative<AttackAction> (unit.action) ? attack_colors : move_colors);
+    colored_renderer->draw (*this, GL_LINES, 2, vertices, std::holds_alternative<AttackAction> (unit.action) ? attack_colors : move_colors, ortho_matrix);
 }
 void RoomWidget::drawActionButton (const QRect& rect, bool pressed, QOpenGLTexture* texture)
 {
@@ -2562,7 +2572,7 @@ void RoomWidget::drawActionButton (const QRect& rect, bool pressed, QOpenGLTextu
             18,
         };
 
-        drawColored (GL_TRIANGLES, vertices, colors, sizeof (indices) / sizeof (indices[0]), indices);
+        colored_renderer->draw (*this, GL_TRIANGLES, vertices, colors, sizeof (indices) / sizeof (indices[0]), indices, ortho_matrix);
     }
 
     {
@@ -2729,7 +2739,7 @@ void RoomWidget::drawActionButtonShade (const QRect& rect, bool pressed, qreal r
         }
     } while (0);
 
-    drawColored (GL_TRIANGLES, vertices.size () / 2, vertices.data (), colors);
+    colored_renderer->draw (*this, GL_TRIANGLES, vertices.size () / 2, vertices.data (), colors, ortho_matrix);
 }
 void RoomWidget::groupEvent (quint64 group_num)
 {

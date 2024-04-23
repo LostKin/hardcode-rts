@@ -24,7 +24,9 @@ SOURCES += \
     roomsettingswidget.cpp \
     profilewidget.cpp \
     roomwidget.cpp \
-    roomentry.cpp
+    roomentry.cpp \
+    unitrenderer.cpp \
+    coloredrenderer.cpp
 
 HEADERS += \
     network_thread.h \
@@ -39,7 +41,9 @@ HEADERS += \
     roomsettingswidget.h \
     profilewidget.h \
     roomwidget.h \
-    roomentry.h
+    roomentry.h \
+    unitrenderer.h \
+    coloredrenderer.h
 
 INCLUDEPATH += .proto_stubs
 LIBS += -lprotobuf
