@@ -4,7 +4,6 @@
 #include <QOpenGLFunctions>
 
 class QOpenGLShaderProgram;
-class QOpenGLFramebufferObject;
 
 
 class ColoredRenderer
@@ -32,5 +31,6 @@ private:
 
     GLuint position_attr_idx;
     GLuint color_attr_idx;
+
     GLuint matrix_uniform_idx;
 };

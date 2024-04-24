@@ -19,9 +19,7 @@ protected:
 
 private:
     void initPrograms ();
-    void initColoredProgram ();
     void initColoredTexturedProgram ();
-    void initTexturedProgram ();
 
 protected:
     virtual void initResources () = 0;
@@ -35,20 +33,8 @@ protected:
     QSharedPointer<QOpenGLTexture> loadTexture2DRectangle (const QString& path);
     void drawColoredTextured (GLenum mode, GLsizei vertex_count, const GLfloat* vertex_positions, const GLfloat* colors, const GLfloat* texture_coords, QOpenGLTexture* texture);
     void drawColoredTextured (GLenum mode, const GLfloat* vertex_positions, const GLfloat* colors, const GLfloat* texture_coords, GLsizei index_count, const GLuint* indices, QOpenGLTexture* texture);
-    void drawTextured (GLenum mode, GLsizei vertex_count, const GLfloat* vertex_positions, const GLfloat* texture_coords, QOpenGLTexture* texture);
-    void drawTextured (GLenum mode, const GLfloat* vertex_positions, const GLfloat* texture_coords, GLsizei index_count, const GLuint* indices, QOpenGLTexture* texture);
-    void fillRectangle (int x, int y, QOpenGLTexture* texture);
-    void fillRectangle (int x, int y, int w, int h, QOpenGLTexture* texture);
 
 private:
-    struct ColoredProgram {
-        QOpenGLShaderProgram* program;
-
-        GLuint position_attr_idx;
-        GLuint color_attr_idx;
-
-        GLuint matrix_uniform_idx;
-    };
     struct ColoredTexturedProgram {
         QOpenGLShaderProgram* program;
 
@@ -61,24 +47,11 @@ private:
         GLuint texture_2d_uniform_idx;
         GLuint texture_2d_rect_uniform_idx;
     };
-    struct TexturedProgram {
-        QOpenGLShaderProgram* program;
-
-        GLuint position_attr_idx;
-        GLuint texture_coords_attr_idx;
-
-        GLuint matrix_uniform_idx;
-        GLuint texture_mode_rect_uniform_idx;
-        GLuint texture_2d_uniform_idx;
-        GLuint texture_2d_rect_uniform_idx;
-    };
 
     int pixels_w = 1;
     int pixels_h = 1;
 
-    ColoredProgram colored_program;
     ColoredTexturedProgram colored_textured_program;
-    TexturedProgram textured_program;
 
 protected:
     QMatrix4x4 ortho_matrix; // TODO: Fix this

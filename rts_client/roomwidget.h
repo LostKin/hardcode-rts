@@ -9,6 +9,7 @@
 
 class Unit;
 class ColoredRenderer;
+class TexturedRenderer;
 
 
 class RoomWidget: public OpenGLWidget
@@ -296,4 +297,5 @@ private:
     bool shift_pressed = false;
     std::mt19937 random_generator;
     QSharedPointer<ColoredRenderer> colored_renderer;
+    QSharedPointer<TexturedRenderer> textured_renderer;
 };
