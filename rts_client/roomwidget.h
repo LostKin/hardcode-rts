@@ -12,7 +12,7 @@ class Unit;
 class ColoredRenderer;
 class ColoredTexturedRenderer;
 class TexturedRenderer;
-class UnitRenderer;
+class UnitSetRenderer;
 
 
 class RoomWidget: public OpenGLWidget
@@ -251,8 +251,6 @@ private:
         QPoint selection_panel_icon_grid_pos = {0, 0};
         QRectF minimap_screen_area = {0, 0, 1, 1};
     } hud;
-    QRect arena_viewport = {0, 0, 1, 1};
-    QPointF arena_viewport_center = {0, 0};
     State state = State::RoleSelection;
     ButtonId pressed_button = ButtonId::None;
     QPoint cursor_position = {-1, -1};
@@ -263,11 +261,7 @@ private:
     QElapsedTimer match_countdown_start;
     QSharedPointer<QOpenGLTexture> cursor;
     QSharedPointer<MatchState> match_state;
-    qreal map_to_screen_factor = 1.0;
-    qreal viewport_scale = 1.0;
     int mouse_scroll_border = 10;
-    int viewport_scale_power = 0;
-    QPointF viewport_center = {0.0, 0.0};
     QTimer match_timer;
     QElapsedTimer last_frame;
     std::optional<QPoint> selection_start;
@@ -276,21 +270,10 @@ private:
     bool shift_pressed = false;
     std::mt19937 random_generator;
     CoordMap coord_map;
+    QColor red_player_color = QColor (0xf1, 0x4b, 0x2c);
+    QColor blue_player_color = QColor (0x48, 0xc0, 0xbb);
     QSharedPointer<ColoredRenderer> colored_renderer;
     QSharedPointer<ColoredTexturedRenderer> colored_textured_renderer;
     QSharedPointer<TexturedRenderer> textured_renderer;
-    QColor red_player_color = QColor (0xf1, 0x4b, 0x2c);
-    QColor blue_player_color = QColor (0x48, 0xc0, 0xbb);
-
-    struct UnitRendererSet {
-        QSharedPointer<UnitRenderer> seal;
-        QSharedPointer<UnitRenderer> crusader;
-        QSharedPointer<UnitRenderer> goon;
-        QSharedPointer<UnitRenderer> beetle;
-        QSharedPointer<UnitRenderer> contaminator;
-    };
-    struct {
-        UnitRendererSet red;
-        UnitRendererSet blue;
-    } unit_renderers;
+    QSharedPointer<UnitSetRenderer> unit_set_renderer;
 };

@@ -15,8 +15,7 @@ class CoordMap;
 class UnitRenderer
 {
 public:
-    UnitRenderer (const QString& name, const QColor& team_color);
-    void loadResources (const QColor& team_color);
+    UnitRenderer (Unit::Type type, const QColor& team_color);
     void draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, TexturedRenderer& textured_renderer, const Unit& unit, quint64 clock_ns,
                const QMatrix4x4& ortho_matrix, const CoordMap& coord_map);
 
@@ -28,7 +27,6 @@ private:
     static quint64 attackAnimationPeriodNS (Unit::Type type);
 
 private:
-    QString name;
     QSharedPointer<QOpenGLTexture> standing;
     QSharedPointer<QOpenGLTexture> walking1;
     QSharedPointer<QOpenGLTexture> walking2;

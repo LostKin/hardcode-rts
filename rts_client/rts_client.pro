@@ -25,6 +25,8 @@ SOURCES += \
     profilewidget.cpp \
     roomwidget.cpp \
     roomentry.cpp \
+    unitsetrenderer.cpp \
+    unitteamrenderer.cpp \
     unitrenderer.cpp \
     coloredrenderer.cpp \
     coloredtexturedrenderer.cpp \
@@ -45,6 +47,8 @@ HEADERS += \
     profilewidget.h \
     roomwidget.h \
     roomentry.h \
+    unitsetrenderer.h \
+    unitteamrenderer.h \
     unitrenderer.h \
     coloredrenderer.h \
     coloredtexturedrenderer.h \

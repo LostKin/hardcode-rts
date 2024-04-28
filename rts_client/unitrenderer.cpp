@@ -16,9 +16,28 @@ static constexpr qreal PI_X_3_4 = 3.0 / 4.0 * M_PI;
 static constexpr qreal PI_X_1_4 = 1.0 / 4.0 * M_PI;
 
 
-UnitRenderer::UnitRenderer (const QString& name, const QColor& team_color)
-    : name (name)
+UnitRenderer::UnitRenderer (Unit::Type type, const QColor& team_color)
 {
+    QString name;
+    switch (type) {
+    case Unit::Type::Seal:
+        name = "seal";
+        break;
+    case Unit::Type::Crusader:
+        name = "crusader";
+        break;
+    case Unit::Type::Goon:
+        name = "goon";
+        break;
+    case Unit::Type::Beetle:
+        name = "beetle";
+        break;
+    case Unit::Type::Contaminator:
+        name = "contaminator";
+        break;
+    default:
+        return;
+    }
     standing = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/" + name + "/unit_tmpl.svg", "standing", team_color));
     walking1 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/" + name + "/unit_tmpl.svg", "walking1", team_color));
     walking2 = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/" + name + "/unit_tmpl.svg", "walking2", team_color));

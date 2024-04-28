@@ -4,7 +4,7 @@
 #include "coloredrenderer.h"
 #include "coloredtexturedrenderer.h"
 #include "texturedrenderer.h"
-#include "unitrenderer.h"
+#include "unitsetrenderer.h"
 
 #include <QLabel>
 #include <QFrame>
@@ -31,7 +31,7 @@ static constexpr qreal PI_X_1_4 = 1.0 / 4.0 * M_PI;
 
 static constexpr qint64 group_count = 20;
 static constexpr qreal POINTS_PER_VIEWPORT_VERTICALLY = 20.0; // At zoom x1.0
-#define MAP_TO_SCREEN_FACTOR (arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY)
+#define MAP_TO_SCREEN_FACTOR (coord_map.arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY)
 
 static const QMap<SoundEvent, QStringList> sound_map = {
     {SoundEvent::SealAttack, {":/audio/units/seal/attack1.wav", ":/audio/units/seal/attack2.wav"}},
@@ -206,9 +206,9 @@ void RoomWidget::startMatch (Unit::Team team)
     connect (&*match_state, &MatchState::unitActionRequested, this, &RoomWidget::unitActionCallback);
     connect (&*match_state, &MatchState::unitCreateRequested, this, &RoomWidget::unitCreateCallback);
     connect (&*match_state, SIGNAL (soundEventEmitted (SoundEvent)), this, SLOT (playSound (SoundEvent)));
-    viewport_scale_power = 0;
-    viewport_scale = 1.0;
-    viewport_center = {};
+    coord_map.viewport_scale_power = 0;
+    coord_map.viewport_scale = 1.0;
+    coord_map.viewport_center = {};
     match_timer.start (20);
     last_frame.restart ();
     state = State::MatchStarted;
@@ -398,20 +398,7 @@ void RoomWidget::initResources ()
         qDebug () << "TODO: Handle error";
     }
 
-    {
-        unit_renderers.red.seal = QSharedPointer<UnitRenderer> (new UnitRenderer ("seal", red_player_color));
-        unit_renderers.red.crusader = QSharedPointer<UnitRenderer> (new UnitRenderer ("crusader", red_player_color));
-        unit_renderers.red.goon = QSharedPointer<UnitRenderer> (new UnitRenderer ("goon", red_player_color));
-        unit_renderers.red.beetle = QSharedPointer<UnitRenderer> (new UnitRenderer ("beetle", red_player_color));
-        unit_renderers.red.contaminator = QSharedPointer<UnitRenderer> (new UnitRenderer ("contaminator", red_player_color));
-    }
-    {
-        unit_renderers.blue.seal = QSharedPointer<UnitRenderer> (new UnitRenderer ("seal", blue_player_color));
-        unit_renderers.blue.crusader = QSharedPointer<UnitRenderer> (new UnitRenderer ("crusader", blue_player_color));
-        unit_renderers.blue.goon = QSharedPointer<UnitRenderer> (new UnitRenderer ("goon", blue_player_color));
-        unit_renderers.blue.beetle = QSharedPointer<UnitRenderer> (new UnitRenderer ("beetle", blue_player_color));
-        unit_renderers.blue.contaminator = QSharedPointer<UnitRenderer> (new UnitRenderer ("contaminator", blue_player_color));
-    }
+    unit_set_renderer = QSharedPointer<UnitSetRenderer> (new UnitSetRenderer (red_player_color, blue_player_color));
 
     loadTextures ();
 
@@ -421,9 +408,8 @@ void RoomWidget::updateSize (int w, int h)
 {
     this->w = w;
     this->h = h;
-    arena_viewport = {0, 0, w, h - 220};
-    arena_viewport_center = QRectF (arena_viewport).center ();
-    map_to_screen_factor = arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY;
+    coord_map.arena_viewport = {0, 0, w, h - 220};
+    coord_map.arena_viewport_center = QRectF (coord_map.arena_viewport).center ();
 
     if (w >= 3656)
         hud.margin = 24;
@@ -474,8 +460,6 @@ void RoomWidget::updateSize (int w, int h)
     } else {
         hud.minimap_screen_area = hud.minimap_panel_rect;
     }
-
-    coord_map = {arena_viewport, arena_viewport_center, viewport_scale, viewport_center};
 }
 void RoomWidget::draw ()
 {
@@ -825,7 +809,7 @@ void RoomWidget::matchMousePressEvent (QMouseEvent* event)
         switch (event->button ()) {
         case Qt::LeftButton: {
             if (ctrl_pressed) {
-                match_state->trySelectByType (team, coord_map.toMapCoords (cursor_position), coord_map.toMapCoords (arena_viewport), shift_pressed);
+                match_state->trySelectByType (team, coord_map.toMapCoords (cursor_position), coord_map.toMapCoords (coord_map.arena_viewport), shift_pressed);
             } else {
                 selection_start = cursor_position;
             }
@@ -945,8 +929,8 @@ void RoomWidget::drawMatchStarted ()
     const QRectF& area = match_state->areaRef ();
 
     {
-        qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
-        QPointF center = arena_viewport_center - viewport_center*scale;
+        qreal scale = coord_map.viewport_scale * MAP_TO_SCREEN_FACTOR;
+        QPointF center = coord_map.arena_viewport_center - coord_map.viewport_center*scale;
         const GLfloat vertices[] = {
             GLfloat (center.x () + scale * area.left ()),
             GLfloat (center.y () + scale * area.top ()),
@@ -1060,17 +1044,17 @@ void RoomWidget::matchFrameUpdate (qreal dt)
     qreal off = 4000.0;
     if (dx && dy)
         off *= SQRT_1_2;
-    qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
-    viewport_center += QPointF (dx * off * dt, dy * off * dt)/scale;
+    qreal scale = coord_map.viewport_scale * MAP_TO_SCREEN_FACTOR;
+    coord_map.viewport_center += QPointF (dx * off * dt, dy * off * dt)/scale;
     const QRectF& area = match_state->areaRef ();
-    if (viewport_center.x () < area.left ())
-        viewport_center.setX (area.left ());
-    else if (viewport_center.x () > area.right ())
-        viewport_center.setX (area.right ());
-    if (viewport_center.y () < area.top ())
-        viewport_center.setY (area.top ());
-    else if (viewport_center.y () > area.bottom ())
-        viewport_center.setY (area.bottom ());
+    if (coord_map.viewport_center.x () < area.left ())
+        coord_map.viewport_center.setX (area.left ());
+    else if (coord_map.viewport_center.x () > area.right ())
+        coord_map.viewport_center.setX (area.right ());
+    if (coord_map.viewport_center.y () < area.top ())
+        coord_map.viewport_center.setY (area.top ());
+    else if (coord_map.viewport_center.y () > area.bottom ())
+        coord_map.viewport_center.setY (area.bottom ());
 }
 bool RoomWidget::pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const
 {
@@ -1123,7 +1107,7 @@ bool RoomWidget::cursorIsAboveMajorMap (const QPoint& cursor_pos) const
 }
 void RoomWidget::centerViewportAt (const QPointF& point)
 {
-    viewport_center = point;
+    coord_map.viewport_center = point;
 }
 void RoomWidget::centerViewportAtSelected ()
 {
@@ -1515,9 +1499,9 @@ void RoomWidget::drawMinimap ()
             colored_renderer->fillRectangle (*this, pos.x () - 1.0, pos.y () - 1.0, 2.0, 2.0, color, ortho_matrix);
     }
     QColor color (0xdf, 0xdf, 0xff);
-    qreal scale = viewport_scale * MAP_TO_SCREEN_FACTOR;
-    QPointF viewport_center_minimap = (viewport_center - area.topLeft ()) * area_to_minimap_scale + hud.minimap_screen_area.topLeft ();
-    QPointF s = QPointF (arena_viewport.width (), arena_viewport.height ()) / scale * area_to_minimap_scale;
+    qreal scale = coord_map.viewport_scale * MAP_TO_SCREEN_FACTOR;
+    QPointF viewport_center_minimap = (coord_map.viewport_center - area.topLeft ()) * area_to_minimap_scale + hud.minimap_screen_area.topLeft ();
+    QPointF s = QPointF (coord_map.arena_viewport.width (), coord_map.arena_viewport.height ()) / scale * area_to_minimap_scale;
     glScissor (hud.minimap_screen_area.x (), h - (hud.minimap_screen_area.y () + hud.minimap_screen_area.height ()), hud.minimap_screen_area.width (), hud.minimap_screen_area.height ());
     glEnable (GL_SCISSOR_TEST);
     colored_renderer->drawRectangle (*this, viewport_center_minimap.x () - s.x () * 0.5, viewport_center_minimap.y () - s.y () * 0.5, s.x (), s.y (), color, ortho_matrix);
@@ -1634,53 +1618,7 @@ void RoomWidget::drawGroupsOverlay ()
 }
 void RoomWidget::drawUnit (const Unit& unit)
 {
-    quint64 clock_ns = match_state->clockNS ();
-    switch (unit.team) {
-    case Unit::Team::Red:
-        switch (unit.type) {
-        case Unit::Type::Seal:
-            unit_renderers.red.seal->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        case Unit::Type::Crusader:
-            unit_renderers.red.crusader->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        case Unit::Type::Goon:
-            unit_renderers.red.goon->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        case Unit::Type::Beetle:
-            unit_renderers.red.beetle->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        case Unit::Type::Contaminator:
-            unit_renderers.red.contaminator->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        default:
-            break;
-        }
-        break;
-    case Unit::Team::Blue:
-        switch (unit.type) {
-        case Unit::Type::Seal:
-            unit_renderers.blue.seal->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        case Unit::Type::Crusader:
-            unit_renderers.blue.crusader->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        case Unit::Type::Goon:
-            unit_renderers.blue.goon->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        case Unit::Type::Beetle:
-            unit_renderers.blue.beetle->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        case Unit::Type::Contaminator:
-            unit_renderers.blue.contaminator->draw (*this, *colored_renderer, *textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
-            break;
-        default:
-            break;
-        }
-        break;
-    default:
-        break;
-    }
+    unit_set_renderer->draw (*this, *colored_renderer, *textured_renderer, unit, match_state->clockNS (), ortho_matrix, coord_map);
 }
 void RoomWidget::drawTabs (int x, int y, int w, int h)
 {
@@ -1872,8 +1810,8 @@ void RoomWidget::drawUnitHPBar (const Unit& unit)
     if (unit.hp < match_state->unitMaxHP (unit.type)) {
         QPointF center = coord_map.toScreenCoords (unit.position);
         qreal hp_ratio = qreal (unit.hp) / match_state->unitMaxHP (unit.type);
-        qreal hitbar_height = viewport_scale * MAP_TO_SCREEN_FACTOR * 0.16;
-        qreal radius = viewport_scale * match_state->unitDiameter (unit.type) * MAP_TO_SCREEN_FACTOR * 0.42;
+        qreal hitbar_height = coord_map.viewport_scale * MAP_TO_SCREEN_FACTOR * 0.16;
+        qreal radius = coord_map.viewport_scale * match_state->unitDiameter (unit.type) * MAP_TO_SCREEN_FACTOR * 0.42;
 
         {
             const GLfloat vertices[] = {
@@ -1976,7 +1914,7 @@ void RoomWidget::drawMissile (const Missile& missile)
     sincos (missile.orientation + PI_X_1_4, &a2_sin, &a2_cos);
     sincos (missile.orientation - PI_X_1_4, &a3_sin, &a3_cos);
     sincos (missile.orientation - PI_X_3_4, &a4_sin, &a4_cos);
-    qreal scale = viewport_scale * sprite_scale * match_state->missileDiameter (Missile::Type::Rocket) * SQRT_2 * MAP_TO_SCREEN_FACTOR;
+    qreal scale = coord_map.viewport_scale * sprite_scale * match_state->missileDiameter (Missile::Type::Rocket) * SQRT_2 * MAP_TO_SCREEN_FACTOR;
 
     const GLfloat vertices[] = {
         GLfloat (center.x () + scale * a1_cos),
@@ -2054,7 +1992,7 @@ void RoomWidget::drawExplosion (const Explosion& explosion)
     sincos (orientation + PI_X_1_4, &a2_sin, &a2_cos);
     sincos (orientation - PI_X_1_4, &a3_sin, &a3_cos);
     sincos (orientation - PI_X_3_4, &a4_sin, &a4_cos);
-    qreal scale = viewport_scale * sprite_scale * match_state->explosionDiameter (explosion.type) * SQRT_2 * MAP_TO_SCREEN_FACTOR;
+    qreal scale = coord_map.viewport_scale * sprite_scale * match_state->explosionDiameter (explosion.type) * SQRT_2 * MAP_TO_SCREEN_FACTOR;
 
     const GLfloat colors[] = {
         1,
@@ -2548,13 +2486,13 @@ void RoomWidget::groupEvent (quint64 group_num)
 }
 void RoomWidget::zoom (int delta)
 {
-    viewport_scale_power += delta;
-    viewport_scale_power = qBound (-10, viewport_scale_power, 10);
-    QPointF offset_before = coord_map.toMapCoords (cursor_position) - viewport_center;
-    viewport_scale = pow (1.125, viewport_scale_power);
-    QPointF offset_after = coord_map.toMapCoords (cursor_position) - viewport_center;
+    coord_map.viewport_scale_power += delta;
+    coord_map.viewport_scale_power = qBound (-10, coord_map.viewport_scale_power, 10);
+    QPointF offset_before = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
+    coord_map.viewport_scale = pow (1.125, coord_map.viewport_scale_power);
+    QPointF offset_after = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
 
-    viewport_center -= offset_after - offset_before;
+    coord_map.viewport_center -= offset_after - offset_before;
 }
 QVector<QPair<quint32, const Unit*>> RoomWidget::buildOrderedSelection ()
 {
