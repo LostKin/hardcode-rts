@@ -27,7 +27,9 @@ SOURCES += \
     roomentry.cpp \
     unitrenderer.cpp \
     coloredrenderer.cpp \
-    texturedrenderer.cpp
+    coloredtexturedrenderer.cpp \
+    texturedrenderer.cpp \
+    coordmap.cpp
 
 HEADERS += \
     network_thread.h \
@@ -45,7 +47,9 @@ HEADERS += \
     roomentry.h \
     unitrenderer.h \
     coloredrenderer.h \
-    texturedrenderer.h
+    coloredtexturedrenderer.h \
+    texturedrenderer.h \
+    coordmap.h
 
 INCLUDEPATH += .proto_stubs
 LIBS += -lprotobuf

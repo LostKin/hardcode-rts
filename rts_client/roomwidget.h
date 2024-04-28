@@ -3,13 +3,16 @@
 #include "openglwidget.h"
 
 #include "matchstate.h"
+#include "coordmap.h"
 
 #include <QElapsedTimer>
 #include <QTimer>
 
 class Unit;
 class ColoredRenderer;
+class ColoredTexturedRenderer;
 class TexturedRenderer;
+class UnitRenderer;
 
 
 class RoomWidget: public OpenGLWidget
@@ -122,9 +125,6 @@ private:
     void drawMatchStarted ();
     void frameUpdate (qreal dt);
     void matchFrameUpdate (qreal dt);
-    QPointF toMapCoords (const QPointF& point) const;
-    QRectF toMapCoords (const QRectF& rect) const;
-    QPointF toScreenCoords (const QPointF& point) const;
     bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const;
     bool getActionButtonUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
     bool getSelectionPanelUnitUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
@@ -155,19 +155,6 @@ private:
 private slots:
     void tick ();
     void playSound (SoundEvent event);
-
-private:
-    struct UnitTextureTeam {
-        QSharedPointer<QOpenGLTexture> standing;
-        QSharedPointer<QOpenGLTexture> walking1;
-        QSharedPointer<QOpenGLTexture> walking2;
-        QSharedPointer<QOpenGLTexture> shooting1;
-        QSharedPointer<QOpenGLTexture> shooting2;
-    };
-    struct UnitTextureSet {
-        UnitTextureTeam red;
-        UnitTextureTeam blue;
-    };
 
 private:
     static ActionButtonId getActionButtonFromGrid (int row, int col);
@@ -205,14 +192,6 @@ private:
             QSharedPointer<QOpenGLTexture> cancel_pressed;
             QSharedPointer<QOpenGLTexture> quit_pressed;
         } buttons;
-        struct {
-            UnitTextureSet seal;
-            UnitTextureSet crusader;
-            UnitTextureSet goon;
-            UnitTextureSet beetle;
-            UnitTextureSet contaminator;
-            QSharedPointer<QOpenGLTexture> contaminator_cooldown_shade;
-        } units;
         struct {
             QSharedPointer<QOpenGLTexture> seal;
             QSharedPointer<QOpenGLTexture> crusader;
@@ -296,6 +275,22 @@ private:
     bool alt_pressed = false;
     bool shift_pressed = false;
     std::mt19937 random_generator;
+    CoordMap coord_map;
     QSharedPointer<ColoredRenderer> colored_renderer;
+    QSharedPointer<ColoredTexturedRenderer> colored_textured_renderer;
     QSharedPointer<TexturedRenderer> textured_renderer;
+    QColor red_player_color = QColor (0xf1, 0x4b, 0x2c);
+    QColor blue_player_color = QColor (0x48, 0xc0, 0xbb);
+
+    struct UnitRendererSet {
+        QSharedPointer<UnitRenderer> seal;
+        QSharedPointer<UnitRenderer> crusader;
+        QSharedPointer<UnitRenderer> goon;
+        QSharedPointer<UnitRenderer> beetle;
+        QSharedPointer<UnitRenderer> contaminator;
+    };
+    struct {
+        UnitRendererSet red;
+        UnitRendererSet blue;
+    } unit_renderers;
 };

@@ -418,7 +418,7 @@ void MatchState::rotateUnit (Unit& unit, qreal dt, qreal dest_orientation)
             unit.orientation -= max_delta;
     }
 }
-qreal MatchState::unitDiameter (Unit::Type type) const
+qreal MatchState::unitDiameter (Unit::Type type)
 {
     switch (type) {
     case Unit::Type::Seal:
@@ -435,7 +435,7 @@ qreal MatchState::unitDiameter (Unit::Type type) const
         return 0.0;
     }
 }
-qreal MatchState::missileDiameter (Missile::Type type) const
+qreal MatchState::missileDiameter (Missile::Type type)
 {
     switch (type) {
     case Missile::Type::Rocket:
@@ -446,7 +446,7 @@ qreal MatchState::missileDiameter (Missile::Type type) const
         return 0.0;
     }
 }
-qreal MatchState::explosionDiameter (Explosion::Type type) const
+qreal MatchState::explosionDiameter (Explosion::Type type)
 {
     switch (type) {
     case Explosion::Type::Fire:
@@ -457,11 +457,11 @@ qreal MatchState::explosionDiameter (Explosion::Type type) const
         return 0.0;
     }
 }
-qreal MatchState::unitRadius (Unit::Type type) const
+qreal MatchState::unitRadius (Unit::Type type)
 {
     return unitDiameter (type) * 0.5;
 }
-qreal MatchState::unitMaxVelocity (Unit::Type type) const
+qreal MatchState::unitMaxVelocity (Unit::Type type)
 {
     switch (type) {
     case Unit::Type::Seal:
@@ -478,7 +478,7 @@ qreal MatchState::unitMaxVelocity (Unit::Type type) const
         return 0.0;
     }
 }
-qreal MatchState::unitMaxAngularVelocity (Unit::Type type) const
+qreal MatchState::unitMaxAngularVelocity (Unit::Type type)
 {
     switch (type) {
     case Unit::Type::Seal:
@@ -495,7 +495,7 @@ qreal MatchState::unitMaxAngularVelocity (Unit::Type type) const
         return 0.0;
     }
 }
-int MatchState::unitHitBarCount (Unit::Type type) const
+int MatchState::unitHitBarCount (Unit::Type type)
 {
     switch (type) {
     case Unit::Type::Seal:
@@ -512,7 +512,7 @@ int MatchState::unitHitBarCount (Unit::Type type) const
         return 0;
     }
 }
-int MatchState::unitMaxHP (Unit::Type type) const
+int MatchState::unitMaxHP (Unit::Type type)
 {
     switch (type) {
     case Unit::Type::Seal:
@@ -529,7 +529,7 @@ int MatchState::unitMaxHP (Unit::Type type) const
         return 0;
     }
 }
-const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type type) const
+const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type type)
 {
     static const AttackDescription seal = ({
         AttackDescription ret;
@@ -583,7 +583,7 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         return unkown;
     }
 }
-const AttackDescription& MatchState::effectAttackDescription (AttackDescription::Type type) const
+const AttackDescription& MatchState::effectAttackDescription (AttackDescription::Type type)
 {
     static const AttackDescription goon_rocket_explosion = ({
         AttackDescription ret;

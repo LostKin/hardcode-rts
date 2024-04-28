@@ -172,6 +172,8 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF 
     case Unit::Type::Contaminator: {
         unit_type = RTS::UnitType::UNIT_TYPE_CONTAMINATOR;
     } break;
+    default: {
+    }
     }
     request->set_unit_type (unit_type);
     request->set_id (10);
