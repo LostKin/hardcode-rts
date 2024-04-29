@@ -27,6 +27,7 @@ SOURCES += \
     roomentry.cpp \
     actionpanelrenderer.cpp \
     hud.cpp \
+    uniticonset.cpp \
     unitgenerator.cpp \
     unitsetrenderer.cpp \
     unitteamrenderer.cpp \
@@ -36,6 +37,7 @@ SOURCES += \
     texturedrenderer.cpp \
     effectrenderer.cpp \
     minimaprenderer.cpp \
+    groupoverlayrenderer.cpp \
     coordmap.cpp
 
 HEADERS += \
@@ -54,6 +56,7 @@ HEADERS += \
     roomentry.h \
     actionpanelrenderer.h \
     hud.h \
+    uniticonset.h \
     unitgenerator.h \
     unitsetrenderer.h \
     unitteamrenderer.h \
@@ -63,6 +66,7 @@ HEADERS += \
     texturedrenderer.h \
     effectrenderer.h \
     minimaprenderer.h \
+    groupoverlayrenderer.h \
     coordmap.h
 
 INCLUDEPATH += .proto_stubs

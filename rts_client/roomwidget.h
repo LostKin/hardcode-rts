@@ -13,10 +13,12 @@ class Unit;
 class ColoredRenderer;
 class ColoredTexturedRenderer;
 class TexturedRenderer;
+class UnitIconSet;
 class UnitSetRenderer;
 class ActionPanelRenderer;
 class EffectRenderer;
 class MinimapRenderer;
+class GroupOverlayRenderer;
 
 
 class RoomWidget: public OpenGLWidget
@@ -125,9 +127,6 @@ private:
     void centerViewportAtSelected ();
     void drawHUD ();
     void drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit);
-    void drawGroupsOverlay ();
-    void drawActionPanel (int margin, const QColor& panel_color, int selected_count, quint64 active_actions, bool contaminator_selected, qint64 cast_cooldown_left_ticks);
-    void drawUnit (const Unit& unit);
     void drawIcon (const Unit& unit, qreal x, qreal y, qreal w, qreal h, bool framed = false);
     void drawIcon (const Unit::Type& unit_type, qreal hp_ratio, qreal x, qreal y, qreal w, qreal h, bool framed = false);
     void drawTabs (int x, int y, int w, int h);
@@ -213,8 +212,10 @@ private:
     QSharedPointer<ColoredRenderer> colored_renderer;
     QSharedPointer<ColoredTexturedRenderer> colored_textured_renderer;
     QSharedPointer<TexturedRenderer> textured_renderer;
+    QSharedPointer<UnitIconSet> unit_icon_set;
     QSharedPointer<UnitSetRenderer> unit_set_renderer;
     QSharedPointer<ActionPanelRenderer> action_panel_renderer;
     QSharedPointer<EffectRenderer> effect_renderer;
     QSharedPointer<MinimapRenderer> minimap_renderer;
+    QSharedPointer<GroupOverlayRenderer> group_overlay_renderer;
 };

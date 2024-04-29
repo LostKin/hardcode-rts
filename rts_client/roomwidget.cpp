@@ -5,11 +5,13 @@
 #include "coloredtexturedrenderer.h"
 #include "texturedrenderer.h"
 #include "unitgenerator.h"
+#include "uniticonset.h"
 #include "unitsetrenderer.h"
 #include "hud.h"
 #include "actionpanelrenderer.h"
 #include "effectrenderer.h"
 #include "minimaprenderer.h"
+#include "groupoverlayrenderer.h"
 
 #include <QLabel>
 #include <QFrame>
@@ -349,10 +351,12 @@ void RoomWidget::initResources ()
         qDebug () << "TODO: Handle error";
     }
 
+    unit_icon_set = QSharedPointer<UnitIconSet>::create ();
     unit_set_renderer = QSharedPointer<UnitSetRenderer>::create (red_player_color, blue_player_color);
     action_panel_renderer = QSharedPointer<ActionPanelRenderer>::create ();
     effect_renderer = QSharedPointer<EffectRenderer>::create ();
     minimap_renderer = QSharedPointer<MinimapRenderer>::create ();
+    group_overlay_renderer = QSharedPointer<GroupOverlayRenderer>::create (unit_icon_set);
 
     loadTextures ();
 
@@ -923,7 +927,8 @@ void RoomWidget::drawMatchStarted ()
     const QHash<quint32, Explosion>& explosions = match_state->explosionsRef ();
 
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
-        drawUnit (it.value ());
+        unit_set_renderer->draw (*this, *colored_renderer, *textured_renderer, it.value (), match_state->clockNS (), ortho_matrix, coord_map);
+
     for (QHash<quint32, Missile>::const_iterator it = missiles.constBegin (); it != missiles.constEnd (); ++it)
         effect_renderer->drawMissile (*this, *textured_renderer, it.value (), match_state->clockNS (), ortho_matrix, coord_map);
     for (QHash<quint32, Explosion>::const_iterator it = explosions.constBegin (); it != explosions.constEnd (); ++it)
@@ -1397,7 +1402,7 @@ void RoomWidget::drawHUD ()
     }
 
     drawSelectionPanel (hud->selection_panel_rect, selected_count, last_selected_unit);
-    drawGroupsOverlay ();
+    group_overlay_renderer->draw (*this, *colored_renderer, *colored_textured_renderer, *this, *hud, *match_state, team, ortho_matrix, coord_map);
     action_panel_renderer->draw (*this, *colored_renderer, *textured_renderer,
                                  *hud, margin, panel_color, selected_count, active_actions, contaminator_selected, cast_cooldown_left_ticks,
                                  ortho_matrix, coord_map);
@@ -1442,84 +1447,6 @@ void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, c
             drawIcon (*unit, hud->selection_panel_icon_grid_pos.x () + icon_rib * col, hud->selection_panel_icon_grid_pos.y () + icon_rib * row, icon_rib, icon_rib, true);
         }
     }
-}
-void RoomWidget::drawGroupsOverlay ()
-{
-    qint64 group_sizes[group_count] = {};
-    Unit::Type group_unit_counts[group_count];
-    for (qint64 i = 0; i < group_count; ++i)
-        group_unit_counts[i] = Unit::Type::Beetle;
-    const QHash<quint32, Unit>& units = match_state->unitsRef ();
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
-        quint64 groups = it->groups;
-        for (qint64 i = 0; i < group_count; ++i) {
-            if (groups & (1 << (i + 1))) {
-                group_sizes[i]++;
-                group_unit_counts[i] = qMax (group_unit_counts[i], it->type);
-            }
-        }
-    }
-    static constexpr QColor group_info_rect_color (0, 0x44, 0);
-    static constexpr QColor group_number_rect_color (0x44, 0, 0);
-    static constexpr QColor group_border_color (0, 0xff, 0);
-    static constexpr QColor group_shade_color (0, 0, 0, 0x22);
-    static constexpr QColor group_text_color (0xdf, 0xdf, 0xff);
-    int icon_rib = hud->selection_panel_icon_rib;
-    QSizeF info_rect_size (icon_rib*0.8, icon_rib*0.4);
-    QSizeF number_rect_size (icon_rib*0.6, icon_rib*0.3);
-    int group_icon_rib = hud->margin*5/3;
-    QSize group_icon_size (group_icon_rib, group_icon_rib);
-    {
-        for (qint64 col = 0; col < group_count; ++col) {
-            qreal number_rect_y = hud->selection_panel_rect.y () - hud->margin*0.5;
-            qreal x_center = hud->selection_panel_icon_grid_pos.x () + icon_rib*(col - 5 + 0.5);
-            qreal number_rect_y_center = number_rect_y - number_rect_size.height ()*0.5;
-            QRectF info_rect = {x_center - info_rect_size.width ()*0.5, number_rect_y_center - info_rect_size.height () + 1, info_rect_size.width (), info_rect_size.height ()};
-            QRectF number_rect = {x_center - number_rect_size.width ()*0.5, number_rect_y_center, number_rect_size.width (), number_rect_size.height ()};
-            if (group_sizes[col]) {
-                colored_renderer->fillRectangle (*this, info_rect, group_info_rect_color, ortho_matrix);
-                colored_renderer->fillRectangle (*this, number_rect, group_number_rect_color, ortho_matrix);
-                colored_renderer->drawRectangle (*this, info_rect, group_border_color, ortho_matrix);
-                colored_renderer->drawRectangle (*this, number_rect, group_border_color, ortho_matrix);
-                drawIcon (group_unit_counts[col], 1.0, info_rect.x (), info_rect.y (), group_icon_size.width (), group_icon_size.height ());
-            } else {
-                colored_renderer->fillRectangle (*this, info_rect, group_shade_color, ortho_matrix);
-            }
-        }
-    }
-    {
-        int icon_rib = hud->selection_panel_icon_rib;
-
-        QPainter p (this);
-        p.setPen (group_text_color);
-        for (qint64 col = 0; col < group_count; ++col) {
-            if (group_sizes[col]) {
-                qreal number_rect_y = hud->selection_panel_rect.y () - hud->margin*0.5;
-                qreal info_rect_w = icon_rib*0.8;
-                qreal info_rect_h = info_rect_w*0.5;
-                qreal number_rect_w = icon_rib*0.6;
-                qreal number_rect_h = number_rect_w*0.5;
-                qreal x_center = hud->selection_panel_icon_grid_pos.x () + icon_rib * (col - 5 + 0.5);
-                qreal number_rect_y_center = number_rect_y - number_rect_h*0.5;
-                QRectF info_rect = QRectF (x_center - info_rect_w*0.5, number_rect_y_center - info_rect_h + 1, info_rect_w, info_rect_h).marginsRemoved ({3, 3, 3, 3});
-                QRectF number_rect = {x_center - number_rect_w*0.5, number_rect_y_center, number_rect_w, number_rect_h};
-                p.setFont (group_size_font);
-                p.drawText (info_rect, Qt::AlignRight | Qt::AlignVCenter, QString::number (group_sizes[col]));
-                p.setFont (group_number_font);
-                p.drawText (number_rect, Qt::AlignHCenter | Qt::AlignVCenter, QString::number (col + 1));
-            }
-        }
-    }
-}
-void RoomWidget::drawActionPanel (int margin, const QColor& panel_color, int selected_count, quint64 active_actions, bool contaminator_selected, qint64 cast_cooldown_left_ticks)
-{
-    action_panel_renderer->draw (*this, *colored_renderer, *textured_renderer,
-                                 *hud, margin, panel_color, selected_count, active_actions, contaminator_selected, cast_cooldown_left_ticks,
-                                 ortho_matrix, coord_map);
-}
-void RoomWidget::drawUnit (const Unit& unit)
-{
-    unit_set_renderer->draw (*this, *colored_renderer, *textured_renderer, unit, match_state->clockNS (), ortho_matrix, coord_map);
 }
 void RoomWidget::drawTabs (int x, int y, int w, int h)
 {
