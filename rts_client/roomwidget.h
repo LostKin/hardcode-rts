@@ -4,6 +4,7 @@
 
 #include "matchstate.h"
 #include "coordmap.h"
+#include "hud.h"
 
 #include <QElapsedTimer>
 #include <QTimer>
@@ -13,6 +14,7 @@ class ColoredRenderer;
 class ColoredTexturedRenderer;
 class TexturedRenderer;
 class UnitSetRenderer;
+class ActionPanelRenderer;
 
 
 class RoomWidget: public OpenGLWidget
@@ -43,16 +45,6 @@ private:
         Ready,
         Cancel,
         Quit,
-    };
-
-    enum class ActionButtonId {
-        None,
-        Move,
-        Stop,
-        Hold,
-        Attack,
-        Pestilence,
-        Spawn,
     };
 
 public:
@@ -115,7 +107,6 @@ private:
     void matchMouseReleaseEvent (QMouseEvent* event);
     void matchWheelEvent (QWheelEvent* event);
     QImage loadUnitFromSVGTemplate (const QString& path, const QByteArray& animation_name, const QColor& player_color);
-    void loadUnitTextures ();
     void loadTextures ();
     void drawRoleSelection ();
     void drawRoleSelectionRequested ();
@@ -136,6 +127,7 @@ private:
     void drawMinimap ();
     void drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit);
     void drawGroupsOverlay ();
+    void drawActionPanel (int margin, const QColor& panel_color, int selected_count, quint64 active_actions, bool contaminator_selected, qint64 cast_cooldown_left_ticks);
     void drawUnit (const Unit& unit);
     void drawIcon (const Unit& unit, qreal x, qreal y, qreal w, qreal h, bool framed = false);
     void drawIcon (const Unit::Type& unit_type, qreal hp_ratio, qreal x, qreal y, qreal w, qreal h, bool framed = false);
@@ -218,44 +210,12 @@ private:
                 QSharedPointer<QOpenGLTexture> splash;
             } pestilence_splash;
         } effects;
-        struct {
-            struct {
-                QSharedPointer<QOpenGLTexture> move;
-                QSharedPointer<QOpenGLTexture> stop;
-                QSharedPointer<QOpenGLTexture> hold;
-                QSharedPointer<QOpenGLTexture> attack;
-                QSharedPointer<QOpenGLTexture> pestilence;
-                QSharedPointer<QOpenGLTexture> spawn;
-            } basic;
-            struct {
-                QSharedPointer<QOpenGLTexture> move;
-                QSharedPointer<QOpenGLTexture> stop;
-                QSharedPointer<QOpenGLTexture> hold;
-                QSharedPointer<QOpenGLTexture> attack;
-                QSharedPointer<QOpenGLTexture> pestilence;
-                QSharedPointer<QOpenGLTexture> spawn;
-            } active;
-        } actions;
     } textures;
 
-    int w = 1;
-    int h = 1;
-    struct {
-        int margin = 1;
-        int stroke_width = 1;
-        QSize action_button_size = {1, 1};
-        QRect minimap_panel_rect = {0, 0, 1, 1};
-        QRect action_panel_rect = {0, 0, 1, 1};
-        QRect selection_panel_rect = {0, 0, 1, 1};
-        int selection_panel_icon_rib = 1;
-        QPoint selection_panel_icon_grid_pos = {0, 0};
-        QRectF minimap_screen_area = {0, 0, 1, 1};
-    } hud;
+    QSharedPointer<HUD> hud;
     State state = State::RoleSelection;
     ButtonId pressed_button = ButtonId::None;
     QPoint cursor_position = {-1, -1};
-    ActionButtonId pressed_action_button = ActionButtonId::None;
-    ActionButtonId current_action_button = ActionButtonId::None;
     bool minimap_viewport_selection_pressed = false;
     Unit::Team team;
     QElapsedTimer match_countdown_start;
@@ -276,4 +236,5 @@ private:
     QSharedPointer<ColoredTexturedRenderer> colored_textured_renderer;
     QSharedPointer<TexturedRenderer> textured_renderer;
     QSharedPointer<UnitSetRenderer> unit_set_renderer;
+    QSharedPointer<ActionPanelRenderer> action_panel_renderer;
 };

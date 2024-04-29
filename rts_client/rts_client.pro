@@ -25,6 +25,8 @@ SOURCES += \
     profilewidget.cpp \
     roomwidget.cpp \
     roomentry.cpp \
+    actionpanelrenderer.cpp \
+    hud.cpp \
     unitsetrenderer.cpp \
     unitteamrenderer.cpp \
     unitrenderer.cpp \
@@ -47,6 +49,8 @@ HEADERS += \
     profilewidget.h \
     roomwidget.h \
     roomentry.h \
+    actionpanelrenderer.h \
+    hud.h \
     unitsetrenderer.h \
     unitteamrenderer.h \
     unitrenderer.h \

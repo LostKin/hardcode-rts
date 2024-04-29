@@ -5,6 +5,8 @@
 #include "coloredtexturedrenderer.h"
 #include "texturedrenderer.h"
 #include "unitsetrenderer.h"
+#include "hud.h"
+#include "actionpanelrenderer.h"
 
 #include <QLabel>
 #include <QFrame>
@@ -106,6 +108,7 @@ RoomWidget::RoomWidget (QWidget* parent)
     , group_number_font ("NotCourier", 10)
     , group_size_font ("NotCourier", 8)
 {
+    hud = QSharedPointer<HUD>::create ();
     setAttribute (Qt::WA_KeyCompression, false);
     font.setStyleHint (QFont::TypeWriter);
 
@@ -267,7 +270,7 @@ quint64 RoomWidget::explosionAnimationPeriodNS ()
 {
     return 400'000'000;
 }
-RoomWidget::ActionButtonId RoomWidget::getActionButtonFromGrid (int row, int col)
+ActionButtonId RoomWidget::getActionButtonFromGrid (int row, int col)
 {
     switch (row) {
     case 0:
@@ -320,9 +323,6 @@ QImage RoomWidget::loadUnitFromSVGTemplate (const QString& path, const QByteArra
     }
     return image;
 }
-void RoomWidget::loadUnitTextures ()
-{
-}
 void RoomWidget::loadTextures ()
 {
     textures.grass = loadTexture2DRectangle (":/images/grass.png");
@@ -350,8 +350,6 @@ void RoomWidget::loadTextures ()
     textures.buttons.cancel_pressed = loadTexture2DRectangle (":/images/buttons/cancel-pressed.png");
     textures.buttons.quit_pressed = loadTexture2DRectangle (":/images/buttons/quit-pressed.png");
 
-    loadUnitTextures ();
-
     {
         textures.effects.explosion.explosion1 = loadTexture2D (":/images/effects/explosion/explosion1.png");
         textures.effects.explosion.explosion2 = loadTexture2D (":/images/effects/explosion/explosion2.png");
@@ -371,20 +369,6 @@ void RoomWidget::loadTextures ()
     textures.unit_icons.contaminator = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "standing", icon_color));
     textures.unit_icons.frame = loadTexture2D (":/images/icons/frame.png"); // TODO: Refine drawing
     textures.unit_icons.tabs = loadTexture2D (":/images/icons/tabs.png"); // TODO: Refine drawing
-
-    textures.actions.basic.move = loadTexture2D (":/images/actions/move.png");
-    textures.actions.basic.stop = loadTexture2D (":/images/actions/stop.png");
-    textures.actions.basic.hold = loadTexture2D (":/images/actions/hold.png");
-    textures.actions.basic.attack = loadTexture2D (":/images/actions/attack.png");
-    textures.actions.basic.pestilence = loadTexture2D (":/images/actions/pestilence.png");
-    textures.actions.basic.spawn = loadTexture2D (":/images/actions/spawn.png");
-
-    textures.actions.active.move = loadTexture2D (":/images/actions/move-active.png");
-    textures.actions.active.stop = loadTexture2D (":/images/actions/stop-active.png");
-    textures.actions.active.hold = loadTexture2D (":/images/actions/hold-active.png");
-    textures.actions.active.attack = loadTexture2D (":/images/actions/attack-active.png");
-    textures.actions.active.pestilence = loadTexture2D (":/images/actions/pestilence-active.png");
-    textures.actions.active.spawn = loadTexture2D (":/images/actions/spawn-active.png");
 }
 void RoomWidget::initResources ()
 {
@@ -398,7 +382,8 @@ void RoomWidget::initResources ()
         qDebug () << "TODO: Handle error";
     }
 
-    unit_set_renderer = QSharedPointer<UnitSetRenderer> (new UnitSetRenderer (red_player_color, blue_player_color));
+    unit_set_renderer = QSharedPointer<UnitSetRenderer>::create (red_player_color, blue_player_color);
+    action_panel_renderer = QSharedPointer<ActionPanelRenderer>::create ();
 
     loadTextures ();
 
@@ -406,59 +391,58 @@ void RoomWidget::initResources ()
 }
 void RoomWidget::updateSize (int w, int h)
 {
-    this->w = w;
-    this->h = h;
+    coord_map.viewport_size = {w, h};
     coord_map.arena_viewport = {0, 0, w, h - 220};
     coord_map.arena_viewport_center = QRectF (coord_map.arena_viewport).center ();
 
     if (w >= 3656)
-        hud.margin = 24;
+        hud->margin = 24;
     else if (w >= 2560)
-        hud.margin = 18;
+        hud->margin = 18;
     else
-        hud.margin = 12;
-    hud.stroke_width = (w >= 3656) ? 4 : 2;
-    hud.action_button_size = {int (h * 0.064), int (h * 0.064)};
+        hud->margin = 12;
+    hud->stroke_width = (w >= 3656) ? 4 : 2;
+    hud->action_button_size = {int (h * 0.064), int (h * 0.064)};
     {
         int area_w = h * 0.30;
         int area_h = h * 0.24;
-        hud.minimap_panel_rect = {hud.margin, h - area_h - hud.margin, area_w, area_h};
+        hud->minimap_panel_rect = {hud->margin, h - area_h - hud->margin, area_w, area_h};
     }
     {
-        int area_w = hud.action_button_size.width () * 5;
-        int area_h = hud.action_button_size.height () * 3;
-        hud.action_panel_rect = {w - area_w - hud.margin, h - area_h - hud.margin, area_w, area_h};
+        int area_w = hud->action_button_size.width () * 5;
+        int area_h = hud->action_button_size.height () * 3;
+        hud->action_panel_rect = {w - area_w - hud->margin, h - area_h - hud->margin, area_w, area_h};
     }
     {
         static constexpr int icon_column_count = 10;
         static constexpr int icon_row_count = 3;
 
-        int area_w = w - hud.minimap_panel_rect.width () - hud.action_panel_rect.width () - hud.margin * 4;
+        int area_w = w - hud->minimap_panel_rect.width () - hud->action_panel_rect.width () - hud->margin * 4;
         int area_h = h * 0.18;
-        hud.selection_panel_rect = {hud.margin * 2 + hud.minimap_panel_rect.width (), h - area_h - hud.margin, area_w, area_h};
+        hud->selection_panel_rect = {hud->margin * 2 + hud->minimap_panel_rect.width (), h - area_h - hud->margin, area_w, area_h};
 
-        int icon_rib1 = hud.selection_panel_rect.height () * 0.3;
-        int icon_rib2 = (hud.selection_panel_rect.width () - (hud.selection_panel_rect.height () - icon_rib1 * icon_row_count) / 2 * 2) / icon_column_count;
+        int icon_rib1 = hud->selection_panel_rect.height () * 0.3;
+        int icon_rib2 = (hud->selection_panel_rect.width () - (hud->selection_panel_rect.height () - icon_rib1 * icon_row_count) / 2 * 2) / icon_column_count;
         int icon_rib = qMin (icon_rib1, icon_rib2);
-        int hmargin = (hud.selection_panel_rect.width () - icon_rib * icon_column_count) / 2;
-        int vmargin = (hud.selection_panel_rect.height () - icon_rib * icon_row_count) / 2;
+        int hmargin = (hud->selection_panel_rect.width () - icon_rib * icon_column_count) / 2;
+        int vmargin = (hud->selection_panel_rect.height () - icon_rib * icon_row_count) / 2;
 
-        hud.selection_panel_icon_rib = icon_rib;
-        hud.selection_panel_icon_grid_pos = {hud.selection_panel_rect.x () + hmargin, hud.selection_panel_rect.y () + vmargin};
+        hud->selection_panel_icon_rib = icon_rib;
+        hud->selection_panel_icon_grid_pos = {hud->selection_panel_rect.x () + hmargin, hud->selection_panel_rect.y () + vmargin};
     }
     if (match_state) {
         const QRectF& area = match_state->areaRef ();
         qreal aspect = area.width () / area.height ();
-        QPointF center = QRectF (hud.minimap_panel_rect).center ();
-        QSizeF size = hud.minimap_panel_rect.size ();
+        QPointF center = QRectF (hud->minimap_panel_rect).center ();
+        QSizeF size = hud->minimap_panel_rect.size ();
         if (size.width () / size.height () < aspect) {
             size.setHeight (size.height () / aspect);
         } else {
             size.setWidth (size.width () * aspect);
         }
-        hud.minimap_screen_area = {center.x () - size.width () * 0.5, center.y () - size.height () * 0.5, size.width (), size.height ()};
+        hud->minimap_screen_area = {center.x () - size.width () * 0.5, center.y () - size.height () * 0.5, size.width (), size.height ()};
     } else {
-        hud.minimap_screen_area = hud.minimap_panel_rect;
+        hud->minimap_screen_area = hud->minimap_panel_rect;
     }
 }
 void RoomWidget::draw ()
@@ -768,9 +752,9 @@ void RoomWidget::matchMousePressEvent (QMouseEvent* event)
     if (getActionButtonUnderCursor (cursor_position, row, col)) {
         switch (event->button ()) {
         case Qt::LeftButton: {
-            if (current_action_button == ActionButtonId::None &&
-                pressed_action_button == ActionButtonId::None)
-                pressed_action_button = getActionButtonFromGrid (row, col);
+            if (hud->current_action_button == ActionButtonId::None &&
+                hud->pressed_action_button == ActionButtonId::None)
+                hud->pressed_action_button = getActionButtonFromGrid (row, col);
         } break;
         default: {
         }
@@ -837,9 +821,9 @@ void RoomWidget::matchMouseReleaseEvent (QMouseEvent* event)
         if (getActionButtonUnderCursor (cursor_position, row, col)) {
             switch (event->button ()) {
             case Qt::LeftButton: {
-                if (current_action_button == ActionButtonId::None &&
-                    pressed_action_button != ActionButtonId::None &&
-                    pressed_action_button == getActionButtonFromGrid (row, col)) {
+                if (hud->current_action_button == ActionButtonId::None &&
+                    hud->pressed_action_button != ActionButtonId::None &&
+                    hud->pressed_action_button == getActionButtonFromGrid (row, col)) {
                     // TODO: Stateful actions
                 }
             } break;
@@ -856,7 +840,7 @@ void RoomWidget::matchMouseReleaseEvent (QMouseEvent* event)
         }
     }
     if (event->button () == Qt::LeftButton) {
-        pressed_action_button = ActionButtonId::None;
+        hud->pressed_action_button = ActionButtonId::None;
         minimap_viewport_selection_pressed = false;
         selection_start.reset ();
     }
@@ -867,7 +851,7 @@ void RoomWidget::matchWheelEvent (QWheelEvent* event)
 }
 void RoomWidget::drawRoleSelection ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, w, h, textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
     textured_renderer->fillRectangle (*this, 30, 30, (pressed_button == ButtonId::JoinBlueTeam) ? textures.buttons.join_as_player_pressed.get () : textures.buttons.join_as_player.get (), ortho_matrix);
     textured_renderer->fillRectangle (*this, 30, 230, (pressed_button == ButtonId::Spectate) ? textures.buttons.spectate_pressed.get () : textures.buttons.spectate.get (), ortho_matrix);
@@ -875,7 +859,7 @@ void RoomWidget::drawRoleSelection ()
 }
 void RoomWidget::drawRoleSelectionRequested ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, w, h, textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
     textured_renderer->fillRectangle (*this, 30, 30, textures.labels.join_team_requested.get (), ortho_matrix);
 
@@ -884,14 +868,14 @@ void RoomWidget::drawRoleSelectionRequested ()
 }
 void RoomWidget::drawConfirmingReadiness ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, w, h, textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
     textured_renderer->fillRectangle (*this, 30, 30, (pressed_button == ButtonId::Ready) ? textures.buttons.ready_pressed.get () : textures.buttons.ready.get (), ortho_matrix);
     textured_renderer->fillRectangle (*this, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
 }
 void RoomWidget::drawReady ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, w, h, textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
     textured_renderer->fillRectangle (*this, 30, 30, textures.labels.ready.get (), ortho_matrix);
 
@@ -899,7 +883,7 @@ void RoomWidget::drawReady ()
 }
 void RoomWidget::drawAwaitingMatch ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, w, h, textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
     qint64 nsecs_elapsed = match_countdown_start.nsecsElapsed ();
     QOpenGLTexture* label_texture;
@@ -1028,18 +1012,18 @@ void RoomWidget::frameUpdate (qreal dt)
 }
 void RoomWidget::matchFrameUpdate (qreal dt)
 {
-    if (cursor_position.x () == -1 || w == 1)
+    if (cursor_position.x () == -1 || coord_map.viewport_size.width () == 1)
         return;
 
     int dx = 0;
     int dy = 0;
     if (cursor_position.x () <= mouse_scroll_border)
         --dx;
-    if (cursor_position.x () >= (w - mouse_scroll_border - 1))
+    if (cursor_position.x () >= (coord_map.viewport_size.width () - mouse_scroll_border - 1))
         ++dx;
     if (cursor_position.y () <= mouse_scroll_border)
         --dy;
-    if (cursor_position.y () >= (h - mouse_scroll_border - 1))
+    if (cursor_position.y () >= (coord_map.viewport_size.width () - mouse_scroll_border - 1))
         ++dy;
     qreal off = 4000.0;
     if (dx && dy)
@@ -1065,45 +1049,45 @@ bool RoomWidget::pointInsideButton (const QPoint& point, const QPoint& button_po
 }
 bool RoomWidget::getActionButtonUnderCursor (const QPoint& cursor_pos, int& row, int& col) const
 {
-    row = (cursor_pos.y () - hud.action_panel_rect.y ());
-    col = (cursor_pos.x () - hud.action_panel_rect.x ());
+    row = (cursor_pos.y () - hud->action_panel_rect.y ());
+    col = (cursor_pos.x () - hud->action_panel_rect.x ());
     if (row < 0 || col < 0)
         return false;
-    row /= hud.action_button_size.height ();
-    col /= hud.action_button_size.width ();
+    row /= hud->action_button_size.height ();
+    col /= hud->action_button_size.width ();
     return row < 3 && col < 5;
 }
 bool RoomWidget::getSelectionPanelUnitUnderCursor (const QPoint& cursor_pos, int& row, int& col) const
 {
-    row = (cursor_pos.y () - hud.selection_panel_icon_grid_pos.y ());
-    col = (cursor_pos.x () - hud.selection_panel_icon_grid_pos.x ());
+    row = (cursor_pos.y () - hud->selection_panel_icon_grid_pos.y ());
+    col = (cursor_pos.x () - hud->selection_panel_icon_grid_pos.x ());
     if (row < 0 || col < 0)
         return false;
-    row /= hud.selection_panel_icon_rib;
-    col /= hud.selection_panel_icon_rib;
+    row /= hud->selection_panel_icon_rib;
+    col /= hud->selection_panel_icon_rib;
     return row < 3 && col < 10;
 }
 bool RoomWidget::getMinimapPositionUnderCursor (const QPoint& cursor_pos, QPointF& area_pos) const
 {
-    if (cursor_pos.x () >= hud.minimap_screen_area.left () &&
-        cursor_pos.x () <= hud.minimap_screen_area.right () &&
-        cursor_pos.y () >= hud.minimap_screen_area.top () &&
-        cursor_pos.y () <= hud.minimap_screen_area.bottom ()) {
+    if (cursor_pos.x () >= hud->minimap_screen_area.left () &&
+        cursor_pos.x () <= hud->minimap_screen_area.right () &&
+        cursor_pos.y () >= hud->minimap_screen_area.top () &&
+        cursor_pos.y () <= hud->minimap_screen_area.bottom ()) {
         const QRectF& area = match_state->areaRef ();
-        area_pos = area.topLeft () + (cursor_pos - hud.minimap_screen_area.topLeft ()) * QPointF (area.width () / hud.minimap_screen_area.width (), area.height () / hud.minimap_screen_area.height ());
+        area_pos = area.topLeft () + (cursor_pos - hud->minimap_screen_area.topLeft ()) * QPointF (area.width () / hud->minimap_screen_area.width (), area.height () / hud->minimap_screen_area.height ());
         return true;
     }
     return false;
 }
 bool RoomWidget::cursorIsAboveMajorMap (const QPoint& cursor_pos) const
 {
-    int margin_x2 = hud.margin * 2;
-    if (cursor_pos.x () < hud.minimap_panel_rect.width () + margin_x2)
-        return cursor_pos.y () < (h - hud.minimap_panel_rect.height () - margin_x2);
-    else if (cursor_pos.x () >= (w - hud.action_panel_rect.width () - margin_x2))
-        return cursor_pos.y () < (h - hud.action_panel_rect.height () - margin_x2);
+    int margin_x2 = hud->margin * 2;
+    if (cursor_pos.x () < hud->minimap_panel_rect.width () + margin_x2)
+        return cursor_pos.y () < (coord_map.viewport_size.height () - hud->minimap_panel_rect.height () - margin_x2);
+    else if (cursor_pos.x () >= (coord_map.viewport_size.width () - hud->action_panel_rect.width () - margin_x2))
+        return cursor_pos.y () < (coord_map.viewport_size.height () - hud->action_panel_rect.height () - margin_x2);
     else
-        return cursor_pos.y () < (h - hud.selection_panel_rect.height () - margin_x2);
+        return cursor_pos.y () < (coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin_x2);
 }
 void RoomWidget::centerViewportAt (const QPointF& point)
 {
@@ -1122,116 +1106,116 @@ void RoomWidget::drawHUD ()
     static const QColor panel_color (0x21, 0x2f, 0x3a);
     static const QColor panel_inner_color (0, 0xaa, 0xaa);
 
-    int margin = hud.margin;
+    int margin = hud->margin;
 
     {
-        int area_w = hud.minimap_panel_rect.width () + margin * 2;
-        int area_h = hud.minimap_panel_rect.height () + margin * 2;
-        colored_renderer->fillRectangle (*this, 0, h - area_h, area_w, area_h, margin_color, ortho_matrix);
+        int area_w = hud->minimap_panel_rect.width () + margin * 2;
+        int area_h = hud->minimap_panel_rect.height () + margin * 2;
+        colored_renderer->fillRectangle (*this, 0, coord_map.viewport_size.height () - area_h, area_w, area_h, margin_color, ortho_matrix);
     }
     {
-        int area_w = hud.action_panel_rect.width () + margin * 2;
-        int area_h = hud.action_panel_rect.height () + margin * 2;
-        colored_renderer->fillRectangle (*this, w - area_w, h - area_h, area_w, area_h, margin_color, ortho_matrix);
+        int area_w = hud->action_panel_rect.width () + margin * 2;
+        int area_h = hud->action_panel_rect.height () + margin * 2;
+        colored_renderer->fillRectangle (*this, coord_map.viewport_size.width () - area_w, coord_map.viewport_size.height () - area_h, area_w, area_h, margin_color, ortho_matrix);
     }
     {
         colored_renderer->fillRectangle (*this,
-                                         hud.minimap_panel_rect.width () + margin * 2, h - hud.selection_panel_rect.height () - margin * 2,
-                                         w - hud.minimap_panel_rect.width () - hud.action_panel_rect.width () - margin * 4, hud.selection_panel_rect.height () + margin * 2,
+                                         hud->minimap_panel_rect.width () + margin * 2, coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin * 2,
+                                         coord_map.viewport_size.width () - hud->minimap_panel_rect.width () - hud->action_panel_rect.width () - margin * 4, hud->selection_panel_rect.height () + margin * 2,
                                          margin_color, ortho_matrix);
     }
-    colored_renderer->fillRectangle (*this, hud.minimap_panel_rect, panel_color, ortho_matrix);
+    colored_renderer->fillRectangle (*this, hud->minimap_panel_rect, panel_color, ortho_matrix);
     drawMinimap ();
-    colored_renderer->fillRectangle (*this, hud.selection_panel_rect, panel_color, ortho_matrix);
+    colored_renderer->fillRectangle (*this, hud->selection_panel_rect, panel_color, ortho_matrix);
     {
-        const qreal half_stroke_width = hud.stroke_width * 0.5;
+        const qreal half_stroke_width = hud->stroke_width * 0.5;
 
-        glLineWidth (hud.stroke_width);
+        glLineWidth (hud->stroke_width);
 
         const GLfloat vertices[] = {
             GLfloat (margin - half_stroke_width),
-            GLfloat (h - hud.minimap_panel_rect.height () - margin),
-            GLfloat (margin + hud.minimap_panel_rect.width () + half_stroke_width),
-            GLfloat (h - hud.minimap_panel_rect.height () - margin),
+            GLfloat (coord_map.viewport_size.height () - hud->minimap_panel_rect.height () - margin),
+            GLfloat (margin + hud->minimap_panel_rect.width () + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->minimap_panel_rect.height () - margin),
             GLfloat (margin - half_stroke_width),
-            GLfloat (h - margin),
-            GLfloat (margin + hud.minimap_panel_rect.width () + half_stroke_width),
-            GLfloat (h - margin),
+            GLfloat (coord_map.viewport_size.height () - margin),
+            GLfloat (margin + hud->minimap_panel_rect.width () + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - margin),
             GLfloat (margin),
-            GLfloat (h - hud.minimap_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->minimap_panel_rect.height () - margin + half_stroke_width),
             GLfloat (margin),
-            GLfloat (h - margin - half_stroke_width),
-            GLfloat (margin + hud.minimap_panel_rect.width ()),
-            GLfloat (h - hud.minimap_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (margin + hud.minimap_panel_rect.width ()),
-            GLfloat (h - margin - half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - margin - half_stroke_width),
+            GLfloat (margin + hud->minimap_panel_rect.width ()),
+            GLfloat (coord_map.viewport_size.height () - hud->minimap_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (margin + hud->minimap_panel_rect.width ()),
+            GLfloat (coord_map.viewport_size.height () - margin - half_stroke_width),
 
-            GLfloat (margin * 2 + hud.minimap_panel_rect.width () - half_stroke_width),
-            GLfloat (h - hud.selection_panel_rect.height () - margin),
-            GLfloat (margin * 2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width () + half_stroke_width),
-            GLfloat (h - hud.selection_panel_rect.height () - margin),
-            GLfloat (margin * 2 + hud.minimap_panel_rect.width () - half_stroke_width),
-            GLfloat (h - margin),
-            GLfloat (margin * 2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width () + half_stroke_width),
-            GLfloat (h - margin),
-            GLfloat (margin * 2 + hud.minimap_panel_rect.width ()),
-            GLfloat (h - hud.selection_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (margin * 2 + hud.minimap_panel_rect.width ()),
-            GLfloat (h - margin - half_stroke_width),
-            GLfloat (margin * 2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width ()),
-            GLfloat (h - hud.selection_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (margin * 2 + hud.minimap_panel_rect.width () + hud.selection_panel_rect.width ()),
-            GLfloat (h - margin - half_stroke_width),
+            GLfloat (margin * 2 + hud->minimap_panel_rect.width () - half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin),
+            GLfloat (margin * 2 + hud->minimap_panel_rect.width () + hud->selection_panel_rect.width () + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin),
+            GLfloat (margin * 2 + hud->minimap_panel_rect.width () - half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - margin),
+            GLfloat (margin * 2 + hud->minimap_panel_rect.width () + hud->selection_panel_rect.width () + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - margin),
+            GLfloat (margin * 2 + hud->minimap_panel_rect.width ()),
+            GLfloat (coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (margin * 2 + hud->minimap_panel_rect.width ()),
+            GLfloat (coord_map.viewport_size.height () - margin - half_stroke_width),
+            GLfloat (margin * 2 + hud->minimap_panel_rect.width () + hud->selection_panel_rect.width ()),
+            GLfloat (coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (margin * 2 + hud->minimap_panel_rect.width () + hud->selection_panel_rect.width ()),
+            GLfloat (coord_map.viewport_size.height () - margin - half_stroke_width),
 
-            GLfloat (w - hud.action_panel_rect.width () - margin - half_stroke_width),
-            GLfloat (h - hud.action_panel_rect.height () - margin),
-            GLfloat (w - margin + half_stroke_width),
-            GLfloat (h - hud.action_panel_rect.height () - margin),
-            GLfloat (w - hud.action_panel_rect.width () - margin - half_stroke_width),
-            GLfloat (h - margin),
-            GLfloat (w - margin + half_stroke_width),
-            GLfloat (h - margin),
-            GLfloat (w - hud.action_panel_rect.width () - margin),
-            GLfloat (h - hud.action_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (w - hud.action_panel_rect.width () - margin),
-            GLfloat (h - margin - half_stroke_width),
-            GLfloat (w - margin),
-            GLfloat (h - hud.action_panel_rect.height () - margin + half_stroke_width),
-            GLfloat (w - margin),
-            GLfloat (h - margin - half_stroke_width),
+            GLfloat (coord_map.viewport_size.width () - hud->action_panel_rect.width () - margin - half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->action_panel_rect.height () - margin),
+            GLfloat (coord_map.viewport_size.width () - margin + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->action_panel_rect.height () - margin),
+            GLfloat (coord_map.viewport_size.width () - hud->action_panel_rect.width () - margin - half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - margin),
+            GLfloat (coord_map.viewport_size.width () - margin + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - margin),
+            GLfloat (coord_map.viewport_size.width () - hud->action_panel_rect.width () - margin),
+            GLfloat (coord_map.viewport_size.height () - hud->action_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (coord_map.viewport_size.width () - hud->action_panel_rect.width () - margin),
+            GLfloat (coord_map.viewport_size.height () - margin - half_stroke_width),
+            GLfloat (coord_map.viewport_size.width () - margin),
+            GLfloat (coord_map.viewport_size.height () - hud->action_panel_rect.height () - margin + half_stroke_width),
+            GLfloat (coord_map.viewport_size.width () - margin),
+            GLfloat (coord_map.viewport_size.height () - margin - half_stroke_width),
 
             GLfloat (0),
-            GLfloat (h - hud.minimap_panel_rect.height () - margin * 2),
-            GLfloat (hud.minimap_panel_rect.width () + margin * 2 + half_stroke_width),
-            GLfloat (h - hud.minimap_panel_rect.height () - margin * 2),
-            GLfloat (hud.minimap_panel_rect.width () + margin * 2),
-            GLfloat (h - hud.minimap_panel_rect.height () - margin * 2 + half_stroke_width),
-            GLfloat (hud.minimap_panel_rect.width () + margin * 2),
-            GLfloat (h - hud.selection_panel_rect.height () - margin * 2 - half_stroke_width),
-            GLfloat (hud.minimap_panel_rect.width () + margin * 2 - half_stroke_width),
-            GLfloat (h - hud.selection_panel_rect.height () - margin * 2),
-            GLfloat (w - hud.action_panel_rect.width () - margin * 2 + half_stroke_width),
-            GLfloat (h - hud.selection_panel_rect.height () - margin * 2),
-            GLfloat (w - hud.action_panel_rect.width () - margin * 2),
-            GLfloat (h - hud.selection_panel_rect.height () - margin * 2 - half_stroke_width),
-            GLfloat (w - hud.action_panel_rect.width () - margin * 2),
-            GLfloat (h - hud.action_panel_rect.height () - margin * 2 + half_stroke_width),
-            GLfloat (w - hud.action_panel_rect.width () - margin * 2 - half_stroke_width),
-            GLfloat (h - hud.action_panel_rect.height () - margin * 2),
-            GLfloat (w),
-            GLfloat (h - hud.action_panel_rect.height () - margin * 2),
-            GLfloat (w),
-            GLfloat (h - hud.action_panel_rect.height () - margin * 2 + half_stroke_width),
-            GLfloat (w),
-            GLfloat (h - half_stroke_width),
-            GLfloat (w),
-            GLfloat (h),
+            GLfloat (coord_map.viewport_size.height () - hud->minimap_panel_rect.height () - margin * 2),
+            GLfloat (hud->minimap_panel_rect.width () + margin * 2 + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->minimap_panel_rect.height () - margin * 2),
+            GLfloat (hud->minimap_panel_rect.width () + margin * 2),
+            GLfloat (coord_map.viewport_size.height () - hud->minimap_panel_rect.height () - margin * 2 + half_stroke_width),
+            GLfloat (hud->minimap_panel_rect.width () + margin * 2),
+            GLfloat (coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin * 2 - half_stroke_width),
+            GLfloat (hud->minimap_panel_rect.width () + margin * 2 - half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin * 2),
+            GLfloat (coord_map.viewport_size.width () - hud->action_panel_rect.width () - margin * 2 + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin * 2),
+            GLfloat (coord_map.viewport_size.width () - hud->action_panel_rect.width () - margin * 2),
+            GLfloat (coord_map.viewport_size.height () - hud->selection_panel_rect.height () - margin * 2 - half_stroke_width),
+            GLfloat (coord_map.viewport_size.width () - hud->action_panel_rect.width () - margin * 2),
+            GLfloat (coord_map.viewport_size.height () - hud->action_panel_rect.height () - margin * 2 + half_stroke_width),
+            GLfloat (coord_map.viewport_size.width () - hud->action_panel_rect.width () - margin * 2 - half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->action_panel_rect.height () - margin * 2),
+            GLfloat (coord_map.viewport_size.width ()),
+            GLfloat (coord_map.viewport_size.height () - hud->action_panel_rect.height () - margin * 2),
+            GLfloat (coord_map.viewport_size.width ()),
+            GLfloat (coord_map.viewport_size.height () - hud->action_panel_rect.height () - margin * 2 + half_stroke_width),
+            GLfloat (coord_map.viewport_size.width ()),
+            GLfloat (coord_map.viewport_size.height () - half_stroke_width),
+            GLfloat (coord_map.viewport_size.width ()),
+            GLfloat (coord_map.viewport_size.height ()),
             GLfloat (0),
-            GLfloat (h),
+            GLfloat (coord_map.viewport_size.height ()),
             GLfloat (0),
-            GLfloat (h - half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - half_stroke_width),
             GLfloat (0),
-            GLfloat (h - hud.minimap_panel_rect.height () - margin * 2 + half_stroke_width),
+            GLfloat (coord_map.viewport_size.height () - hud->minimap_panel_rect.height () - margin * 2 + half_stroke_width),
         };
 
         const GLfloat colors[] = {
@@ -1441,57 +1425,21 @@ void RoomWidget::drawHUD ()
         }
     }
 
-    drawSelectionPanel (hud.selection_panel_rect, selected_count, last_selected_unit);
+    drawSelectionPanel (hud->selection_panel_rect, selected_count, last_selected_unit);
     drawGroupsOverlay ();
-
-    {
-        int area_w = hud.action_panel_rect.width ();
-        int area_h = hud.action_panel_rect.height ();
-        colored_renderer->fillRectangle (*this, w - area_w - margin, h - area_h - margin, area_w, area_h, QColor (panel_color), ortho_matrix);
-
-        if (selected_count > 0) {
-            drawActionButton ({w - area_w - margin, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
-                              pressed_action_button == ActionButtonId::Move,
-                              (active_actions & (1 << quint64 (ActionButtonId::Move))) ? textures.actions.active.move.get () : textures.actions.basic.move.get ());
-            drawActionButton ({w - area_w - margin + hud.action_button_size.width (), h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
-                              pressed_action_button == ActionButtonId::Stop,
-                              (active_actions & (1 << quint64 (ActionButtonId::Stop))) ? textures.actions.active.stop.get () : textures.actions.basic.stop.get ());
-            drawActionButton ({w - area_w - margin + hud.action_button_size.width () * 2, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
-                              pressed_action_button == ActionButtonId::Hold,
-                              (active_actions & (1 << quint64 (ActionButtonId::Hold))) ? textures.actions.active.hold.get () : textures.actions.basic.hold.get ());
-            drawActionButton ({w - area_w - margin + hud.action_button_size.width () * 4, h - area_h - margin, hud.action_button_size.width (), hud.action_button_size.height ()},
-                              pressed_action_button == ActionButtonId::Attack,
-                              (active_actions & (1 << quint64 (ActionButtonId::Attack))) ? textures.actions.active.attack.get () : textures.actions.basic.attack.get ());
-
-            if (contaminator_selected) {
-                QRect pestilence_button_rect = {w - area_w - margin, h - area_h - margin + hud.action_button_size.height () * 2,
-                                                hud.action_button_size.width (), hud.action_button_size.height ()};
-                QRect spawn_button_rect = {w - area_w - margin + hud.action_button_size.width (), h - area_h - margin + hud.action_button_size.height () * 2,
-                                           hud.action_button_size.width (), hud.action_button_size.height ()};
-                drawActionButton (pestilence_button_rect, pressed_action_button == ActionButtonId::Pestilence,
-                                  (active_actions & (1 << quint64 (ActionButtonId::Pestilence))) ? textures.actions.active.pestilence.get () : textures.actions.basic.pestilence.get ());
-                drawActionButton (spawn_button_rect, pressed_action_button == ActionButtonId::Spawn,
-                                  (active_actions & (1 << quint64 (ActionButtonId::Spawn))) ? textures.actions.active.spawn.get () : textures.actions.basic.spawn.get ());
-                if (cast_cooldown_left_ticks) {
-                    qreal max_cooldown_ticks = qMax (match_state->effectAttackDescription (AttackDescription::Type::PestilenceMissile).cooldown_ticks,
-                                                     match_state->effectAttackDescription (AttackDescription::Type::SpawnBeetle).cooldown_ticks);
-                    qreal remaining = qreal (cast_cooldown_left_ticks) / max_cooldown_ticks;
-                    drawActionButtonShade (pestilence_button_rect, pressed_action_button == ActionButtonId::Pestilence, remaining);
-                    drawActionButtonShade (spawn_button_rect, pressed_action_button == ActionButtonId::Spawn, remaining);
-                }
-            }
-        }
-    }
+    action_panel_renderer->draw (*this, *colored_renderer, *textured_renderer,
+                                 *hud, margin, panel_color, selected_count, active_actions, contaminator_selected, cast_cooldown_left_ticks,
+                                 ortho_matrix, coord_map);
 }
 void RoomWidget::drawMinimap ()
 {
     const QRectF& area = match_state->areaRef ();
-    QPointF area_to_minimap_scale = {hud.minimap_screen_area.width () / area.width (), hud.minimap_screen_area.height () / area.height ()};
-    colored_renderer->fillRectangle (*this, hud.minimap_screen_area, QColor (), ortho_matrix);
+    QPointF area_to_minimap_scale = {hud->minimap_screen_area.width () / area.width (), hud->minimap_screen_area.height () / area.height ()};
+    colored_renderer->fillRectangle (*this, hud->minimap_screen_area, QColor (), ortho_matrix);
     const QHash<quint32, Unit>& units = match_state->unitsRef ();
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
         const Unit& unit = *it;
-        QPointF pos = hud.minimap_screen_area.topLeft () + (unit.position - area.topLeft ()) * area_to_minimap_scale;
+        QPointF pos = hud->minimap_screen_area.topLeft () + (unit.position - area.topLeft ()) * area_to_minimap_scale;
         QColor color = (team == unit.team) ? QColor (0, 0xff, 0) : QColor (0xff, 0, 0);
         if (unit.type == Unit::Type::Contaminator)
             colored_renderer->fillRectangle (*this, pos.x () - 1.5, pos.y () - 1.5, 3.0, 3.0, color, ortho_matrix);
@@ -1500,9 +1448,10 @@ void RoomWidget::drawMinimap ()
     }
     QColor color (0xdf, 0xdf, 0xff);
     qreal scale = coord_map.viewport_scale * MAP_TO_SCREEN_FACTOR;
-    QPointF viewport_center_minimap = (coord_map.viewport_center - area.topLeft ()) * area_to_minimap_scale + hud.minimap_screen_area.topLeft ();
+    QPointF viewport_center_minimap = (coord_map.viewport_center - area.topLeft ()) * area_to_minimap_scale + hud->minimap_screen_area.topLeft ();
     QPointF s = QPointF (coord_map.arena_viewport.width (), coord_map.arena_viewport.height ()) / scale * area_to_minimap_scale;
-    glScissor (hud.minimap_screen_area.x (), h - (hud.minimap_screen_area.y () + hud.minimap_screen_area.height ()), hud.minimap_screen_area.width (), hud.minimap_screen_area.height ());
+    glScissor (hud->minimap_screen_area.x (), coord_map.viewport_size.height () - (hud->minimap_screen_area.y () + hud->minimap_screen_area.height ()),
+               hud->minimap_screen_area.width (), hud->minimap_screen_area.height ());
     glEnable (GL_SCISSOR_TEST);
     colored_renderer->drawRectangle (*this, viewport_center_minimap.x () - s.x () * 0.5, viewport_center_minimap.y () - s.y () * 0.5, s.x (), s.y (), color, ortho_matrix);
     glDisable (GL_SCISSOR_TEST);
@@ -1533,18 +1482,18 @@ void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, c
                             unitAttackClassName (primary_attack_description.type) + "; range = " + QString::number (primary_attack_description.range));
         }
     } else if (selected_count) {
-        int icon_rib = hud.selection_panel_icon_rib;
+        int icon_rib = hud->selection_panel_icon_rib;
 
         QVector<QPair<quint32, const Unit*>> selection = buildOrderedSelection ();
 
         if (selection.size () > 30)
-            drawTabs (hud.selection_panel_icon_grid_pos.x () - icon_rib, hud.selection_panel_icon_grid_pos.y (), icon_rib, icon_rib);
+            drawTabs (hud->selection_panel_icon_grid_pos.x () - icon_rib, hud->selection_panel_icon_grid_pos.y (), icon_rib, icon_rib);
 
         for (size_t i = 0; i < size_t (qMin (selection.size (), 30)); ++i) {
             const Unit* unit = selection[i].second;
             size_t row = i / 10;
             size_t col = i % 10;
-            drawIcon (*unit, hud.selection_panel_icon_grid_pos.x () + icon_rib * col, hud.selection_panel_icon_grid_pos.y () + icon_rib * row, icon_rib, icon_rib, true);
+            drawIcon (*unit, hud->selection_panel_icon_grid_pos.x () + icon_rib * col, hud->selection_panel_icon_grid_pos.y () + icon_rib * row, icon_rib, icon_rib, true);
         }
     }
 }
@@ -1569,15 +1518,15 @@ void RoomWidget::drawGroupsOverlay ()
     static constexpr QColor group_border_color (0, 0xff, 0);
     static constexpr QColor group_shade_color (0, 0, 0, 0x22);
     static constexpr QColor group_text_color (0xdf, 0xdf, 0xff);
-    int icon_rib = hud.selection_panel_icon_rib;
+    int icon_rib = hud->selection_panel_icon_rib;
     QSizeF info_rect_size (icon_rib*0.8, icon_rib*0.4);
     QSizeF number_rect_size (icon_rib*0.6, icon_rib*0.3);
-    int group_icon_rib = hud.margin*5/3;
+    int group_icon_rib = hud->margin*5/3;
     QSize group_icon_size (group_icon_rib, group_icon_rib);
     {
         for (qint64 col = 0; col < group_count; ++col) {
-            qreal number_rect_y = hud.selection_panel_rect.y () - hud.margin*0.5;
-            qreal x_center = hud.selection_panel_icon_grid_pos.x () + icon_rib*(col - 5 + 0.5);
+            qreal number_rect_y = hud->selection_panel_rect.y () - hud->margin*0.5;
+            qreal x_center = hud->selection_panel_icon_grid_pos.x () + icon_rib*(col - 5 + 0.5);
             qreal number_rect_y_center = number_rect_y - number_rect_size.height ()*0.5;
             QRectF info_rect = {x_center - info_rect_size.width ()*0.5, number_rect_y_center - info_rect_size.height () + 1, info_rect_size.width (), info_rect_size.height ()};
             QRectF number_rect = {x_center - number_rect_size.width ()*0.5, number_rect_y_center, number_rect_size.width (), number_rect_size.height ()};
@@ -1593,18 +1542,18 @@ void RoomWidget::drawGroupsOverlay ()
         }
     }
     {
-        int icon_rib = hud.selection_panel_icon_rib;
+        int icon_rib = hud->selection_panel_icon_rib;
 
         QPainter p (this);
         p.setPen (group_text_color);
         for (qint64 col = 0; col < group_count; ++col) {
             if (group_sizes[col]) {
-                qreal number_rect_y = hud.selection_panel_rect.y () - hud.margin*0.5;
+                qreal number_rect_y = hud->selection_panel_rect.y () - hud->margin*0.5;
                 qreal info_rect_w = icon_rib*0.8;
                 qreal info_rect_h = info_rect_w*0.5;
                 qreal number_rect_w = icon_rib*0.6;
                 qreal number_rect_h = number_rect_w*0.5;
-                qreal x_center = hud.selection_panel_icon_grid_pos.x () + icon_rib * (col - 5 + 0.5);
+                qreal x_center = hud->selection_panel_icon_grid_pos.x () + icon_rib * (col - 5 + 0.5);
                 qreal number_rect_y_center = number_rect_y - number_rect_h*0.5;
                 QRectF info_rect = QRectF (x_center - info_rect_w*0.5, number_rect_y_center - info_rect_h + 1, info_rect_w, info_rect_h).marginsRemoved ({3, 3, 3, 3});
                 QRectF number_rect = {x_center - number_rect_w*0.5, number_rect_y_center, number_rect_w, number_rect_h};
@@ -1615,6 +1564,12 @@ void RoomWidget::drawGroupsOverlay ()
             }
         }
     }
+}
+void RoomWidget::drawActionPanel (int margin, const QColor& panel_color, int selected_count, quint64 active_actions, bool contaminator_selected, qint64 cast_cooldown_left_ticks)
+{
+    action_panel_renderer->draw (*this, *colored_renderer, *textured_renderer,
+                                 *hud, margin, panel_color, selected_count, active_actions, contaminator_selected, cast_cooldown_left_ticks,
+                                 ortho_matrix, coord_map);
 }
 void RoomWidget::drawUnit (const Unit& unit)
 {
