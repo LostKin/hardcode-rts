@@ -27,6 +27,7 @@ SOURCES += \
     roomentry.cpp \
     actionpanelrenderer.cpp \
     hud.cpp \
+    unitgenerator.cpp \
     unitsetrenderer.cpp \
     unitteamrenderer.cpp \
     unitrenderer.cpp \
@@ -52,6 +53,7 @@ HEADERS += \
     roomentry.h \
     actionpanelrenderer.h \
     hud.h \
+    unitgenerator.h \
     unitsetrenderer.h \
     unitteamrenderer.h \
     unitrenderer.h \

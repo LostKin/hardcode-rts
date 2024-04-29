@@ -106,7 +106,6 @@ private:
     void matchMousePressEvent (QMouseEvent* event);
     void matchMouseReleaseEvent (QMouseEvent* event);
     void matchWheelEvent (QWheelEvent* event);
-    QImage loadUnitFromSVGTemplate (const QString& path, const QByteArray& animation_name, const QColor& player_color);
     void loadTextures ();
     void drawRoleSelection ();
     void drawRoleSelectionRequested ();

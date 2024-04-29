@@ -20,7 +20,6 @@ public:
                const QMatrix4x4& ortho_matrix, const CoordMap& coord_map);
 
 private:
-    static QImage loadUnitFromSVGTemplate (const QString& path, const QByteArray& animation_name, const QColor& player_color);
     static QSharedPointer<QOpenGLTexture> loadTexture2D (const QString& path);
     static QSharedPointer<QOpenGLTexture> loadTexture2D (const QImage& image);
     static quint64 moveAnimationPeriodNS (Unit::Type type);

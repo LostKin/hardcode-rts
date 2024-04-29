@@ -4,6 +4,7 @@
 #include "coloredrenderer.h"
 #include "coloredtexturedrenderer.h"
 #include "texturedrenderer.h"
+#include "unitgenerator.h"
 #include "unitsetrenderer.h"
 #include "hud.h"
 #include "actionpanelrenderer.h"
@@ -17,7 +18,6 @@
 #include <QDebug>
 #include <QPainter>
 #include <QFile>
-#include <QSvgRenderer>
 #if QT_VERSION >= 0x060000
 #include <QSoundEffect>
 #else
@@ -299,27 +299,6 @@ ActionButtonId RoomWidget::getActionButtonFromGrid (int row, int col)
     }
     return ActionButtonId::None;
 }
-QImage RoomWidget::loadUnitFromSVGTemplate (const QString& path, const QByteArray& animation_name, const QColor& player_color)
-{
-    static constexpr QSize texture_size (256, 256);
-    QImage image (texture_size, QImage::Format_ARGB32);
-    image.fill (QColor (0, 0, 0, 0));
-    QFile svg_fh (path);
-    if (!svg_fh.open (QIODevice::ReadOnly))
-        return image;
-    QByteArray svg_data = svg_fh.readAll ();
-    svg_data.replace ("&animation;", animation_name);
-    svg_data.replace ("&player_color;", player_color.name ().toUtf8 ());
-    QSvgRenderer svg_renderer (svg_data);
-    {
-        QPainter p (&image);
-        p.translate (texture_size.width ()*0.5, texture_size.height ()*0.5);
-        p.rotate (90.0);
-        p.translate (-texture_size.width ()*0.5, -texture_size.height ()*0.5);
-        svg_renderer.render (&p, QRectF (QPointF (0, 0), QSizeF (texture_size)));
-    }
-    return image;
-}
 void RoomWidget::loadTextures ()
 {
     textures.grass = loadTexture2DRectangle (":/images/grass.png");
@@ -349,11 +328,11 @@ void RoomWidget::loadTextures ()
 
     static constexpr QColor icon_color (0xdd, 0xdd, 0xdd);
 
-    textures.unit_icons.seal = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "standing", icon_color));
-    textures.unit_icons.crusader = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "standing", icon_color));
-    textures.unit_icons.goon = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "standing", icon_color));
-    textures.unit_icons.beetle = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "standing", icon_color));
-    textures.unit_icons.contaminator = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.seal = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.crusader = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.goon = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.beetle = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "standing", icon_color));
+    textures.unit_icons.contaminator = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "standing", icon_color));
     textures.unit_icons.frame = loadTexture2D (":/images/icons/frame.png"); // TODO: Refine drawing
     textures.unit_icons.tabs = loadTexture2D (":/images/icons/tabs.png"); // TODO: Refine drawing
 }
