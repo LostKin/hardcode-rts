@@ -15,6 +15,7 @@ class ColoredTexturedRenderer;
 class TexturedRenderer;
 class UnitSetRenderer;
 class ActionPanelRenderer;
+class EffectRenderer;
 
 
 class RoomWidget: public OpenGLWidget
@@ -99,7 +100,6 @@ private:
     static quint64 moveAnimationPeriodNS (Unit::Type type);
     static quint64 attackAnimationPeriodNS (Unit::Type type);
     static quint64 missileAnimationPeriodNS (Missile::Type type);
-    static quint64 explosionAnimationPeriodNS ();
     void matchKeyPressEvent (QKeyEvent* event);
     void matchKeyReleaseEvent (QKeyEvent* event);
     void matchMouseMoveEvent (QMouseEvent* event);
@@ -133,8 +133,6 @@ private:
     void drawIcon (const Unit::Type& unit_type, qreal hp_ratio, qreal x, qreal y, qreal w, qreal h, bool framed = false);
     void drawTabs (int x, int y, int w, int h);
     void drawUnitHPBar (const Unit& unit);
-    void drawMissile (const Missile& missile);
-    void drawExplosion (const Explosion& explosion);
     void drawUnitPathToTarget (const Unit& unit);
     void drawActionButton (const QRect& rect, bool pressed, QOpenGLTexture* texture);
     void drawActionButtonShade (const QRect& rect, bool pressed, qreal remaining);
@@ -193,23 +191,6 @@ private:
             QSharedPointer<QOpenGLTexture> frame;
             QSharedPointer<QOpenGLTexture> tabs;
         } unit_icons;
-        struct {
-            struct {
-                QSharedPointer<QOpenGLTexture> explosion1;
-                QSharedPointer<QOpenGLTexture> explosion2;
-            } explosion;
-            struct {
-                QSharedPointer<QOpenGLTexture> rocket1;
-                QSharedPointer<QOpenGLTexture> rocket2;
-            } goon_rocket;
-            struct {
-                QSharedPointer<QOpenGLTexture> missile1;
-                QSharedPointer<QOpenGLTexture> missile2;
-            } pestilence_missile;
-            struct {
-                QSharedPointer<QOpenGLTexture> splash;
-            } pestilence_splash;
-        } effects;
     } textures;
 
     QSharedPointer<HUD> hud;
@@ -237,4 +218,5 @@ private:
     QSharedPointer<TexturedRenderer> textured_renderer;
     QSharedPointer<UnitSetRenderer> unit_set_renderer;
     QSharedPointer<ActionPanelRenderer> action_panel_renderer;
+    QSharedPointer<EffectRenderer> effect_renderer;
 };

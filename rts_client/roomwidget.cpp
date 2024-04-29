@@ -7,6 +7,7 @@
 #include "unitsetrenderer.h"
 #include "hud.h"
 #include "actionpanelrenderer.h"
+#include "effectrenderer.h"
 
 #include <QLabel>
 #include <QFrame>
@@ -266,10 +267,6 @@ quint64 RoomWidget::missileAnimationPeriodNS (Missile::Type type)
         return 0;
     }
 }
-quint64 RoomWidget::explosionAnimationPeriodNS ()
-{
-    return 400'000'000;
-}
 ActionButtonId RoomWidget::getActionButtonFromGrid (int row, int col)
 {
     switch (row) {
@@ -350,16 +347,6 @@ void RoomWidget::loadTextures ()
     textures.buttons.cancel_pressed = loadTexture2DRectangle (":/images/buttons/cancel-pressed.png");
     textures.buttons.quit_pressed = loadTexture2DRectangle (":/images/buttons/quit-pressed.png");
 
-    {
-        textures.effects.explosion.explosion1 = loadTexture2D (":/images/effects/explosion/explosion1.png");
-        textures.effects.explosion.explosion2 = loadTexture2D (":/images/effects/explosion/explosion2.png");
-        textures.effects.goon_rocket.rocket1 = loadTexture2D (":/images/effects/goon-rocket/rocket1.png");
-        textures.effects.goon_rocket.rocket2 = loadTexture2D (":/images/effects/goon-rocket/rocket2.png");
-        textures.effects.pestilence_missile.missile1 = loadTexture2D (":/images/effects/pestilence-missile/missile1.png");
-        textures.effects.pestilence_missile.missile2 = loadTexture2D (":/images/effects/pestilence-missile/missile2.png");
-        textures.effects.pestilence_splash.splash = loadTexture2D (":/images/effects/pestilence-splash/splash.png");
-    }
-
     static constexpr QColor icon_color (0xdd, 0xdd, 0xdd);
 
     textures.unit_icons.seal = loadTexture2D (loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "standing", icon_color));
@@ -384,6 +371,7 @@ void RoomWidget::initResources ()
 
     unit_set_renderer = QSharedPointer<UnitSetRenderer>::create (red_player_color, blue_player_color);
     action_panel_renderer = QSharedPointer<ActionPanelRenderer>::create ();
+    effect_renderer = QSharedPointer<EffectRenderer>::create ();
 
     loadTextures ();
 
@@ -956,9 +944,9 @@ void RoomWidget::drawMatchStarted ()
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
         drawUnit (it.value ());
     for (QHash<quint32, Missile>::const_iterator it = missiles.constBegin (); it != missiles.constEnd (); ++it)
-        drawMissile (it.value ());
+        effect_renderer->drawMissile (*this, *textured_renderer, it.value (), match_state->clockNS (), ortho_matrix, coord_map);
     for (QHash<quint32, Explosion>::const_iterator it = explosions.constBegin (); it != explosions.constEnd (); ++it)
-        drawExplosion (it.value ());
+        effect_renderer->drawExplosion (*this, *colored_textured_renderer, it.value (), match_state->clockNS (), ortho_matrix, coord_map);
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
         drawUnitHPBar (it.value ());
     glEnable (GL_LINE_SMOOTH);
@@ -1023,7 +1011,7 @@ void RoomWidget::matchFrameUpdate (qreal dt)
         ++dx;
     if (cursor_position.y () <= mouse_scroll_border)
         --dy;
-    if (cursor_position.y () >= (coord_map.viewport_size.width () - mouse_scroll_border - 1))
+    if (cursor_position.y () >= (coord_map.viewport_size.height () - mouse_scroll_border - 1))
         ++dy;
     qreal off = 4000.0;
     if (dx && dy)
@@ -1839,167 +1827,6 @@ void RoomWidget::drawUnitHPBar (const Unit& unit)
             colored_renderer->draw (*this, GL_LINE_LOOP, 4, vertices, colors, ortho_matrix);
         }
     }
-}
-void RoomWidget::drawMissile (const Missile& missile)
-{
-    quint64 clock_ns = match_state->clockNS ();
-    qreal sprite_scale = 0.5;
-
-    quint64 period = missileAnimationPeriodNS (Missile::Type::Rocket);
-    quint64 phase = clock_ns % period;
-    QOpenGLTexture* texture;
-    switch (missile.type) {
-    case Missile::Type::Rocket:
-        texture = (phase < period / 2) ? textures.effects.goon_rocket.rocket1.get () : textures.effects.goon_rocket.rocket2.get ();
-        break;
-    case Missile::Type::Pestilence:
-        texture = (phase < period / 2) ? textures.effects.pestilence_missile.missile1.get () : textures.effects.pestilence_missile.missile2.get ();
-        break;
-    default:
-        return;
-    }
-
-    QPointF center = coord_map.toScreenCoords (missile.position);
-
-    qreal a1_sin, a1_cos;
-    qreal a2_sin, a2_cos;
-    qreal a3_sin, a3_cos;
-    qreal a4_sin, a4_cos;
-    sincos (missile.orientation + PI_X_3_4, &a1_sin, &a1_cos);
-    sincos (missile.orientation + PI_X_1_4, &a2_sin, &a2_cos);
-    sincos (missile.orientation - PI_X_1_4, &a3_sin, &a3_cos);
-    sincos (missile.orientation - PI_X_3_4, &a4_sin, &a4_cos);
-    qreal scale = coord_map.viewport_scale * sprite_scale * match_state->missileDiameter (Missile::Type::Rocket) * SQRT_2 * MAP_TO_SCREEN_FACTOR;
-
-    const GLfloat vertices[] = {
-        GLfloat (center.x () + scale * a1_cos),
-        GLfloat (center.y () + scale * a1_sin),
-        GLfloat (center.x () + scale * a2_cos),
-        GLfloat (center.y () + scale * a2_sin),
-        GLfloat (center.x () + scale * a3_cos),
-        GLfloat (center.y () + scale * a3_sin),
-        GLfloat (center.x () + scale * a4_cos),
-        GLfloat (center.y () + scale * a4_sin),
-    };
-
-    static const GLfloat texture_coords[] = {
-        0,
-        1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0,
-    };
-
-    static const GLuint indices[] = {
-        0,
-        1,
-        2,
-        0,
-        2,
-        3,
-    };
-
-    textured_renderer->draw (*this, GL_TRIANGLES, vertices, texture_coords, 6, indices, texture, ortho_matrix);
-}
-void RoomWidget::drawExplosion (const Explosion& explosion)
-{
-    const AttackDescription& attack_description = match_state->effectAttackDescription (AttackDescription::Type::GoonRocketExplosion);
-    qreal sprite_scale;
-    switch (explosion.type) {
-    case Explosion::Type::Fire:
-        sprite_scale = 0.85;
-        break;
-    case Explosion::Type::Pestilence:
-        sprite_scale = 0.6;
-        break;
-    default:
-        return;
-    }
-
-    qreal orientation = 0.0;
-    quint64 clock_ns = match_state->clockNS ();
-    GLfloat alpha = explosion.remaining_ticks * 0.5 / attack_description.duration_ticks;
-
-    quint64 period = explosionAnimationPeriodNS ();
-    quint64 phase = clock_ns % period;
-    QOpenGLTexture* texture;
-    switch (explosion.type) {
-    case Explosion::Type::Fire:
-        texture = (phase < period / 2) ? textures.effects.explosion.explosion1.get () : textures.effects.explosion.explosion2.get ();
-        break;
-    case Explosion::Type::Pestilence:
-        texture = textures.effects.pestilence_splash.splash.get ();
-        break;
-    default:
-        return;
-    }
-
-    QPointF center = coord_map.toScreenCoords (explosion.position);
-
-    qreal a1_sin, a1_cos;
-    qreal a2_sin, a2_cos;
-    qreal a3_sin, a3_cos;
-    qreal a4_sin, a4_cos;
-    sincos (orientation + PI_X_3_4, &a1_sin, &a1_cos);
-    sincos (orientation + PI_X_1_4, &a2_sin, &a2_cos);
-    sincos (orientation - PI_X_1_4, &a3_sin, &a3_cos);
-    sincos (orientation - PI_X_3_4, &a4_sin, &a4_cos);
-    qreal scale = coord_map.viewport_scale * sprite_scale * match_state->explosionDiameter (explosion.type) * SQRT_2 * MAP_TO_SCREEN_FACTOR;
-
-    const GLfloat colors[] = {
-        1,
-        1,
-        1,
-        alpha,
-        1,
-        1,
-        1,
-        alpha,
-        1,
-        1,
-        1,
-        alpha,
-        1,
-        1,
-        1,
-        alpha,
-    };
-
-    const GLfloat vertices[] = {
-        GLfloat (center.x () + scale * a1_cos),
-        GLfloat (center.y () + scale * a1_sin),
-        GLfloat (center.x () + scale * a2_cos),
-        GLfloat (center.y () + scale * a2_sin),
-        GLfloat (center.x () + scale * a3_cos),
-        GLfloat (center.y () + scale * a3_sin),
-        GLfloat (center.x () + scale * a4_cos),
-        GLfloat (center.y () + scale * a4_sin),
-    };
-
-    static const GLfloat texture_coords[] = {
-        0,
-        1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0,
-    };
-
-    static const GLuint indices[] = {
-        0,
-        1,
-        2,
-        0,
-        2,
-        3,
-    };
-
-    colored_textured_renderer->draw (*this, GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, texture, ortho_matrix);
 }
 void RoomWidget::drawUnitPathToTarget (const Unit& unit)
 {

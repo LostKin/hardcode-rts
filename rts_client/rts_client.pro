@@ -33,6 +33,7 @@ SOURCES += \
     coloredrenderer.cpp \
     coloredtexturedrenderer.cpp \
     texturedrenderer.cpp \
+    effectrenderer.cpp \
     coordmap.cpp
 
 HEADERS += \
@@ -57,6 +58,7 @@ HEADERS += \
     coloredrenderer.h \
     coloredtexturedrenderer.h \
     texturedrenderer.h \
+    effectrenderer.h \
     coordmap.h
 
 INCLUDEPATH += .proto_stubs
