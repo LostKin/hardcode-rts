@@ -16,6 +16,7 @@ class TexturedRenderer;
 class UnitSetRenderer;
 class ActionPanelRenderer;
 class EffectRenderer;
+class MinimapRenderer;
 
 
 class RoomWidget: public OpenGLWidget
@@ -123,7 +124,6 @@ private:
     void centerViewportAt (const QPointF& point);
     void centerViewportAtSelected ();
     void drawHUD ();
-    void drawMinimap ();
     void drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit);
     void drawGroupsOverlay ();
     void drawActionPanel (int margin, const QColor& panel_color, int selected_count, quint64 active_actions, bool contaminator_selected, qint64 cast_cooldown_left_ticks);
@@ -133,8 +133,6 @@ private:
     void drawTabs (int x, int y, int w, int h);
     void drawUnitHPBar (const Unit& unit);
     void drawUnitPathToTarget (const Unit& unit);
-    void drawActionButton (const QRect& rect, bool pressed, QOpenGLTexture* texture);
-    void drawActionButtonShade (const QRect& rect, bool pressed, qreal remaining);
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
     void groupEvent (quint64 group_num);
@@ -218,4 +216,5 @@ private:
     QSharedPointer<UnitSetRenderer> unit_set_renderer;
     QSharedPointer<ActionPanelRenderer> action_panel_renderer;
     QSharedPointer<EffectRenderer> effect_renderer;
+    QSharedPointer<MinimapRenderer> minimap_renderer;
 };
