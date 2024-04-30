@@ -1273,3 +1273,23 @@ std::optional<quint32> MatchState::findClosestTarget (const Unit& unit)
     }
     return closest_target;
 }
+QVector<QPair<quint32, const Unit*>> MatchState::buildOrderedSelection ()
+{
+    static const Unit::Type unit_order[] = {
+        Unit::Type::Contaminator,
+        Unit::Type::Crusader,
+        Unit::Type::Goon,
+        Unit::Type::Seal,
+        Unit::Type::Beetle,
+    };
+
+    QVector<QPair<quint32, const Unit*>> selection;
+
+    // TODO: Use radix algorithm
+    for (const Unit::Type unit_type: unit_order)
+        for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
+            if (it->selected && it->type == unit_type)
+                selection.append ({it.key (), &*it});
+
+    return selection;
+}

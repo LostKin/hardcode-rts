@@ -19,6 +19,7 @@ class ActionPanelRenderer;
 class EffectRenderer;
 class MinimapRenderer;
 class GroupOverlayRenderer;
+class SelectionPanelRenderer;
 
 
 class RoomWidget: public OpenGLWidget
@@ -126,17 +127,12 @@ private:
     void centerViewportAt (const QPointF& point);
     void centerViewportAtSelected ();
     void drawHUD ();
-    void drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit);
-    void drawIcon (const Unit& unit, qreal x, qreal y, qreal w, qreal h, bool framed = false);
-    void drawIcon (const Unit::Type& unit_type, qreal hp_ratio, qreal x, qreal y, qreal w, qreal h, bool framed = false);
-    void drawTabs (int x, int y, int w, int h);
     void drawUnitHPBar (const Unit& unit);
     void drawUnitPathToTarget (const Unit& unit);
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
     void groupEvent (quint64 group_num);
     void zoom (int delta);
-    QVector<QPair<quint32, const Unit*>> buildOrderedSelection ();
 
 private slots:
     void tick ();
@@ -146,10 +142,6 @@ private:
     static ActionButtonId getActionButtonFromGrid (int row, int col);
 
 private:
-    QFont font;
-    QFont group_number_font;
-    QFont group_size_font;
-
     struct {
         QSharedPointer<QOpenGLTexture> grass;
         QSharedPointer<QOpenGLTexture> ground;
@@ -178,15 +170,6 @@ private:
             QSharedPointer<QOpenGLTexture> cancel_pressed;
             QSharedPointer<QOpenGLTexture> quit_pressed;
         } buttons;
-        struct {
-            QSharedPointer<QOpenGLTexture> seal;
-            QSharedPointer<QOpenGLTexture> crusader;
-            QSharedPointer<QOpenGLTexture> goon;
-            QSharedPointer<QOpenGLTexture> beetle;
-            QSharedPointer<QOpenGLTexture> contaminator;
-            QSharedPointer<QOpenGLTexture> frame;
-            QSharedPointer<QOpenGLTexture> tabs;
-        } unit_icons;
     } textures;
 
     QSharedPointer<HUD> hud;
@@ -218,4 +201,5 @@ private:
     QSharedPointer<EffectRenderer> effect_renderer;
     QSharedPointer<MinimapRenderer> minimap_renderer;
     QSharedPointer<GroupOverlayRenderer> group_overlay_renderer;
+    QSharedPointer<SelectionPanelRenderer> selection_panel_renderer;
 };

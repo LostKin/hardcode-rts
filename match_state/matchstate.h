@@ -82,6 +82,7 @@ public:
     void moveSelectionToGroup (quint64 group, bool add);
     bool fuzzyMatchPoints (const QPointF& p1, const QPointF& p2) const;
     quint32 get_tick_no ();
+    QVector<QPair<quint32, const Unit*>> buildOrderedSelection ();
 
 signals:
     void soundEventEmitted (SoundEvent event);

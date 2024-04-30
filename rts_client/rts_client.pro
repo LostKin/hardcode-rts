@@ -38,6 +38,7 @@ SOURCES += \
     effectrenderer.cpp \
     minimaprenderer.cpp \
     groupoverlayrenderer.cpp \
+    selectionpanelrenderer.cpp \
     coordmap.cpp
 
 HEADERS += \
@@ -67,6 +68,7 @@ HEADERS += \
     effectrenderer.h \
     minimaprenderer.h \
     groupoverlayrenderer.h \
+    selectionpanelrenderer.h \
     coordmap.h
 
 INCLUDEPATH += .proto_stubs

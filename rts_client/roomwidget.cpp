@@ -12,6 +12,7 @@
 #include "effectrenderer.h"
 #include "minimaprenderer.h"
 #include "groupoverlayrenderer.h"
+#include "selectionpanelrenderer.h"
 
 #include <QLabel>
 #include <QFrame>
@@ -50,52 +51,6 @@ static const QMap<SoundEvent, QStringList> sound_map = {
     {SoundEvent::SpawnBeetle, {":/audio/units/contaminator/spawn-beetle.wav"}},
 };
 
-static const QString& unitTitle (Unit::Type type)
-{
-    static const QString seal = "Seal";
-    static const QString crusader = "Crusader";
-    static const QString goon = "Goon";
-    static const QString beetle = "Beetle";
-    static const QString contaminator = "Contaminator";
-    static const QString unknown = "Unknown";
-
-    switch (type) {
-    case Unit::Type::Seal:
-        return seal;
-    case Unit::Type::Crusader:
-        return crusader;
-    case Unit::Type::Goon:
-        return goon;
-    case Unit::Type::Beetle:
-        return beetle;
-    case Unit::Type::Contaminator:
-        return contaminator;
-    default:
-        return unknown;
-    }
-}
-static const QString& unitAttackClassName (AttackDescription::Type type)
-{
-    static const QString immediate = "immediate";
-    static const QString missile = "missile";
-    static const QString splash = "splash";
-    static const QString unknown = "unknown";
-
-    switch (type) {
-    case AttackDescription::Type::SealShot:
-    case AttackDescription::Type::CrusaderChop:
-    case AttackDescription::Type::BeetleSlice:
-        return immediate;
-    case AttackDescription::Type::GoonRocket:
-    case AttackDescription::Type::PestilenceMissile:
-        return missile;
-    case AttackDescription::Type::GoonRocketExplosion:
-    case AttackDescription::Type::PestilenceSplash:
-        return splash;
-    default:
-        return unknown;
-    }
-}
 static QColor getHPColor (qreal hp_ratio)
 {
     return QColor::fromRgbF (1.0 - hp_ratio, hp_ratio, 0.0);
@@ -108,13 +63,9 @@ static QPointF operator* (const QPointF& a, const QPointF& b)
 
 RoomWidget::RoomWidget (QWidget* parent)
     : OpenGLWidget (parent)
-    , font ("NotCourier", 16)
-    , group_number_font ("NotCourier", 10)
-    , group_size_font ("NotCourier", 8)
 {
     hud = QSharedPointer<HUD>::create ();
     setAttribute (Qt::WA_KeyCompression, false);
-    font.setStyleHint (QFont::TypeWriter);
 
     last_frame.invalidate ();
     setMouseTracking (true);
@@ -163,7 +114,6 @@ void RoomWidget::readinessHandler ()
 }
 void RoomWidget::quitRequestedHandler ()
 {
-    return;
 }
 
 void RoomWidget::startCountDownHandler (Unit::Team team)
@@ -328,16 +278,6 @@ void RoomWidget::loadTextures ()
     textures.buttons.ready_pressed = loadTexture2DRectangle (":/images/buttons/ready-pressed.png");
     textures.buttons.cancel_pressed = loadTexture2DRectangle (":/images/buttons/cancel-pressed.png");
     textures.buttons.quit_pressed = loadTexture2DRectangle (":/images/buttons/quit-pressed.png");
-
-    static constexpr QColor icon_color (0xdd, 0xdd, 0xdd);
-
-    textures.unit_icons.seal = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/seal/unit_tmpl.svg", "standing", icon_color));
-    textures.unit_icons.crusader = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/crusader/unit_tmpl.svg", "standing", icon_color));
-    textures.unit_icons.goon = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/goon/unit_tmpl.svg", "standing", icon_color));
-    textures.unit_icons.beetle = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/beetle/unit_tmpl.svg", "standing", icon_color));
-    textures.unit_icons.contaminator = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/contaminator/unit_tmpl.svg", "standing", icon_color));
-    textures.unit_icons.frame = loadTexture2D (":/images/icons/frame.png"); // TODO: Refine drawing
-    textures.unit_icons.tabs = loadTexture2D (":/images/icons/tabs.png"); // TODO: Refine drawing
 }
 void RoomWidget::initResources ()
 {
@@ -357,6 +297,7 @@ void RoomWidget::initResources ()
     effect_renderer = QSharedPointer<EffectRenderer>::create ();
     minimap_renderer = QSharedPointer<MinimapRenderer>::create ();
     group_overlay_renderer = QSharedPointer<GroupOverlayRenderer>::create (unit_icon_set);
+    selection_panel_renderer = QSharedPointer<SelectionPanelRenderer>::create (unit_icon_set);
 
     loadTextures ();
 
@@ -733,7 +674,7 @@ void RoomWidget::matchMousePressEvent (QMouseEvent* event)
         }
         }
     } else if (getSelectionPanelUnitUnderCursor (cursor_position, row, col)) {
-        QVector<QPair<quint32, const Unit*>> selection = buildOrderedSelection ();
+        QVector<QPair<quint32, const Unit*>> selection = match_state->buildOrderedSelection ();
         if (selection.size () > 1) {
             int i = row * 10 + col;
             if (i < selection.size ()) {
@@ -1401,237 +1342,11 @@ void RoomWidget::drawHUD ()
         }
     }
 
-    drawSelectionPanel (hud->selection_panel_rect, selected_count, last_selected_unit);
+    selection_panel_renderer->draw (*this, *colored_textured_renderer, *this, hud->selection_panel_rect, selected_count, last_selected_unit, *hud, *match_state, ortho_matrix);
     group_overlay_renderer->draw (*this, *colored_renderer, *colored_textured_renderer, *this, *hud, *match_state, team, ortho_matrix, coord_map);
     action_panel_renderer->draw (*this, *colored_renderer, *textured_renderer,
                                  *hud, margin, panel_color, selected_count, active_actions, contaminator_selected, cast_cooldown_left_ticks,
                                  ortho_matrix, coord_map);
-}
-void RoomWidget::drawSelectionPanel (const QRect& rect, size_t selected_count, const Unit* last_selected_unit)
-{
-    if (selected_count == 1) {
-        const Unit& unit = *last_selected_unit;
-        const AttackDescription& primary_attack_description = match_state->unitPrimaryAttackDescription (unit.type);
-
-        {
-            int margin = rect.height () * 0.2;
-            int icon_rib = rect.height () - margin * 2;
-            drawIcon (unit, rect.x () + margin, rect.y () + margin, icon_rib, icon_rib);
-        }
-
-        {
-            int margin = rect.height () * 0.05;
-            QPainter p (this);
-            p.setFont (font);
-            p.setPen (QColor (0xdf, 0xdf, 0xff));
-            p.drawText (rect.marginsRemoved ({margin, margin, margin, margin}), Qt::AlignHCenter,
-                        unitTitle (unit.type) + "\n"
-                                                "\n"
-                                                "HP: " +
-                            QString::number (unit.hp) + "/" + QString::number (match_state->unitMaxHP (unit.type)) + "\n"
-                                                                                                                     "Attack: class = " +
-                            unitAttackClassName (primary_attack_description.type) + "; range = " + QString::number (primary_attack_description.range));
-        }
-    } else if (selected_count) {
-        int icon_rib = hud->selection_panel_icon_rib;
-
-        QVector<QPair<quint32, const Unit*>> selection = buildOrderedSelection ();
-
-        if (selection.size () > 30)
-            drawTabs (hud->selection_panel_icon_grid_pos.x () - icon_rib, hud->selection_panel_icon_grid_pos.y (), icon_rib, icon_rib);
-
-        for (size_t i = 0; i < size_t (qMin (selection.size (), 30)); ++i) {
-            const Unit* unit = selection[i].second;
-            size_t row = i / 10;
-            size_t col = i % 10;
-            drawIcon (*unit, hud->selection_panel_icon_grid_pos.x () + icon_rib * col, hud->selection_panel_icon_grid_pos.y () + icon_rib * row, icon_rib, icon_rib, true);
-        }
-    }
-}
-void RoomWidget::drawTabs (int x, int y, int w, int h)
-{
-    const GLfloat vertices[] = {
-        GLfloat (x),
-        GLfloat (y + h),
-        GLfloat (x),
-        GLfloat (y),
-        GLfloat (x + w),
-        GLfloat (y),
-        GLfloat (x + w),
-        GLfloat (y + h),
-    };
-
-    static const GLuint indices[] = {
-        0,
-        1,
-        2,
-        0,
-        2,
-        3,
-    };
-
-    static const GLfloat texture_coords[] = {
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        1.0,
-        1.0,
-        0.0,
-        1.0,
-    };
-
-    QColor color = QColor::fromRgbF (1.0, 1.0, 1.0, 1.0);
-    const GLfloat colors[] = {
-        GLfloat (color.redF ()),
-        GLfloat (color.greenF ()),
-        GLfloat (color.blueF ()),
-        GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()),
-        GLfloat (color.greenF ()),
-        GLfloat (color.blueF ()),
-        GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()),
-        GLfloat (color.greenF ()),
-        GLfloat (color.blueF ()),
-        GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()),
-        GLfloat (color.greenF ()),
-        GLfloat (color.blueF ()),
-        GLfloat (color.alphaF ()),
-    };
-    colored_textured_renderer->draw (*this, GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, textures.unit_icons.tabs.get (), ortho_matrix);
-}
-void RoomWidget::drawIcon (const Unit::Type& unit_type, qreal hp_ratio, qreal x, qreal y, qreal w, qreal h, bool framed)
-{
-    qreal sprite_scale;
-    QOpenGLTexture* texture;
-    switch (unit_type) {
-    case Unit::Type::Seal:
-        sprite_scale = 0.8;
-        texture = textures.unit_icons.seal.get ();
-        break;
-    case Unit::Type::Crusader:
-        sprite_scale = 1.1;
-        texture = textures.unit_icons.crusader.get ();
-        break;
-    case Unit::Type::Goon:
-        sprite_scale = 0.9;
-        texture = textures.unit_icons.goon.get ();
-        break;
-    case Unit::Type::Beetle:
-        sprite_scale = 0.6;
-        texture = textures.unit_icons.beetle.get ();
-        break;
-    case Unit::Type::Contaminator:
-        sprite_scale = 1.2;
-        texture = textures.unit_icons.contaminator.get ();
-        break;
-    default:
-        return;
-    }
-
-    const GLfloat vertices[] = {
-        GLfloat (x + w*(0.5 - 0.5*sprite_scale)),
-        GLfloat (y + h*(0.5 + 0.5*sprite_scale)),
-        GLfloat (x + w*(0.5 - 0.5*sprite_scale)),
-        GLfloat (y + h*(0.5 - 0.5*sprite_scale)),
-        GLfloat (x + w*(0.5 + 0.5*sprite_scale)),
-        GLfloat (y + h*(0.5 - 0.5*sprite_scale)),
-        GLfloat (x + w*(0.5 + 0.5*sprite_scale)),
-        GLfloat (y + h*(0.5 + 0.5*sprite_scale)),
-    };
-
-    static const GLfloat texture_coords[] = {
-        GLfloat (0),
-        GLfloat (0),
-        GLfloat (1),
-        GLfloat (0),
-        GLfloat (1),
-        GLfloat (1),
-        GLfloat (0),
-        GLfloat (1),
-    };
-
-    QColor color = getHPColor (hp_ratio);
-
-    const GLfloat colors[] = {
-        GLfloat (color.redF ()),
-        GLfloat (color.greenF ()),
-        GLfloat (color.blueF ()),
-        GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()),
-        GLfloat (color.greenF ()),
-        GLfloat (color.blueF ()),
-        GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()),
-        GLfloat (color.greenF ()),
-        GLfloat (color.blueF ()),
-        GLfloat (color.alphaF ()),
-        GLfloat (color.redF ()),
-        GLfloat (color.greenF ()),
-        GLfloat (color.blueF ()),
-        GLfloat (color.alphaF ()),
-    };
-
-    static const GLuint indices[] = {
-        0,
-        1,
-        2,
-        0,
-        2,
-        3,
-    };
-
-    if (framed) {
-        const GLfloat vertices[] = {
-            GLfloat (x),
-            GLfloat (y + h),
-            GLfloat (x),
-            GLfloat (y),
-            GLfloat (x + w),
-            GLfloat (y),
-            GLfloat (x + w),
-            GLfloat (y + h),
-        };
-        static const GLfloat texture_coords[] = {
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            0,
-            1,
-        };
-        QColor color = QColor::fromRgbF (1.0, 1.0, 1.0, 1.0);
-        const GLfloat colors[] = {
-            GLfloat (color.redF ()),
-            GLfloat (color.greenF ()),
-            GLfloat (color.blueF ()),
-            GLfloat (color.alphaF ()),
-            GLfloat (color.redF ()),
-            GLfloat (color.greenF ()),
-            GLfloat (color.blueF ()),
-            GLfloat (color.alphaF ()),
-            GLfloat (color.redF ()),
-            GLfloat (color.greenF ()),
-            GLfloat (color.blueF ()),
-            GLfloat (color.alphaF ()),
-            GLfloat (color.redF ()),
-            GLfloat (color.greenF ()),
-            GLfloat (color.blueF ()),
-            GLfloat (color.alphaF ()),
-        };
-        colored_textured_renderer->draw (*this, GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, textures.unit_icons.frame.get (), ortho_matrix);
-    }
-
-    colored_textured_renderer->draw (*this, GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, texture, ortho_matrix);
-}
-void RoomWidget::drawIcon (const Unit& unit, qreal x, qreal y, qreal w, qreal h, bool framed)
-{
-    qreal hp_ratio = qreal (unit.hp) / match_state->unitMaxHP (unit.type);
-    drawIcon (unit.type, hp_ratio, x, y, w, h, framed);
 }
 void RoomWidget::drawUnitHPBar (const Unit& unit)
 {
@@ -1803,28 +1518,4 @@ void RoomWidget::zoom (int delta)
     QPointF offset_after = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
 
     coord_map.viewport_center -= offset_after - offset_before;
-}
-QVector<QPair<quint32, const Unit*>> RoomWidget::buildOrderedSelection ()
-{
-    QVector<QPair<quint32, const Unit*>> selection;
-
-    const QHash<quint32, Unit>& units = match_state->unitsRef ();
-
-    static const Unit::Type unit_order[] = {
-        Unit::Type::Contaminator,
-        Unit::Type::Crusader,
-        Unit::Type::Goon,
-        Unit::Type::Seal,
-        Unit::Type::Beetle,
-    };
-
-    for (const Unit::Type unit_type: unit_order) {
-        for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
-            if (it->selected && it->type == unit_type) {
-                selection.append ({it.key (), &*it});
-            }
-        }
-    }
-
-    return selection;
 }
