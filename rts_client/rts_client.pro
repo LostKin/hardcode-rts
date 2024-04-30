@@ -39,6 +39,7 @@ SOURCES += \
     minimaprenderer.cpp \
     groupoverlayrenderer.cpp \
     selectionpanelrenderer.cpp \
+    hudrenderer.cpp \
     coordmap.cpp
 
 HEADERS += \
@@ -69,6 +70,7 @@ HEADERS += \
     minimaprenderer.h \
     groupoverlayrenderer.h \
     selectionpanelrenderer.h \
+    hudrenderer.h \
     coordmap.h
 
 INCLUDEPATH += .proto_stubs

@@ -22,17 +22,17 @@ class GroupOverlayRenderer
 public:
     GroupOverlayRenderer (const QSharedPointer<UnitIconSet>& unit_icon_set);
     void draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, ColoredTexturedRenderer& colored_textured_renderer, QPaintDevice& device /* Can it be fixed? */,
-               HUD& hud, MatchState& match_state, Unit::Team team,
-               const QMatrix4x4& ortho_matrix, const CoordMap& coord_map);
+               HUD& hud, MatchState& match_state,
+               const QMatrix4x4& ortho_matrix);
 
 private:
     static QColor getHPColor (qreal hp_ratio);
 
     QSharedPointer<QOpenGLTexture> loadTexture2D (const QString& path);
-    void drawIcon (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, ColoredTexturedRenderer& colored_textured_renderer,
+    void drawIcon (QOpenGLFunctions& gl, ColoredTexturedRenderer& colored_textured_renderer,
                    const Unit::Type& unit_type, qreal hp_ratio, qreal x, qreal y, qreal w, qreal h, bool framed,
                    const QMatrix4x4& ortho_matrix);
-    void drawIcon (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, ColoredTexturedRenderer& colored_textured_renderer,
+    void drawIcon (QOpenGLFunctions& gl, ColoredTexturedRenderer& colored_textured_renderer,
                    const Unit& unit, qreal x, qreal y, qreal w, qreal h, bool framed,
                    const QMatrix4x4& ortho_matrix);
 

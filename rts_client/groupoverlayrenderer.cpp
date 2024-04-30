@@ -21,8 +21,8 @@ GroupOverlayRenderer::GroupOverlayRenderer (const QSharedPointer<UnitIconSet>& u
 }
 
 void GroupOverlayRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, ColoredTexturedRenderer& colored_textured_renderer, QPaintDevice& device,
-                                 HUD& hud, MatchState& match_state, Unit::Team team,
-                                 const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
+                                 HUD& hud, MatchState& match_state,
+                                 const QMatrix4x4& ortho_matrix)
 {
     qint64 group_sizes[GROUP_COUNT] = {};
     Unit::Type group_unit_counts[GROUP_COUNT];
@@ -61,7 +61,7 @@ void GroupOverlayRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_
                 colored_renderer.fillRectangle (gl, number_rect, group_number_rect_color, ortho_matrix);
                 colored_renderer.drawRectangle (gl, info_rect, group_border_color, ortho_matrix);
                 colored_renderer.drawRectangle (gl, number_rect, group_border_color, ortho_matrix);
-                drawIcon (gl, colored_renderer, colored_textured_renderer, group_unit_counts[col], 1.0, info_rect.x (), info_rect.y (), group_icon_size.width (), group_icon_size.height (), false, ortho_matrix);
+                drawIcon (gl, colored_textured_renderer, group_unit_counts[col], 1.0, info_rect.x (), info_rect.y (), group_icon_size.width (), group_icon_size.height (), false, ortho_matrix);
             } else {
                 colored_renderer.fillRectangle (gl, info_rect, group_shade_color, ortho_matrix);
             }
@@ -102,7 +102,7 @@ QSharedPointer<QOpenGLTexture> GroupOverlayRenderer::loadTexture2D (const QStrin
     texture->setMagnificationFilter (QOpenGLTexture::LinearMipMapLinear);
     return QSharedPointer<QOpenGLTexture> (texture);
 }
-void GroupOverlayRenderer::drawIcon (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, ColoredTexturedRenderer& colored_textured_renderer,
+void GroupOverlayRenderer::drawIcon (QOpenGLFunctions& gl, ColoredTexturedRenderer& colored_textured_renderer,
                                      const Unit::Type& unit_type, qreal hp_ratio, qreal x, qreal y, qreal w, qreal h, bool framed,
                                      const QMatrix4x4& ortho_matrix)
 {
@@ -230,10 +230,10 @@ void GroupOverlayRenderer::drawIcon (QOpenGLFunctions& gl, ColoredRenderer& colo
 
     colored_textured_renderer.draw (gl, GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, texture, ortho_matrix);
 }
-void GroupOverlayRenderer::drawIcon (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, ColoredTexturedRenderer& colored_textured_renderer,
+void GroupOverlayRenderer::drawIcon (QOpenGLFunctions& gl, ColoredTexturedRenderer& colored_textured_renderer,
                                      const Unit& unit, qreal x, qreal y, qreal w, qreal h, bool framed,
                                      const QMatrix4x4& ortho_matrix)
 {
     qreal hp_ratio = qreal (unit.hp) / MatchState::unitMaxHP (unit.type);
-    drawIcon (gl, colored_renderer, colored_textured_renderer, unit.type, hp_ratio, x, y, w, h, framed, ortho_matrix);
+    drawIcon (gl, colored_textured_renderer, unit.type, hp_ratio, x, y, w, h, framed, ortho_matrix);
 }

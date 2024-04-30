@@ -13,13 +13,9 @@ class Unit;
 class ColoredRenderer;
 class ColoredTexturedRenderer;
 class TexturedRenderer;
-class UnitIconSet;
 class UnitSetRenderer;
-class ActionPanelRenderer;
 class EffectRenderer;
-class MinimapRenderer;
-class GroupOverlayRenderer;
-class SelectionPanelRenderer;
+class HUDRenderer;
 
 
 class RoomWidget: public OpenGLWidget
@@ -126,7 +122,6 @@ private:
     bool cursorIsAboveMajorMap (const QPoint& cursor_pos) const;
     void centerViewportAt (const QPointF& point);
     void centerViewportAtSelected ();
-    void drawHUD ();
     void drawUnitHPBar (const Unit& unit);
     void drawUnitPathToTarget (const Unit& unit);
     void selectGroup (quint64 group);
@@ -172,7 +167,7 @@ private:
         } buttons;
     } textures;
 
-    QSharedPointer<HUD> hud;
+    HUD hud;
     State state = State::RoleSelection;
     ButtonId pressed_button = ButtonId::None;
     QPoint cursor_position = {-1, -1};
@@ -195,11 +190,7 @@ private:
     QSharedPointer<ColoredRenderer> colored_renderer;
     QSharedPointer<ColoredTexturedRenderer> colored_textured_renderer;
     QSharedPointer<TexturedRenderer> textured_renderer;
-    QSharedPointer<UnitIconSet> unit_icon_set;
     QSharedPointer<UnitSetRenderer> unit_set_renderer;
-    QSharedPointer<ActionPanelRenderer> action_panel_renderer;
     QSharedPointer<EffectRenderer> effect_renderer;
-    QSharedPointer<MinimapRenderer> minimap_renderer;
-    QSharedPointer<GroupOverlayRenderer> group_overlay_renderer;
-    QSharedPointer<SelectionPanelRenderer> selection_panel_renderer;
+    QSharedPointer<HUDRenderer> hud_renderer;
 };
