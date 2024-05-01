@@ -9,12 +9,10 @@
 #include <QElapsedTimer>
 #include <QTimer>
 
-class Unit;
 class ColoredRenderer;
 class ColoredTexturedRenderer;
 class TexturedRenderer;
-class UnitSetRenderer;
-class EffectRenderer;
+class SceneRenderer;
 class HUDRenderer;
 
 
@@ -122,8 +120,6 @@ private:
     bool cursorIsAboveMajorMap (const QPoint& cursor_pos) const;
     void centerViewportAt (const QPointF& point);
     void centerViewportAtSelected ();
-    void drawUnitHPBar (const Unit& unit);
-    void drawUnitPathToTarget (const Unit& unit);
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
     void groupEvent (quint64 group_num);
@@ -139,7 +135,6 @@ private:
 private:
     struct {
         QSharedPointer<QOpenGLTexture> grass;
-        QSharedPointer<QOpenGLTexture> ground;
         struct {
             QSharedPointer<QOpenGLTexture> crosshair;
         } cursors;
@@ -190,7 +185,6 @@ private:
     QSharedPointer<ColoredRenderer> colored_renderer;
     QSharedPointer<ColoredTexturedRenderer> colored_textured_renderer;
     QSharedPointer<TexturedRenderer> textured_renderer;
-    QSharedPointer<UnitSetRenderer> unit_set_renderer;
-    QSharedPointer<EffectRenderer> effect_renderer;
+    QSharedPointer<SceneRenderer> scene_renderer;
     QSharedPointer<HUDRenderer> hud_renderer;
 };

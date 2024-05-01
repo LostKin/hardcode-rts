@@ -4,10 +4,8 @@
 #include "coloredrenderer.h"
 #include "coloredtexturedrenderer.h"
 #include "texturedrenderer.h"
-#include "unitgenerator.h"
-#include "unitsetrenderer.h"
 #include "hud.h"
-#include "effectrenderer.h"
+#include "scenerenderer.h"
 #include "hudrenderer.h"
 
 #include <QLabel>
@@ -47,10 +45,6 @@ static const QMap<SoundEvent, QStringList> sound_map = {
     {SoundEvent::SpawnBeetle, {":/audio/units/contaminator/spawn-beetle.wav"}},
 };
 
-static QColor getHPColor (qreal hp_ratio)
-{
-    return QColor::fromRgbF (1.0 - hp_ratio, hp_ratio, 0.0);
-}
 static QPointF operator* (const QPointF& a, const QPointF& b)
 {
     return {a.x () * b.x (), a.y () * b.y ()};
@@ -250,7 +244,6 @@ ActionButtonId RoomWidget::getActionButtonFromGrid (int row, int col)
 void RoomWidget::loadTextures ()
 {
     textures.grass = loadTexture2DRectangle (":/images/grass.png");
-    textures.ground = loadTexture2D (":/images/ground.png");
 
     textures.cursors.crosshair = loadTexture2DRectangle (":/images/cursors/crosshair.png");
 
@@ -286,8 +279,7 @@ void RoomWidget::initResources ()
         qDebug () << "TODO: Handle error";
     }
 
-    unit_set_renderer = QSharedPointer<UnitSetRenderer>::create (red_player_color, blue_player_color);
-    effect_renderer = QSharedPointer<EffectRenderer>::create ();
+    scene_renderer = QSharedPointer<SceneRenderer>::create ();
     hud_renderer = QSharedPointer<HUDRenderer>::create ();
 
     loadTextures ();
@@ -815,74 +807,9 @@ void RoomWidget::drawMatchStarted ()
         frameUpdate (last_frame.nsecsElapsed () * 0.000000001);
     last_frame.restart ();
 
-    const QRectF& area = match_state->areaRef ();
-
-    {
-        qreal scale = coord_map.viewport_scale * MAP_TO_SCREEN_FACTOR;
-        QPointF center = coord_map.arena_viewport_center - coord_map.viewport_center*scale;
-        const GLfloat vertices[] = {
-            GLfloat (center.x () + scale * area.left ()),
-            GLfloat (center.y () + scale * area.top ()),
-            GLfloat (center.x () + scale * area.right ()),
-            GLfloat (center.y () + scale * area.top ()),
-            GLfloat (center.x () + scale * area.right ()),
-            GLfloat (center.y () + scale * area.bottom ()),
-            GLfloat (center.x () + scale * area.left ()),
-            GLfloat (center.y () + scale * area.bottom ()),
-        };
-
-        static const GLfloat texture_coords[] = {
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            0,
-            1,
-        };
-
-        static const GLuint indices[] = {
-            0,
-            1,
-            2,
-            0,
-            2,
-            3,
-        };
-
-        textured_renderer->draw (*this, GL_TRIANGLES, vertices, texture_coords, 6, indices, textures.ground.get (), ortho_matrix);
-    }
-
-    const QHash<quint32, Unit>& units = match_state->unitsRef ();
-    const QHash<quint32, Missile>& missiles = match_state->missilesRef ();
-    const QHash<quint32, Explosion>& explosions = match_state->explosionsRef ();
-
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
-        unit_set_renderer->draw (*this, *colored_renderer, *textured_renderer, it.value (), match_state->clockNS (), ortho_matrix, coord_map);
-
-    for (QHash<quint32, Missile>::const_iterator it = missiles.constBegin (); it != missiles.constEnd (); ++it)
-        effect_renderer->drawMissile (*this, *textured_renderer, it.value (), match_state->clockNS (), ortho_matrix, coord_map);
-    for (QHash<quint32, Explosion>::const_iterator it = explosions.constBegin (); it != explosions.constEnd (); ++it)
-        effect_renderer->drawExplosion (*this, *colored_textured_renderer, it.value (), match_state->clockNS (), ortho_matrix, coord_map);
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
-        drawUnitHPBar (it.value ());
-    glEnable (GL_LINE_SMOOTH);
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
-        const Unit& unit = *it;
-        if (unit.team == team && unit.selected)
-            drawUnitPathToTarget (unit);
-    }
-    glDisable (GL_LINE_SMOOTH);
-
-    if (selection_start.has_value () && *selection_start != cursor_position) {
-        colored_renderer->drawRectangle (
-            *this,
-            qMin (selection_start->x (), cursor_position.x ()), qMin (selection_start->y (), cursor_position.y ()),
-            qAbs (selection_start->x () - cursor_position.x ()), qAbs (selection_start->y () - cursor_position.y ()),
-            QColor (0, 255, 0, 255),
-            ortho_matrix);
-    }
+    scene_renderer->draw (*this, *colored_renderer, *colored_textured_renderer, *textured_renderer,
+                          *match_state, team, cursor_position, selection_start,
+                          ortho_matrix, coord_map);
 
     hud_renderer->draw (*this, *colored_renderer, *colored_textured_renderer, *textured_renderer, *this,
                         hud, *match_state, team, ortho_matrix, coord_map);
@@ -1005,154 +932,6 @@ void RoomWidget::centerViewportAtSelected ()
     std::optional<QPointF> center = match_state->selectionCenter ();
     if (center.has_value ())
         centerViewportAt (*center);
-}
-void RoomWidget::drawUnitHPBar (const Unit& unit)
-{
-    if (unit.hp < match_state->unitMaxHP (unit.type)) {
-        QPointF center = coord_map.toScreenCoords (unit.position);
-        qreal hp_ratio = qreal (unit.hp) / match_state->unitMaxHP (unit.type);
-        qreal hitbar_height = coord_map.viewport_scale * MAP_TO_SCREEN_FACTOR * 0.16;
-        qreal radius = coord_map.viewport_scale * match_state->unitDiameter (unit.type) * MAP_TO_SCREEN_FACTOR * 0.42;
-
-        {
-            const GLfloat vertices[] = {
-                GLfloat (center.x () - radius),
-                GLfloat (center.y () - radius),
-                GLfloat (center.x () + radius * (-1.0 + hp_ratio * 2.0)),
-                GLfloat (center.y () - radius),
-                GLfloat (center.x () + radius * (-1.0 + hp_ratio * 2.0)),
-                GLfloat (center.y () - radius - hitbar_height),
-                GLfloat (center.x () - radius),
-                GLfloat (center.y () - radius - hitbar_height),
-            };
-
-            QColor color = getHPColor (hp_ratio);
-            color.setRgbF (color.redF (), color.greenF (), color.blueF (), color.alphaF ());
-
-            const GLfloat colors[] = {
-                GLfloat (color.redF ()),
-                GLfloat (color.greenF ()),
-                GLfloat (color.blueF ()),
-                GLfloat (color.alphaF ()),
-                GLfloat (color.redF ()),
-                GLfloat (color.greenF ()),
-                GLfloat (color.blueF ()),
-                GLfloat (color.alphaF ()),
-                GLfloat (color.redF ()),
-                GLfloat (color.greenF ()),
-                GLfloat (color.blueF ()),
-                GLfloat (color.alphaF ()),
-                GLfloat (color.redF ()),
-                GLfloat (color.greenF ()),
-                GLfloat (color.blueF ()),
-                GLfloat (color.alphaF ()),
-            };
-
-            colored_renderer->draw (*this, GL_TRIANGLE_FAN, 4, vertices, colors, ortho_matrix);
-        }
-
-        {
-            const GLfloat vertices[] = {
-                GLfloat (center.x () - radius),
-                GLfloat (center.y () - radius),
-                GLfloat (center.x () + radius),
-                GLfloat (center.y () - radius),
-                GLfloat (center.x () + radius),
-                GLfloat (center.y () - radius - hitbar_height),
-                GLfloat (center.x () - radius),
-                GLfloat (center.y () - radius - hitbar_height),
-            };
-
-            static const GLfloat colors[] = {
-                0,
-                0.8,
-                0.8,
-                1,
-                0,
-                0.8,
-                0.8,
-                1,
-                0,
-                0.8,
-                0.8,
-                1,
-                0,
-                0.8,
-                0.8,
-                1,
-            };
-
-            colored_renderer->draw (*this, GL_LINE_LOOP, 4, vertices, colors, ortho_matrix);
-        }
-    }
-}
-void RoomWidget::drawUnitPathToTarget (const Unit& unit)
-{
-    const QPointF* target_position = nullptr;
-    if (std::holds_alternative<MoveAction> (unit.action)) {
-        const std::variant<QPointF, quint32>& action_target = std::get<MoveAction> (unit.action).target;
-        if (std::holds_alternative<QPointF> (action_target)) {
-            target_position = &std::get<QPointF> (action_target);
-        } else if (std::holds_alternative<quint32> (action_target)) {
-            quint32 target_unit_id = std::get<quint32> (action_target);
-            const QHash<quint32, Unit>& units = match_state->unitsRef ();
-            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
-            if (target_unit_it != units.end ()) {
-                const Unit& target_unit = *target_unit_it;
-                target_position = &target_unit.position;
-            }
-        }
-    } else if (std::holds_alternative<AttackAction> (unit.action)) {
-        const std::variant<QPointF, quint32>& action_target = std::get<AttackAction> (unit.action).target;
-        if (std::holds_alternative<QPointF> (action_target)) {
-            target_position = &std::get<QPointF> (action_target);
-        } else if (std::holds_alternative<quint32> (action_target)) {
-            quint32 target_unit_id = std::get<quint32> (action_target);
-            const QHash<quint32, Unit>& units = match_state->unitsRef ();
-            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
-            if (target_unit_it != units.end ()) {
-                const Unit& target_unit = *target_unit_it;
-                target_position = &target_unit.position;
-            }
-        }
-    }
-
-    if (!target_position)
-        return;
-
-    QPointF current = coord_map.toScreenCoords (unit.position);
-    QPointF target = coord_map.toScreenCoords (*target_position);
-
-    const GLfloat vertices[] = {
-        GLfloat (current.x ()),
-        GLfloat (current.y ()),
-        GLfloat (target.x ()),
-        GLfloat (target.y ()),
-    };
-
-    static const GLfloat attack_colors[] = {
-        1,
-        0,
-        0,
-        1,
-        1,
-        0,
-        0,
-        1,
-    };
-
-    static const GLfloat move_colors[] = {
-        0,
-        1,
-        0,
-        1,
-        0,
-        1,
-        0,
-        1,
-    };
-
-    colored_renderer->draw (*this, GL_LINES, 2, vertices, std::holds_alternative<AttackAction> (unit.action) ? attack_colors : move_colors, ortho_matrix);
 }
 void RoomWidget::groupEvent (quint64 group_num)
 {

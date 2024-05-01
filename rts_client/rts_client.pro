@@ -40,6 +40,7 @@ SOURCES += \
     groupoverlayrenderer.cpp \
     selectionpanelrenderer.cpp \
     hudrenderer.cpp \
+    scenerenderer.cpp \
     coordmap.cpp
 
 HEADERS += \
@@ -71,6 +72,7 @@ HEADERS += \
     groupoverlayrenderer.h \
     selectionpanelrenderer.h \
     hudrenderer.h \
+    scenerenderer.h \
     coordmap.h
 
 INCLUDEPATH += .proto_stubs

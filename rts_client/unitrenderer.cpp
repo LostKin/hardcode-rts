@@ -47,7 +47,7 @@ UnitRenderer::UnitRenderer (Unit::Type type, const QColor& team_color)
     contaminator_cooldown_shade = loadTexture2D (":/images/units/contaminator/cooldown-shade.png");
 }
 
-void UnitRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, TexturedRenderer& textured_renderer, const Unit& unit, quint64 clock_ns,
+void UnitRenderer::draw (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, const Unit& unit, quint64 clock_ns,
                          const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
     qreal sprite_scale;
@@ -223,9 +223,117 @@ void UnitRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer
 
         textured_renderer.draw (gl, GL_TRIANGLES, vertices.size () / 2, vertices.data (), texture_coords.data (), contaminator_cooldown_shade.get (), ortho_matrix);
     }
-
-    if (unit.selected)
+}
+void UnitRenderer::drawSelection (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, const Unit& unit,
+                                  const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
+{
+    if (unit.selected) {
+        qreal sprite_scale;
+        switch (unit.type) {
+        case Unit::Type::Seal:
+            sprite_scale = 0.8;
+            break;
+        case Unit::Type::Crusader:
+            sprite_scale = 1.0;
+            break;
+        case Unit::Type::Goon:
+            sprite_scale = 0.8;
+            break;
+        case Unit::Type::Beetle:
+            sprite_scale = 0.8;
+            break;
+        case Unit::Type::Contaminator:
+            sprite_scale = 0.8;
+            break;
+        default:
+            return;
+        }
+        qreal map_to_screen_factor = coord_map.arena_viewport.height () / coord_map.POINTS_PER_VIEWPORT_VERTICALLY;
+        qreal scale = coord_map.viewport_scale * sprite_scale * MatchState::unitDiameter (unit.type) * SQRT_2 * map_to_screen_factor;
+        QPointF center = coord_map.toScreenCoords (unit.position);
         colored_renderer.drawCircle (gl, center.x (), center.y (), scale * 0.5, {0, 255, 0}, ortho_matrix);
+    }
+}
+void UnitRenderer::drawHPBar (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, const Unit& unit,
+                              const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
+{
+    if (unit.hp < MatchState::unitMaxHP (unit.type)) {
+        QPointF center = coord_map.toScreenCoords (unit.position);
+        qreal hp_ratio = qreal (unit.hp) / MatchState::unitMaxHP (unit.type);
+        qreal hitbar_height = coord_map.viewport_scale * 0.16 * coord_map.arena_viewport.height () / coord_map.POINTS_PER_VIEWPORT_VERTICALLY;
+        qreal radius = coord_map.viewport_scale * MatchState::unitDiameter (unit.type) * 0.42 * coord_map.arena_viewport.height () / coord_map.POINTS_PER_VIEWPORT_VERTICALLY;
+
+        {
+            const GLfloat vertices[] = {
+                GLfloat (center.x () - radius),
+                GLfloat (center.y () - radius),
+                GLfloat (center.x () + radius * (-1.0 + hp_ratio * 2.0)),
+                GLfloat (center.y () - radius),
+                GLfloat (center.x () + radius * (-1.0 + hp_ratio * 2.0)),
+                GLfloat (center.y () - radius - hitbar_height),
+                GLfloat (center.x () - radius),
+                GLfloat (center.y () - radius - hitbar_height),
+            };
+
+            QColor color = getHPColor (hp_ratio);
+            color.setRgbF (color.redF (), color.greenF (), color.blueF (), color.alphaF ());
+
+            const GLfloat colors[] = {
+                GLfloat (color.redF ()),
+                GLfloat (color.greenF ()),
+                GLfloat (color.blueF ()),
+                GLfloat (color.alphaF ()),
+                GLfloat (color.redF ()),
+                GLfloat (color.greenF ()),
+                GLfloat (color.blueF ()),
+                GLfloat (color.alphaF ()),
+                GLfloat (color.redF ()),
+                GLfloat (color.greenF ()),
+                GLfloat (color.blueF ()),
+                GLfloat (color.alphaF ()),
+                GLfloat (color.redF ()),
+                GLfloat (color.greenF ()),
+                GLfloat (color.blueF ()),
+                GLfloat (color.alphaF ()),
+            };
+
+            colored_renderer.draw (gl, GL_TRIANGLE_FAN, 4, vertices, colors, ortho_matrix);
+        }
+
+        {
+            const GLfloat vertices[] = {
+                GLfloat (center.x () - radius),
+                GLfloat (center.y () - radius),
+                GLfloat (center.x () + radius),
+                GLfloat (center.y () - radius),
+                GLfloat (center.x () + radius),
+                GLfloat (center.y () - radius - hitbar_height),
+                GLfloat (center.x () - radius),
+                GLfloat (center.y () - radius - hitbar_height),
+            };
+
+            static const GLfloat colors[] = {
+                0,
+                0.8,
+                0.8,
+                1,
+                0,
+                0.8,
+                0.8,
+                1,
+                0,
+                0.8,
+                0.8,
+                1,
+                0,
+                0.8,
+                0.8,
+                1,
+            };
+
+            colored_renderer.draw (gl, GL_LINE_LOOP, 4, vertices, colors, ortho_matrix);
+        }
+    }
 }
 QSharedPointer<QOpenGLTexture> UnitRenderer::loadTexture2D (const QString& path)
 {
@@ -274,4 +382,8 @@ quint64 UnitRenderer::attackAnimationPeriodNS (Unit::Type type)
     default:
         return 0;
     }
+}
+QColor UnitRenderer::getHPColor (qreal hp_ratio)
+{
+    return QColor::fromRgbF (1.0 - hp_ratio, hp_ratio, 0.0);
 }
