@@ -685,7 +685,7 @@ void RoomWidget::matchMousePressEvent (QMouseEvent* event)
         default: {
         }
         }
-    } else if (cursorIsAboveMajorMap (cursor_position)) {
+    } else if (cursorIsAboveScene (cursor_position)) {
         switch (event->button ()) {
         case Qt::LeftButton: {
             if (ctrl_pressed) {
@@ -726,7 +726,7 @@ void RoomWidget::matchMouseReleaseEvent (QMouseEvent* event)
             default: {
             }
             }
-        } else if (cursorIsAboveMajorMap (cursor_position)) {
+        } else if (cursorIsAboveScene (cursor_position)) {
             switch (event->button ()) {
             case Qt::LeftButton: {
             } break;
@@ -926,7 +926,7 @@ QPointF RoomWidget::getMinimapPositionFromCursor (const QPoint& cursor_pos) cons
         area_pos.setY (area.top ());
     return area_pos;
 }
-bool RoomWidget::cursorIsAboveMajorMap (const QPoint& cursor_pos) const
+bool RoomWidget::cursorIsAboveScene (const QPoint& cursor_pos) const
 {
     int margin_x2 = hud.margin * 2;
     if (cursor_pos.x () < hud.minimap_panel_rect.width () + margin_x2)
@@ -961,11 +961,18 @@ void RoomWidget::groupEvent (quint64 group_num)
 }
 void RoomWidget::zoom (int delta)
 {
-    coord_map.viewport_scale_power += delta;
-    coord_map.viewport_scale_power = qBound (-10, coord_map.viewport_scale_power, 10);
-    QPointF offset_before = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
-    coord_map.viewport_scale = pow (1.125, coord_map.viewport_scale_power);
-    QPointF offset_after = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
+    QPointF area_pos;
+    if (getMinimapPositionUnderCursor (cursor_position, area_pos)) {
+        coord_map.viewport_scale_power += delta;
+        coord_map.viewport_scale_power = qBound (-10, coord_map.viewport_scale_power, 10);
+        coord_map.viewport_scale = pow (1.125, coord_map.viewport_scale_power);
+    } else if (cursorIsAboveScene (cursor_position)) {
+        coord_map.viewport_scale_power += delta;
+        coord_map.viewport_scale_power = qBound (-10, coord_map.viewport_scale_power, 10);
+        QPointF offset_before = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
+        coord_map.viewport_scale = pow (1.125, coord_map.viewport_scale_power);
+        QPointF offset_after = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
 
-    coord_map.viewport_center -= offset_after - offset_before;
+        coord_map.viewport_center -= offset_after - offset_before;
+    }
 }
