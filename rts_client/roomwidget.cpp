@@ -637,9 +637,8 @@ void RoomWidget::matchKeyReleaseEvent (QKeyEvent* event)
 void RoomWidget::matchMouseMoveEvent (QMouseEvent* /* event */)
 {
     if (minimap_viewport_selection_pressed) {
-        QPointF area_pos;
-        if (getMinimapPositionUnderCursor (cursor_position, area_pos))
-            centerViewportAt (area_pos);
+        QPointF area_pos = getMinimapPositionFromCursor (cursor_position);
+        centerViewportAt (area_pos);
     }
 }
 void RoomWidget::matchMousePressEvent (QMouseEvent* event)
@@ -912,6 +911,20 @@ bool RoomWidget::getMinimapPositionUnderCursor (const QPoint& cursor_pos, QPoint
         return true;
     }
     return false;
+}
+QPointF RoomWidget::getMinimapPositionFromCursor (const QPoint& cursor_pos) const
+{
+    const QRectF& area = match_state->areaRef ();
+    QPointF area_pos = area.topLeft () + (cursor_pos - hud.minimap_screen_area.topLeft ()) * QPointF (area.width () / hud.minimap_screen_area.width (), area.height () / hud.minimap_screen_area.height ());
+    if (area_pos.x () > area.right ())
+        area_pos.setX (area.right ());
+    if (area_pos.x () < area.left ())
+        area_pos.setX (area.left ());
+    if (area_pos.y () > area.bottom ())
+        area_pos.setY (area.bottom ());
+    if (area_pos.y () < area.top ())
+        area_pos.setY (area.top ());
+    return area_pos;
 }
 bool RoomWidget::cursorIsAboveMajorMap (const QPoint& cursor_pos) const
 {

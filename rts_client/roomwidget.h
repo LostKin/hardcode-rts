@@ -117,6 +117,7 @@ private:
     bool getActionButtonUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
     bool getSelectionPanelUnitUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
     bool getMinimapPositionUnderCursor (const QPoint& cursor_pos, QPointF& area_pos) const;
+    QPointF getMinimapPositionFromCursor (const QPoint& cursor_pos) const;
     bool cursorIsAboveMajorMap (const QPoint& cursor_pos) const;
     void centerViewportAt (const QPointF& point);
     void centerViewportAtSelected ();
