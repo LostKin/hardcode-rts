@@ -15,6 +15,7 @@
 #include "attack_description.h"
 #include "actions.h"
 #include "unit.h"
+#include "corpse.h"
 #include "effects.h"
 
 enum class SoundEvent {
@@ -39,12 +40,28 @@ class MatchState: public QObject
     Q_OBJECT
 
 public:
+    // TODO: Refine it into property set
+    static qreal unitRadius (Unit::Type type);
+    static qreal unitDiameter (Unit::Type type);
+    static qreal missileDiameter (Missile::Type type);
+    static qreal explosionDiameter (Explosion::Type type);
+    static qreal unitMaxVelocity (Unit::Type type);
+    static qreal unitMaxAngularVelocity (Unit::Type type);
+    static int unitHitBarCount (Unit::Type type);
+    static int unitMaxHP (Unit::Type type);
+    static const AttackDescription& unitPrimaryAttackDescription (Unit::Type type);
+    static quint64 animationPeriodNS (Unit::Type type);
+    static const AttackDescription& effectAttackDescription (AttackDescription::Type type);
+
+public:
     MatchState (bool is_client);
     ~MatchState ();
     quint64 clockNS () const;
     const QRectF& areaRef () const;
     const QHash<quint32, Unit>& unitsRef () const;
+    const QHash<quint32, Corpse>& corpsesRef () const;
     Unit& addUnit (quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
+    Corpse& addCorpse (quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction, quint64 decay_remaining_ticks);
     Missile& addMissile (quint32 id, Missile::Type type, Unit::Team team, const QPointF& position, qreal direction);
     const QHash<quint32, Missile>& missilesRef () const;
     const QHash<quint32, Explosion>& explosionsRef () const;
@@ -64,18 +81,7 @@ public:
     void stop ();
     void autoAction (Unit::Team attacker_team, const QPointF& point);
     void tick ();
-    static qreal unitRadius (Unit::Type type);
-    static qreal unitDiameter (Unit::Type type);
-    static qreal missileDiameter (Missile::Type type);
-    static qreal explosionDiameter (Explosion::Type type);
-    static qreal unitMaxVelocity (Unit::Type type);
-    static qreal unitMaxAngularVelocity (Unit::Type type);
-    static int unitHitBarCount (Unit::Type type);
-    static int unitMaxHP (Unit::Type type);
-    static const AttackDescription& unitPrimaryAttackDescription (Unit::Type type);
-    static quint64 animationPeriodNS (Unit::Type type);
-    void LoadState (const QVector<QPair<quint32, Unit>>& other, QVector<QPair<quint32, Missile>>& other_missiles);
-    static const AttackDescription& effectAttackDescription (AttackDescription::Type type);
+    void LoadState (const QVector<QPair<quint32, Unit>>& units, const QVector<QPair<quint32, Corpse>>& corpses, const QVector<QPair<quint32, Missile>>& missiles);
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
     void addSelectionToGroup (quint64 group);
@@ -98,6 +104,9 @@ private:
     };
 
 private:
+    void loadUnits (const QVector<QPair<quint32, Unit>>& units);
+    void loadCorpses (const QVector<QPair<quint32, Corpse>>& corpses);
+    void loadMissiles (const QVector<QPair<quint32, Missile>>& missiles);
     void clearSelection ();
     void rotateUnit (Unit& unit, qreal dt, qreal dest_orientation);
     bool checkUnitInsideSelection (const Unit& unit, const QPointF& point) const;
@@ -120,7 +129,8 @@ private:
     void applyAreaBoundaryCollision (Unit& unit, qreal dt);
     void applyUnitCollisions (qreal dt);
     void dealDamage (Unit& unit, qint64 damage);
-    void killUnits ();
+    void applyDeath ();
+    void applyDecay ();
     Unit* findUnitAt (Unit::Team team, const QPointF& point);
     std::optional<quint32> findClosestTarget (const Unit& unit);
     quint32 getRandomNumber ();
@@ -132,6 +142,7 @@ private:
     quint64 clock_ns = 0;
     QRectF area = {-64, -48, 128, 96};
     QHash<quint32, Unit> units;
+    QHash<quint32, Corpse> corpses;
     QHash<quint32, Missile> missiles;
     QHash<quint32, Explosion> explosions;
     RedTeamUserData red_team_user_data;

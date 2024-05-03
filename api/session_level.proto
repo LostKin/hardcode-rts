@@ -241,6 +241,11 @@ message Unit {
     uint32 cooldown = 10;
 }
 
+message Corpse {
+    Unit unit = 1;
+    uint32 decay_remaining_ticks = 2;
+}
+
 enum MissileType {
     MISSILE_ROCKET = 0;
     MISSILE_PESTILENCE = 1;
@@ -261,8 +266,9 @@ message Explosion {
 
 message MatchStateResponse {
     uint32 tick = 1;
-    repeated Unit units = 4;
-    repeated Missile missiles = 5;
+    repeated Unit units = 2;
+    repeated Corpse corpses = 3;
+    repeated Missile missiles = 4;
 }
 
 message Request {

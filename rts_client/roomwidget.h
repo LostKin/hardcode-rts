@@ -77,7 +77,7 @@ public slots:
     void readinessHandler ();
     void startMatchHandler ();
     void startCountDownHandler (Unit::Team team);
-    void loadMatchState (QVector<QPair<quint32, Unit>> units, QVector<QPair<quint32, Missile>> missiles);
+    void loadMatchState (const QVector<QPair<quint32, Unit>>& units, const QVector<QPair<quint32, Corpse>>& corpses, const QVector<QPair<quint32, Missile>>& missiles);
     // void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
     void unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);

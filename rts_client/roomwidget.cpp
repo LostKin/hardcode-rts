@@ -159,9 +159,9 @@ void RoomWidget::startMatch (Unit::Team team)
     last_frame.restart ();
     state = State::MatchStarted;
 }
-void RoomWidget::loadMatchState (QVector<QPair<quint32, Unit>> units, QVector<QPair<quint32, Missile>> missiles)
+void RoomWidget::loadMatchState (const QVector<QPair<quint32, Unit>>& units, const QVector<QPair<quint32, Corpse>>& corpses, const QVector<QPair<quint32, Missile>>& missiles)
 {
-    match_state->LoadState (units, missiles);
+    match_state->LoadState (units, corpses, missiles);
     return;
 }
 quint64 RoomWidget::moveAnimationPeriodNS (Unit::Type type)

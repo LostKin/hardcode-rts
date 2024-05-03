@@ -15,6 +15,12 @@ void UnitSetRenderer::draw (QOpenGLFunctions& gl, TexturedRenderer& textured_ren
     if (UnitTeamRenderer* unit_team_renderer = selectUnitTeamRenderer (unit))
         unit_team_renderer->draw (gl, textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
 }
+void UnitSetRenderer::drawCorpse (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, const Corpse& corpse,
+                                  const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
+{
+    if (UnitTeamRenderer* unit_team_renderer = selectUnitTeamRenderer (corpse.unit))
+        unit_team_renderer->drawCorpse (gl, textured_renderer, corpse, ortho_matrix, coord_map);
+}
 void UnitSetRenderer::drawSelection (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, const Unit& unit,
                                      const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {

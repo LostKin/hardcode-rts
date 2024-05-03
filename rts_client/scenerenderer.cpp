@@ -23,6 +23,7 @@ void SceneRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_rendere
                           const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
     drawBackground (gl, textured_renderer, match_state, ortho_matrix, coord_map);
+    drawCorpses (gl, textured_renderer, match_state, ortho_matrix, coord_map);
     drawUnits (gl, textured_renderer, match_state, ortho_matrix, coord_map);
     drawUnitSelection (gl, colored_renderer, match_state, ortho_matrix, coord_map);
     drawEffects (gl, colored_textured_renderer, textured_renderer, match_state, ortho_matrix, coord_map);
@@ -70,6 +71,14 @@ void SceneRenderer::drawBackground (QOpenGLFunctions& gl, TexturedRenderer& text
     };
 
     textured_renderer.draw (gl, GL_TRIANGLES, vertices, texture_coords, 6, indices, textures.ground.get (), ortho_matrix);
+}
+void SceneRenderer::drawCorpses (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer,
+                                 MatchState& match_state,
+                                 const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
+{
+    const QHash<quint32, Corpse>& corpses = match_state.corpsesRef ();
+    for (QHash<quint32, Corpse>::const_iterator it = corpses.constBegin (); it != corpses.constEnd (); ++it)
+        unit_set_renderer->drawCorpse (gl, textured_renderer, it.value (), ortho_matrix, coord_map);
 }
 void SceneRenderer::drawUnits (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer,
                                MatchState& match_state,

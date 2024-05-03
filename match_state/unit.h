@@ -24,8 +24,22 @@ public:
     };
 
 public:
-    Unit (Type type, quint64 phase_offset, Team team, const QPointF& position, qreal direction);
-    Unit (); // TODO: Remove after switch to emplace ()
+    Unit (Type type, quint64 phase_offset, Team team, const QPointF& position, qreal orientation)
+        : type (type)
+        , phase_offset (phase_offset)
+        , team (team)
+        , position (position)
+        , orientation (orientation)
+    {
+    }
+    Unit ()
+    {
+        type = Type::Seal;
+        phase_offset = 0;
+        team = Team::Red;
+        position = QPointF (0, 0);
+        orientation = 0;
+    } // TODO: Remove after switch to emplace ()
 
 public:
     Type type;
