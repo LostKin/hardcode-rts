@@ -2,12 +2,124 @@ syntax = "proto3";
 
 package RTS;
 
-message Something {
-    string name = 1;
-    bytes value = 2;
+message SessionToken {
+    uint64 value = 1;
 }
 
-message SomethingElse {
-    int32 field = 1;
-    bool another_field = 2;
+enum Team {
+    TEAM_UNSPECIFIED = 0;
+    TEAM_SPECTATOR = 1;
+    TEAM_RED = 2;
+    TEAM_BLUE = 3;
+}
+
+enum Role {
+    ROLE_UNSPECIFIED = 0;
+    ROLE_SPECTATOR = 1;
+    ROLE_PLAYER = 2;
+}
+
+enum UnitType {
+    UNIT_TYPE_UNSPECIFIED = 0;
+    UNIT_TYPE_CRUSADER = 1;
+    UNIT_TYPE_SEAL = 2;
+    UNIT_TYPE_GOON = 3;
+    UNIT_TYPE_BEETLE = 4;
+    UNIT_TYPE_CONTAMINATOR = 5;
+}
+
+message RoomInfo {
+    uint32 id = 1;
+    bytes name = 2;
+    uint32 client_count = 3;
+    uint32 player_count = 4;
+    uint32 ready_player_count = 5;
+    uint32 spectator_count = 6;
+}
+
+message TargetUnit {
+    uint32 id = 1;
+}
+
+message ActionTargetPosition {
+    Vector2D position = 1;
+}
+
+message AttackAction {
+    oneof target {
+        ActionTargetPosition position = 1;
+        TargetUnit unit = 2;
+    }
+}
+
+message MoveAction {
+    oneof target {
+        ActionTargetPosition position = 1;
+        TargetUnit unit = 2;
+    }
+}
+
+enum CastType {
+    CAST_TYPE_UNSPECIFIED = 0;
+    CAST_TYPE_PESTILENCE = 1;
+    CAST_TYPE_SPAWN_BEETLE = 2;
+}
+
+message CastAction {
+    ActionTargetPosition position = 1;
+    CastType type = 2;
+}
+
+message StopAction {
+    TargetUnit target = 1;
+}
+
+message UnitAction {
+    oneof action{
+        AttackAction attack = 1;
+        MoveAction move = 2;
+        CastAction cast = 3;
+        StopAction stop = 4;
+    }
+}
+
+message ClientId {
+    fixed32 id = 1; // Задаётся клиентом (Старший бит == 1)
+}
+
+message Vector2D {
+    double x = 1;
+    double y = 2;
+}
+
+message Unit {
+    ClientId client_id = 1;
+    uint32 id = 2;
+    UnitType type = 3;
+    Team team = 4;
+    Vector2D position = 5;
+    double orientation = 6;
+    uint32 health = 7;
+    UnitAction current_action = 8;
+    uint32 attack_remaining_ticks = 9;
+    uint32 cooldown = 10;
+}
+
+message Corpse {
+    Unit unit = 1;
+    uint32 decay_remaining_ticks = 2;
+}
+
+enum MissileType {
+    MISSILE_ROCKET = 0;
+    MISSILE_PESTILENCE = 1;
+}
+
+message Missile {
+    uint32 id = 1;
+    MissileType type = 2;
+    Team team = 3;
+    Vector2D position = 4;
+    Vector2D target_position = 5;
+    TargetUnit target_unit = 6;
 }

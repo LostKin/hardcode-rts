@@ -3,6 +3,7 @@
 #include "authorizationprogresswidget.h"
 #include "lobbywidget.h"
 #include "matchstate.h"
+#include "requests.pb.h"
 
 #include <QDebug>
 #include <QDateTime>
@@ -232,10 +233,10 @@ void Application::unitActionCallback (quint32 id, const std::variant<StopAction,
         cast->mutable_position ()->mutable_position ()->set_y (cast_action.target.y ());
         switch (cast_action.type) {
         case (CastAction::Type::Pestilence): {
-            cast->set_type (RTS::CastType::PESTILENCE);
+            cast->set_type (RTS::CastType::CAST_TYPE_PESTILENCE);
         } break;
         case (CastAction::Type::SpawnBeetle): {
-            cast->set_type (RTS::CastType::SPAWN_BEETLE);
+            cast->set_type (RTS::CastType::CAST_TYPE_SPAWN_BEETLE);
         } break;
         default: {
             return;
@@ -578,10 +579,10 @@ std::optional<std::pair<quint32, Unit>> Application::parseUnit (const RTS::Unit&
         CastAction cast (CastAction::Type::Unknown, QPointF (0, 0));
         cast.target = QPointF (r_unit.current_action ().cast ().position ().position ().x (), r_unit.current_action ().cast ().position ().position ().y ());
         switch (r_unit.current_action ().cast ().type ()) {
-        case RTS::CastType::PESTILENCE: {
+        case RTS::CastType::CAST_TYPE_PESTILENCE: {
             cast.type = CastAction::Type::Pestilence;
         } break;
-        case RTS::CastType::SPAWN_BEETLE: {
+        case RTS::CastType::CAST_TYPE_SPAWN_BEETLE: {
             cast.type = CastAction::Type::SpawnBeetle;
         } break;
         default: {

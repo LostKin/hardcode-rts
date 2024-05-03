@@ -1,0 +1,30 @@
+// TODO: Control messages (acknowledge, routing, switch IP, etc.)
+
+// Meta sequence
+// - Control bit (reserverd == 0)
+// - Tail bit
+// - Session id presence bit
+// - Request id presence bit/(reserved == 1)
+// - (Tail size)/(Fragment number) length encoding bit sequence
+// - (Tail size)/(Fragment number)
+
+// CTSR0xxx
+// CTSR10xx xxxxxxxx + 0x08
+// CTSR110x xxxxxxxx xxxxxxxx + 0x08 + 0x0400
+// CTSR1110 xxxxxxxx xxxxxxxx xxxxxxxx + 0x08 + 0x0400 + 0x020000
+// CTSR1111 xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx + 0x08 + 0x0400 + 0x020000 + 0x01000000
+
+// Optional session id
+// 0xxxxxxx
+// 10xxxxxx xxxxxxxx + 0x80
+// 110xxxxx xxxxxxxx xxxxxxxx + 0x80 + 0x4000
+// 1110xxxx xxxxxxxx xxxxxxxx xxxxxxxx + 0x80 + 0x4000 + 0x200000
+// 11110xxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx + 0x80 + 0x4000 + 0x200000 + 0x10000000
+// 111110xx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx + 0x80 + 0x4000 + 0x200000 + 0x10000000 + 0x0800000000
+// 1111110x xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx + 0x80 + 0x4000 + 0x200000 + 0x10000000 + 0x0800000000 + 0x040000000000
+// 11111110 xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx + 0x80 + 0x4000 + 0x200000 + 0x10000000 + 0x0800000000 + 0x040000000000 + 0x02000000000000
+// 11111111 xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx + 0x80 + 0x4000 + 0x200000 + 0x10000000 + 0x0800000000 + 0x040000000000 + 0x02000000000000 + 0x0100000000000000
+
+// Optional request id
+
+// Response id

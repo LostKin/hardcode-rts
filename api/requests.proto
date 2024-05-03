@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "entities.proto";
+
+package RTS;
+
+message AuthorizationRequest {
+    bytes login = 1;
+    bytes password = 2;
+}
+
+message QueryRoomListRequest {
+}
+
+message StopQueryRoomListRequest {
+}
+
+message JoinRoomRequest {
+    uint32 room_id = 1;
+}
+
+message CreateRoomRequest {
+    bytes name = 1;
+}
+
+message DeleteRoomRequest {
+    uint32 room_id = 1;
+}
+
+message SelectRoleRequest {
+    Role role = 1;
+}
+
+message ReadyRequest {
+}
+
+message UnitCreateRequest {
+    uint32 id = 1;
+    Vector2D position = 2;
+    UnitType unit_type = 3;
+}
+
+message UnitActionRequest {
+    uint32 unit_id = 1;
+    UnitAction action = 2;
+}
+
+message Request {
+    oneof message {
+        AuthorizationRequest authorization = 1;
+        QueryRoomListRequest query_room_list = 2;
+        StopQueryRoomListRequest stop_query_room_list = 3;
+        JoinRoomRequest join_room = 4;
+        CreateRoomRequest create_room = 5;
+        DeleteRoomRequest delete_room = 6;
+        SelectRoleRequest select_role = 7;
+        ReadyRequest ready = 8;
+        UnitCreateRequest unit_create = 9;
+        UnitActionRequest unit_action = 10;
+    }
+}

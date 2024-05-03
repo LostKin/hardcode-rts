@@ -135,10 +135,10 @@ bool Room::fillUnit (quint32 id, const Unit& unit, RTS::Unit& m_unit)
         RTS::CastType type;
         switch (std::get<CastAction> (unit.action).type) {
         case CastAction::Type::Pestilence:
-            type = RTS::CastType::PESTILENCE;
+            type = RTS::CastType::CAST_TYPE_PESTILENCE;
             break;
         case CastAction::Type::SpawnBeetle:
-            type = RTS::CastType::SPAWN_BEETLE;
+            type = RTS::CastType::CAST_TYPE_SPAWN_BEETLE;
             break;
         default:
             return false;
@@ -366,10 +366,10 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             CastAction::Type type;
             type = CastAction::Type::Unknown;
             switch (action.cast ().type ()) {
-            case (RTS::CastType::PESTILENCE): {
+            case (RTS::CastType::CAST_TYPE_PESTILENCE): {
                 type = CastAction::Type::Pestilence;
             } break;
-            case (RTS::CastType::SPAWN_BEETLE): {
+            case (RTS::CastType::CAST_TYPE_SPAWN_BEETLE): {
                 type = CastAction::Type::SpawnBeetle;
             } break;
             }

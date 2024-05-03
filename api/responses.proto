@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "error.proto";
+import "entities.proto";
+
+package RTS;
+
+message AuthorizationResponse {
+    oneof response {
+        Error error = 1;
+        SessionToken session_token = 2;
+    }
+}
+
+message RoomListResponse {
+    repeated RoomInfo room_info_list = 1;
+}
+
+message JoinRoomResponse {
+    oneof response {
+        Error error = 1;
+        google.protobuf.Empty success = 2;
+    }
+}
+
+message ErrorResponse {
+    Error error = 1;
+}
+
+message SessionClosedResponse {
+    Error error = 1;
+}
+
+message CreateRoomResponse {
+    oneof status {
+        uint32 room_id = 1;
+        Error error = 2;
+    }
+}
+
+message DeleteRoomResponse {
+    oneof status {
+        google.protobuf.Empty success = 1;
+        Error error = 2;
+    }
+}
+
+message SelectRoleResponse {
+    oneof status {
+        google.protobuf.Empty success = 1;
+        Error error = 2;
+    }
+}
+
+message MatchPreparedResponse {
+    Team team = 1;
+}
+
+message MatchStartResponse {
+}
+
+message ReadyResponse {
+    oneof status {
+        google.protobuf.Empty success = 1;
+        Error error = 2;
+    }
+}
+
+message UnitCreateResponse {
+    ClientId client_id = 1;
+    uint32 unit_id = 2;
+    Vector2D position = 3;
+    UnitType unit_type = 4;
+}
+
+message MatchStateResponse {
+    uint32 tick = 1;
+    repeated Unit units = 2;
+    repeated Corpse corpses = 3;
+    repeated Missile missiles = 4;
+}
+
+message Response {
+    oneof message {
+        ErrorResponse error = 1;
+        AuthorizationResponse authorization = 2;
+        SessionClosedResponse session_closed = 3;
+        RoomListResponse room_list = 4;
+        JoinRoomResponse join_room = 5;
+        CreateRoomResponse create_room = 6;
+        DeleteRoomResponse delete_room = 7;
+        SelectRoleResponse select_role = 8;
+        ReadyResponse ready = 9;
+        MatchPreparedResponse match_prepared = 10;
+        MatchStartResponse match_start = 11;
+        MatchStateResponse match_state = 12;
+    }
+}
