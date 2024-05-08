@@ -74,12 +74,35 @@ message StopAction {
     TargetUnit target = 1;
 }
 
-message UnitAction {
-    oneof action{
+message PerformingAttackAction {
+    oneof next_action {
         AttackAction attack = 1;
         MoveAction move = 2;
         CastAction cast = 3;
         StopAction stop = 4;
+    }
+    int64 remaining_ticks = 5;
+}
+
+message PerformingCastAction {
+    oneof next_action {
+        AttackAction attack = 1;
+        MoveAction move = 2;
+        CastAction cast = 3;
+        StopAction stop = 4;
+    }
+    CastType cast_type = 5;
+    int64 remaining_ticks = 6;
+}
+
+message UnitAction {
+    oneof action {
+        AttackAction attack = 1;
+        MoveAction move = 2;
+        CastAction cast = 3;
+        StopAction stop = 4;
+        PerformingAttackAction performing_attack = 5;
+        PerformingCastAction performing_cast = 6;
     }
 }
 
@@ -102,7 +125,8 @@ message Unit {
     uint32 health = 7;
     UnitAction current_action = 8;
     uint32 attack_remaining_ticks = 9;
-    uint32 cooldown = 10;
+    uint32 attack_cooldown_left_ticks = 10;
+    uint32 cast_cooldown_left_ticks = 11;
 }
 
 message Corpse {

@@ -32,14 +32,6 @@ public:
         , orientation (orientation)
     {
     }
-    Unit ()
-    {
-        type = Type::Seal;
-        phase_offset = 0;
-        team = Team::Red;
-        position = QPointF (0, 0);
-        orientation = 0;
-    } // TODO: Remove after switch to emplace ()
 
 public:
     Type type;
@@ -48,9 +40,9 @@ public:
     QPointF position;
     qreal orientation = 0.0;
     bool selected = false;
-    std::variant<StopAction, AttackAction, MoveAction, CastAction> action;
+    UnitActionVariant action;
     qint64 hp = 0;
-    qint64 attack_remaining_ticks = 0;
+    qint64 attack_cooldown_left_ticks = 0;
     qint64 cast_cooldown_left_ticks = 0;
     quint64 groups = 0;
 };

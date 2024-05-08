@@ -10,10 +10,6 @@ public:
         , decay_remaining_ticks (decay_remaining_ticks)
     {
     }
-    Corpse () // TODO: Remove after switch to emplace ()
-        : decay_remaining_ticks (DECAY_DURATION_TICKS)
-    {
-    }
 
 public:
     static const qint64 DECAY_DURATION_TICKS = 150;

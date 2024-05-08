@@ -54,6 +54,8 @@ private:
                            const QPoint& cursor_position, const std::optional<QPoint>& selection_start,
                            const QMatrix4x4& ortho_matrix);
     const QPointF* getUnitTargetPosition (const Unit& unit, MatchState& match_state);
+    const QPointF* getUnitTargetPosition (const UnitActionVariant& unit_action, MatchState& match_state);
+    const QPointF* getUnitTargetPosition (const IntentiveActionVariant& unit_action, MatchState& match_state);
     QSharedPointer<QOpenGLTexture> loadTexture2D (const QString& path);
 
 private:

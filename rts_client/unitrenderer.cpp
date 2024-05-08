@@ -262,14 +262,14 @@ void UnitRenderer::drawBody (QOpenGLFunctions& gl, TexturedRenderer& textured_re
 
     QOpenGLTexture* texture;
     if (alive) {
-        if (unit.attack_remaining_ticks) {
-            quint64 period = attackAnimationPeriodNS (unit.type);
-            quint64 phase = (clock_ns + unit.phase_offset) % period;
-            texture = (phase < period / 2) ? shooting1.get () : shooting2.get ();
-        } else if (std::holds_alternative<MoveAction> (unit.action) || std::holds_alternative<AttackAction> (unit.action)) {
+        if (std::holds_alternative<MoveAction> (unit.action) || std::holds_alternative<AttackAction> (unit.action)) {
             quint64 period = moveAnimationPeriodNS (unit.type);
             quint64 phase = (clock_ns + unit.phase_offset) % period;
             texture = (phase < period / 2) ? walking1.get () : walking2.get ();
+        } else if (std::holds_alternative<PerformingAttackAction> (unit.action)) {
+            quint64 period = attackAnimationPeriodNS (unit.type);
+            quint64 phase = (clock_ns + unit.phase_offset) % period;
+            texture = (phase < period / 2) ? shooting1.get () : shooting2.get ();
         } else {
             texture = standing.get ();
         }

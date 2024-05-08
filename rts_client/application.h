@@ -38,6 +38,13 @@ private:
     std::optional<std::pair<quint32, Unit>> parseUnit (const RTS::Unit& r_unit, QString& error_message);
     std::optional<std::pair<quint32, Corpse>> parseCorpse (const RTS::Corpse& r_corpse, QString& error_message);
     std::optional<std::pair<quint32, Missile>> parseMissile (const RTS::Missile& r_missile, QString& error_message);
+    bool parseUnitAction (const RTS::UnitAction& m_current_action, UnitActionVariant& unit_action, QString& error_message);
+    StopAction parseUnitActionStop (const RTS::StopAction& m_current_action);
+    MoveAction parseUnitActionMove (const RTS::MoveAction& m_move_action);
+    AttackAction parseUnitActionAttack (const RTS::AttackAction& m_attack_action);
+    std::optional<CastAction> parseUnitActionCast (const RTS::CastAction& m_cast_action, QString& error_message);
+    std::optional<PerformingAttackAction> parseUnitActionPerformingAttack (const RTS::PerformingAttackAction& m_peforming_attack_action, QString& error_message);
+    std::optional<PerformingCastAction> parseUnitActionPerformingCast (const RTS::PerformingCastAction& m_peforming_cast_action, QString& error_message);
     QVector<AuthorizationCredentials> loadCredentials ();
 
 private slots:
@@ -53,9 +60,7 @@ private slots:
     void matchStartCallback ();
     void createUnitCallback (Unit::Team team, Unit::Type type, QPointF positon);
     void savedCredentials (const QVector<AuthorizationCredentials>& credentials);
-    // void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
-
-    void unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
+    void unitActionCallback (quint32 id, const UnitActionVariant& action);
 
 private:
     void selectRolePlayer ();

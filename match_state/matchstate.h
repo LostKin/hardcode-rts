@@ -73,7 +73,7 @@ public:
     void select (quint32 unit_id, bool add);
     void trimSelection (Unit::Type type, bool remove);
     void deselect (quint32 unit_id);
-    void setAction (quint32 unit_id, const std::variant<StopAction, AttackAction, MoveAction, CastAction>& action);
+    void setUnitAction (quint32 unit_id, const UnitActionVariant& action);
     std::optional<QPointF> selectionCenter () const;
     void attackEnemy (Unit::Team attacker_team, const QPointF& point);
     void cast (CastAction::Type cast_type, Unit::Team attacker_team, const QPointF& point);
@@ -92,8 +92,7 @@ public:
 
 signals:
     void soundEventEmitted (SoundEvent event);
-    // void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
-    void unitActionRequested (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
+    void unitActionRequested (quint32 id, const UnitActionVariant& action);
     void unitCreateRequested (Unit::Team team, Unit::Type type, const QPointF& position);
 
 private:
@@ -123,8 +122,8 @@ private:
     void applyMissilesMovement (qreal dt);
     void applyExplosionEffects (qreal dt);
     void applyMovement (Unit& unit, const QPointF& target_position, qreal dt, bool clear_action_on_completion);
-    void applyAttack (Unit& unit, quint32 target_unit_id, Unit& target_unit, qreal dt);
-    void applyCast (Unit& unit, CastAction::Type cast_type, const QPointF& target, qreal dt);
+    bool applyAttack (Unit& unit, quint32 target_unit_id, Unit& target_unit, qreal dt);
+    bool applyCast (Unit& unit, CastAction::Type cast_type, const QPointF& target, qreal dt);
     void applyAreaBoundaryCollisions (qreal dt);
     void applyAreaBoundaryCollision (Unit& unit, qreal dt);
     void applyUnitCollisions (qreal dt);
@@ -139,6 +138,7 @@ private:
 
 private:
     const bool is_client;
+    quint32 tick_no = 0;
     quint64 clock_ns = 0;
     QRectF area = {-64, -48, 128, 96};
     QHash<quint32, Unit> units;
@@ -149,5 +149,4 @@ private:
     BlueTeamUserData blue_team_user_data;
     quint32 next_id = 0;
     std::mt19937 random_generator;
-    quint32 tick_no = 0;
 };

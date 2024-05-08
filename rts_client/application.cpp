@@ -199,7 +199,7 @@ void Application::savedCredentials (const QVector<AuthorizationCredentials>& cre
         settings.endArray ();
     }
 }
-void Application::unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action)
+void Application::unitActionCallback (quint32 id, const UnitActionVariant& action)
 {
     if (!session_id.has_value ())
         return;
@@ -492,22 +492,28 @@ bool Application::parseMatchState (const RTS::MatchStateResponse& response,
 {
     for (int i = 0; i < response.units_size (); i++) {
         std::optional<std::pair<quint32, Unit>> id_unit = parseUnit (response.units (i), error_message);
+        if (id_unit == std::nullopt)
+            return false;
         units.emplace_back (id_unit->first, id_unit->second);
     }
     for (int i = 0; i < response.corpses_size (); i++) {
         std::optional<std::pair<quint32, Corpse>> id_corpse = parseCorpse (response.corpses (i), error_message);
+        if (id_corpse == std::nullopt)
+            return false;
         corpses.emplace_back (id_corpse->first, id_corpse->second);
     }
     for (int i = 0; i < response.missiles_size (); i++) {
         std::optional<std::pair<quint32, Missile>> id_missile = parseMissile (response.missiles (i), error_message);
+        if (id_missile == std::nullopt)
+            return false;
         missiles.emplace_back (id_missile->first, id_missile->second);
     }
     return true;
 }
-std::optional<std::pair<quint32, Unit>> Application::parseUnit (const RTS::Unit& r_unit, QString& error_message)
+std::optional<std::pair<quint32, Unit>> Application::parseUnit (const RTS::Unit& m_unit, QString& error_message)
 {
     Unit::Team team;
-    switch (r_unit.team ()) {
+    switch (m_unit.team ()) {
     case RTS::Team::TEAM_RED:
         team = Unit::Team::Red;
         break;
@@ -520,7 +526,7 @@ std::optional<std::pair<quint32, Unit>> Application::parseUnit (const RTS::Unit&
     }
 
     Unit::Type type;
-    switch (r_unit.type ()) {
+    switch (m_unit.type ()) {
     case RTS::UnitType::UNIT_TYPE_CRUSADER:
         type = Unit::Type::Crusader;
         break;
@@ -541,78 +547,34 @@ std::optional<std::pair<quint32, Unit>> Application::parseUnit (const RTS::Unit&
         return std::nullopt;
     }
 
-    if (!r_unit.has_position ()) {
+    if (!m_unit.has_position ()) {
         error_message = "Invalid 'MatchState' from server: missing position";
         return std::nullopt;
     }
 
-    quint32 id = r_unit.has_client_id () ? r_unit.client_id ().id () : r_unit.id ();
-    Unit unit = Unit (type, 0, team, QPointF (r_unit.position ().x (), r_unit.position ().y ()), r_unit.orientation ());
-    unit.hp = r_unit.health ();
-    switch (r_unit.current_action ().action_case ()) {
-    case RTS::UnitAction::kStop: {
-        StopAction stop;
-        if (r_unit.current_action ().stop ().has_target ()) {
-            stop.current_target = r_unit.current_action ().stop ().target ().id ();
-        }
-        unit.action = stop;
-    } break;
-    case RTS::UnitAction::kMove: {
-        MoveAction move (QPointF (0, 0));
-        if (r_unit.current_action ().move ().target_case () == RTS::MoveAction::kPosition) {
-            move.target = QPointF (r_unit.current_action ().move ().position ().position ().x (), r_unit.current_action ().move ().position ().position ().y ());
-        } else {
-            move.target = (quint32) r_unit.current_action ().move ().unit ().id ();
-        }
-        unit.action = move;
-    } break;
-    case RTS::UnitAction::kAttack: {
-        AttackAction attack (QPointF (0, 0));
-        if (r_unit.current_action ().attack ().target_case () == RTS::AttackAction::kPosition) {
-            attack.target = QPointF (r_unit.current_action ().attack ().position ().position ().x (), r_unit.current_action ().attack ().position ().position ().y ());
-        } else {
-            attack.target = (quint32) r_unit.current_action ().attack ().unit ().id ();
-        }
-        unit.action = attack;
-    } break;
-    case RTS::UnitAction::kCast: {
-        CastAction cast (CastAction::Type::Unknown, QPointF (0, 0));
-        cast.target = QPointF (r_unit.current_action ().cast ().position ().position ().x (), r_unit.current_action ().cast ().position ().position ().y ());
-        switch (r_unit.current_action ().cast ().type ()) {
-        case RTS::CastType::CAST_TYPE_PESTILENCE: {
-            cast.type = CastAction::Type::Pestilence;
-        } break;
-        case RTS::CastType::CAST_TYPE_SPAWN_BEETLE: {
-            cast.type = CastAction::Type::SpawnBeetle;
-        } break;
-        default: {
-        } return std::nullopt;
-        }
-        unit.action = cast;
-    } break;
-    default: {
-    } return std::nullopt;
-    }
-    unit.attack_remaining_ticks = r_unit.attack_remaining_ticks ();
-    unit.cast_cooldown_left_ticks = r_unit.cooldown ();
+    quint32 id = m_unit.has_client_id () ? m_unit.client_id ().id () : m_unit.id ();
+    Unit unit = Unit (type, 0, team, QPointF (m_unit.position ().x (), m_unit.position ().y ()), m_unit.orientation ());
+    unit.hp = m_unit.health ();
+    if (!parseUnitAction (m_unit.current_action (), unit.action, error_message))
+        return std::nullopt;
+    unit.attack_cooldown_left_ticks = m_unit.attack_cooldown_left_ticks ();
+    unit.cast_cooldown_left_ticks = m_unit.cast_cooldown_left_ticks ();
     return std::pair<quint32, Unit> (id, unit);
 }
-std::optional<std::pair<quint32, Corpse>> Application::parseCorpse (const RTS::Corpse& r_corpse, QString& error_message)
+std::optional<std::pair<quint32, Corpse>> Application::parseCorpse (const RTS::Corpse& m_corpse, QString& error_message)
 {
-    if (!r_corpse.has_unit ())
+    if (!m_corpse.has_unit ())
         return std::nullopt;
-    std::optional<std::pair<quint32, Unit>> parsed_unit = parseUnit (r_corpse.unit (), error_message);
+    std::optional<std::pair<quint32, Unit>> parsed_unit = parseUnit (m_corpse.unit (), error_message);
     if (!parsed_unit.has_value ())
         return std::nullopt;
-    Corpse corpse;
-    corpse.unit = parsed_unit->second;
-    corpse.decay_remaining_ticks = r_corpse.decay_remaining_ticks ();
+    Corpse corpse (parsed_unit->second, m_corpse.decay_remaining_ticks ());
     return std::pair<quint32, Corpse> (parsed_unit->first, corpse);
 }
-std::optional<std::pair<quint32, Missile>> Application::parseMissile (const RTS::Missile& r_missile, QString& error_message)
+std::optional<std::pair<quint32, Missile>> Application::parseMissile (const RTS::Missile& m_missile, QString& error_message)
 {
     Unit::Team team;
-    switch (r_missile.team ()) {
+    switch (m_missile.team ()) {
     case RTS::Team::TEAM_RED:
         team = Unit::Team::Red;
         break;
@@ -625,7 +587,7 @@ std::optional<std::pair<quint32, Missile>> Application::parseMissile (const RTS:
     }
 
     Missile::Type type;
-    switch (r_missile.type ()) {
+    switch (m_missile.type ()) {
     case RTS::MissileType::MISSILE_ROCKET:
         type = Missile::Type::Rocket;
         break;
@@ -637,20 +599,160 @@ std::optional<std::pair<quint32, Missile>> Application::parseMissile (const RTS:
         return std::nullopt;
     }
 
-    if (!r_missile.has_position ()) {
+    if (!m_missile.has_position ()) {
         error_message = "Invalid 'MatchState' from server: missing missile position";
         return std::nullopt;
     }
 
-    quint32 id = r_missile.id ();
-    Missile missile (type, team, QPointF (r_missile.position ().x (), r_missile.position ().y ()), 0, QPointF (r_missile.target_position ().x (), r_missile.target_position ().y ()));
+    quint32 id = m_missile.id ();
+    Missile missile (type, team, QPointF (m_missile.position ().x (), m_missile.position ().y ()), 0, QPointF (m_missile.target_position ().x (), m_missile.target_position ().y ()));
 
-    if (r_missile.has_target_unit ())
-        missile.target_unit = r_missile.target_unit ().id ();
+    if (m_missile.has_target_unit ())
+        missile.target_unit = m_missile.target_unit ().id ();
     else
         missile.target_unit.reset ();
 
     return std::pair<quint32, Missile> (id, missile);
+}
+bool Application::parseUnitAction (const RTS::UnitAction& m_current_action, UnitActionVariant& unit_action, QString& error_message)
+{
+    switch (m_current_action.action_case ()) {
+    case RTS::UnitAction::kStop: {
+        unit_action = parseUnitActionStop (m_current_action.stop ());
+    } break;
+    case RTS::UnitAction::kMove: {
+        unit_action = parseUnitActionMove (m_current_action.move ());
+    } break;
+    case RTS::UnitAction::kAttack: {
+        unit_action = parseUnitActionAttack (m_current_action.attack ());
+    } break;
+    case RTS::UnitAction::kCast: {
+        std::optional<CastAction> cast = parseUnitActionCast (m_current_action.cast (), error_message);
+        if (cast == std::nullopt)
+            return false;
+        unit_action = *cast;
+    } break;
+    case RTS::UnitAction::kPerformingAttack: {
+        std::optional<PerformingAttackAction> performing_attack = parseUnitActionPerformingAttack (m_current_action.performing_attack (), error_message);
+        if (performing_attack == std::nullopt)
+            return false;
+        unit_action = *performing_attack;
+    } break;
+    case RTS::UnitAction::kPerformingCast: {
+        std::optional<PerformingCastAction> performing_cast = parseUnitActionPerformingCast (m_current_action.performing_cast (), error_message);
+        if (performing_cast == std::nullopt)
+            return false;
+        unit_action = *performing_cast;
+    } break;
+    default: {
+        error_message = "Invalid unit action type from server";
+    } return false;
+    }
+    return true;
+}
+StopAction Application::parseUnitActionStop (const RTS::StopAction& m_stop_action)
+{
+    StopAction stop;
+    if (m_stop_action.has_target ())
+        stop.current_target = m_stop_action.target ().id ();
+    return stop;
+}
+MoveAction Application::parseUnitActionMove (const RTS::MoveAction& m_move_action)
+{
+    MoveAction move (QPointF (0, 0));
+    if (m_move_action.target_case () == RTS::MoveAction::kPosition)
+        move.target = QPointF (m_move_action.position ().position ().x (), m_move_action.position ().position ().y ());
+    else
+        move.target = (quint32) m_move_action.unit ().id ();
+    return move;
+}
+AttackAction Application::parseUnitActionAttack (const RTS::AttackAction& m_attack_action)
+{
+    AttackAction attack (QPointF (0, 0));
+    if (m_attack_action.target_case () == RTS::AttackAction::kPosition)
+        attack.target = QPointF (m_attack_action.position ().position ().x (), m_attack_action.position ().position ().y ());
+    else
+        attack.target = (quint32) m_attack_action.unit ().id ();
+    return attack;
+}
+std::optional<CastAction> Application::parseUnitActionCast (const RTS::CastAction& m_cast_action, QString& error_message)
+{
+    CastAction cast (CastAction::Type::Unknown, QPointF (0, 0));
+    cast.target = QPointF (m_cast_action.position ().position ().x (), m_cast_action.position ().position ().y ());
+    switch (m_cast_action.type ()) {
+    case RTS::CastType::CAST_TYPE_PESTILENCE:
+        cast.type = CastAction::Type::Pestilence;
+        break;
+    case RTS::CastType::CAST_TYPE_SPAWN_BEETLE:
+        cast.type = CastAction::Type::SpawnBeetle;
+        break;
+    default:
+        error_message = "Invalid unit action cast type from server";
+        return std::nullopt;
+    }
+    return cast;
+}
+std::optional<PerformingAttackAction> Application::parseUnitActionPerformingAttack (const RTS::PerformingAttackAction& m_peforming_attack_action, QString& error_message)
+{
+    qint64 remaining_ticks = m_peforming_attack_action.remaining_ticks ();
+    switch (m_peforming_attack_action.next_action_case ()) {
+    case RTS::UnitAction::kStop: {
+        return PerformingAttackAction (parseUnitActionStop (m_peforming_attack_action.stop ()), remaining_ticks);
+    } break;
+    case RTS::UnitAction::kMove: {
+        return PerformingAttackAction (parseUnitActionMove (m_peforming_attack_action.move ()), remaining_ticks);
+    } break;
+    case RTS::UnitAction::kAttack: {
+        return PerformingAttackAction (parseUnitActionAttack (m_peforming_attack_action.attack ()), remaining_ticks);
+    } break;
+    case RTS::UnitAction::kCast: {
+        std::optional<CastAction> cast = parseUnitActionCast (m_peforming_attack_action.cast (), error_message);
+        if (cast == std::nullopt)
+            return std::nullopt;
+        return PerformingAttackAction (*cast, remaining_ticks);
+    } break;
+    default: {
+        error_message = "Invalid unit next action type from server";
+        return std::nullopt;
+    }
+    }
+}
+std::optional<PerformingCastAction> Application::parseUnitActionPerformingCast (const RTS::PerformingCastAction& m_peforming_cast_action, QString& error_message)
+{
+    qint64 remaining_ticks = m_peforming_cast_action.remaining_ticks ();
+    CastAction::Type cast_type;
+    switch (m_peforming_cast_action.cast_type ()) {
+    case RTS::CastType::CAST_TYPE_PESTILENCE:
+        cast_type = CastAction::Type::Pestilence;
+        break;
+    case RTS::CastType::CAST_TYPE_SPAWN_BEETLE:
+        cast_type = CastAction::Type::SpawnBeetle;
+        break;
+    default:
+        error_message = "Invalid unit next action cast type from server";
+        return std::nullopt;
+    }
+    switch (m_peforming_cast_action.next_action_case ()) {
+    case RTS::UnitAction::kStop: {
+        return PerformingCastAction (cast_type, parseUnitActionStop (m_peforming_cast_action.stop ()), remaining_ticks);
+    } break;
+    case RTS::UnitAction::kMove: {
+        return PerformingCastAction (cast_type, parseUnitActionMove (m_peforming_cast_action.move ()), remaining_ticks);
+    } break;
+    case RTS::UnitAction::kAttack: {
+        return PerformingCastAction (cast_type, parseUnitActionAttack (m_peforming_cast_action.attack ()), remaining_ticks);
+    } break;
+    case RTS::UnitAction::kCast: {
+        std::optional<CastAction> cast = parseUnitActionCast (m_peforming_cast_action.cast (), error_message);
+        if (cast == std::nullopt)
+            return std::nullopt;
+        return PerformingCastAction (cast_type, *cast, remaining_ticks);
+    } break;
+    default: {
+        error_message = "Invalid unit next action type from server 2";
+        return std::nullopt;
+    }
+    }
 }
 QVector<AuthorizationCredentials> Application::loadCredentials ()
 {

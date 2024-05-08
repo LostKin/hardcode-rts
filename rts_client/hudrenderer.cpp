@@ -325,12 +325,23 @@ void HUDRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
     const QHash<quint32, Unit>& units = match_state.unitsRef ();
     for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
         if (it->selected) {
-            if (std::holds_alternative<AttackAction> (it->action)) {
+            if (std::holds_alternative<AttackAction> (it->action) || std::holds_alternative<PerformingAttackAction> (it->action)) {
                 active_actions |= 1 << quint64 (ActionButtonId::Attack);
             } else if (std::holds_alternative<MoveAction> (it->action)) {
                 active_actions |= 1 << quint64 (ActionButtonId::Move);
             } else if (std::holds_alternative<CastAction> (it->action)) {
                 switch (std::get<CastAction> (it->action).type) {
+                case CastAction::Type::Pestilence:
+                    active_actions |= 1 << quint64 (ActionButtonId::Pestilence);
+                    break;
+                case CastAction::Type::SpawnBeetle:
+                    active_actions |= 1 << quint64 (ActionButtonId::Spawn);
+                    break;
+                default:
+                    break;
+                }
+            } else if (std::holds_alternative<PerformingCastAction> (it->action)) {
+                switch (std::get<PerformingCastAction> (it->action).cast_type) {
                 case CastAction::Type::Pestilence:
                     active_actions |= 1 << quint64 (ActionButtonId::Pestilence);
                     break;

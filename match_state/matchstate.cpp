@@ -112,7 +112,7 @@ quint32 MatchState::getRandomNumber ()
 }
 QHash<quint32, Unit>::iterator MatchState::createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction)
 {
-    quint32 id = getRandomNumber ();
+    quint32 id = getRandomNumber (); // TODO: Fix it
 
     QHash<quint32, Unit>::iterator unit = units.insert (next_id++, {type, id, team, position, direction});
     unit->hp = unitMaxHP (unit->type);
@@ -154,12 +154,42 @@ void MatchState::trySelect (Unit::Team team, const QPointF& point, bool add)
         }
     }
 }
-void MatchState::setAction (quint32 unit_id, const std::variant<StopAction, AttackAction, MoveAction, CastAction>& action)
+void MatchState::setUnitAction (quint32 unit_id, const UnitActionVariant& action)
 {
-    QHash<quint32, Unit>::iterator iter = units.find (unit_id);
-    if (iter == units.end ())
+    QHash<quint32, Unit>::iterator it = units.find (unit_id);
+    if (it == units.end ())
         return;
-    iter->action = action;
+    Unit& unit = *it;
+    IntentiveActionVariant* next_action;
+    if (std::holds_alternative<PerformingAttackAction> (unit.action))
+        next_action = &std::get<PerformingAttackAction> (unit.action).next_action;
+    else if (std::holds_alternative<PerformingCastAction> (unit.action))
+        next_action = &std::get<PerformingCastAction> (unit.action).next_action;
+    else
+        next_action = nullptr;
+    if (next_action) {
+        if (std::holds_alternative<StopAction> (action))
+            *next_action = std::get<StopAction> (action);
+        else if (std::holds_alternative<MoveAction> (action))
+            *next_action = std::get<MoveAction> (action);
+        else if (std::holds_alternative<AttackAction> (action))
+            *next_action = std::get<AttackAction> (action);
+        else if (std::holds_alternative<CastAction> (action))
+            *next_action = std::get<CastAction> (action);
+    } else {
+        if (std::holds_alternative<StopAction> (action))
+            unit.action = std::get<StopAction> (action);
+        else if (std::holds_alternative<MoveAction> (action))
+            unit.action = std::get<MoveAction> (action);
+        else if (std::holds_alternative<AttackAction> (action))
+            unit.action = std::get<AttackAction> (action);
+        else if (std::holds_alternative<CastAction> (action))
+            unit.action = std::get<CastAction> (action);
+        else if (std::holds_alternative<PerformingAttackAction> (action))
+            unit.action = std::get<PerformingAttackAction> (action);
+        else if (std::holds_alternative<PerformingCastAction> (action))
+            unit.action = std::get<PerformingCastAction> (action);
+    }
 }
 void MatchState::select (quint32 unit_id, bool add)
 {
@@ -396,56 +426,56 @@ void MatchState::tick ()
 void MatchState::loadUnits (const QVector<QPair<quint32, Unit>>& new_units)
 {
     QSet<quint32> to_keep;
-    for (quint32 i = 0; i < new_units.size (); i++) {
-        to_keep.insert (new_units.at (i).first);
-    }
-    auto it = units.begin ();
-    while (it != units.end ()) {
+    for (const QPair<quint32, Unit>& new_unit_entry: new_units)
+        to_keep.insert (new_unit_entry.first);
+    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end ();) {
         if (to_keep.find (it.key ()) == to_keep.end ())
             it = units.erase (it);
         else
             ++it;
     }
-    for (quint32 i = 0; i < new_units.size (); i++) {
-        if (unitsRef ().find (new_units.at (i).first) == unitsRef ().end ()) {
-            Unit& unit = addUnit (new_units.at (i).first, new_units.at (i).second.type, new_units.at (i).second.team, new_units.at (i).second.position, new_units.at (i).second.orientation);
-            unit.action = new_units.at (i).second.action;
+    for (const QPair<quint32, Unit>& new_unit_entry: new_units) {
+        quint32 new_unit_id = new_unit_entry.first;
+        const Unit& new_unit = new_unit_entry.second;
+        QHash<quint32, Unit>::iterator to_change = units.find (new_unit_id);
+        if (to_change != units.end ()) {
+            to_change->position = new_unit.position;
+            to_change->orientation = new_unit.orientation;
+            to_change->hp = new_unit.hp;
+            to_change->action = new_unit.action;
+            to_change->attack_cooldown_left_ticks = new_unit.attack_cooldown_left_ticks;
+            to_change->cast_cooldown_left_ticks = new_unit.cast_cooldown_left_ticks;
         } else {
-            QHash<quint32, Unit>::iterator to_change = units.find (new_units.at (i).first);
-            to_change.value ().position = new_units.at (i).second.position;
-            to_change.value ().orientation = new_units.at (i).second.orientation;
-            to_change.value ().hp = new_units.at (i).second.hp;
-            to_change.value ().action = new_units.at (i).second.action;
-            to_change.value ().attack_remaining_ticks = new_units.at (i).second.attack_remaining_ticks;
-            to_change.value ().cast_cooldown_left_ticks = new_units.at (i).second.cast_cooldown_left_ticks;
+            Unit& unit = addUnit (new_unit_id, new_unit.type, new_unit.team, new_unit.position, new_unit.orientation);
+            unit.action = new_unit.action;
         }
     }
 }
 void MatchState::loadCorpses (const QVector<QPair<quint32, Corpse>>& new_corpses)
 {
     QSet<quint32> to_keep;
-    for (quint32 i = 0; i < new_corpses.size (); i++) {
-        to_keep.insert (new_corpses.at (i).first);
-    }
-    auto it = corpses.begin ();
-    while (it != corpses.end ()) {
+    for (const QPair<quint32, Corpse>& new_corpse_entry: new_corpses)
+        to_keep.insert (new_corpse_entry.first);
+    for (QHash<quint32, Corpse>::iterator it = corpses.begin (); it != corpses.end ();) {
         if (to_keep.find (it.key ()) == to_keep.end ())
             it = corpses.erase (it);
         else
             ++it;
     }
-    for (quint32 i = 0; i < new_corpses.size (); i++) {
-        if (corpsesRef ().find (new_corpses.at (i).first) == corpsesRef ().end ()) {
-            Corpse& corpse = addCorpse (new_corpses.at (i).first, new_corpses.at (i).second.unit.type, new_corpses.at (i).second.unit.team, new_corpses.at (i).second.unit.position, new_corpses.at (i).second.unit.orientation, new_corpses.at (i).second.decay_remaining_ticks);
-            corpse.unit.action = new_corpses.at (i).second.unit.action;
+    for (const QPair<quint32, Corpse>& new_corpse_entry: new_corpses) {
+        quint32 new_corpse_id = new_corpse_entry.first;
+        const Corpse& new_corpse = new_corpse_entry.second;
+        QHash<quint32, Corpse>::iterator to_change = corpses.find (new_corpse_id);
+        if (to_change != corpses.end ()) {
+            to_change->unit.position = new_corpse.unit.position;
+            to_change->unit.orientation = new_corpse.unit.orientation;
+            to_change->unit.hp = new_corpse.unit.hp;
+            to_change->unit.action = new_corpse.unit.action;
+            to_change->unit.attack_cooldown_left_ticks = new_corpse.unit.attack_cooldown_left_ticks;
+            to_change->unit.cast_cooldown_left_ticks = new_corpse.unit.cast_cooldown_left_ticks;
         } else {
-            QHash<quint32, Corpse>::iterator to_change = corpses.find (new_corpses.at (i).first);
-            to_change->unit.position = new_corpses.at (i).second.unit.position;
-            to_change->unit.orientation = new_corpses.at (i).second.unit.orientation;
-            to_change->unit.hp = new_corpses.at (i).second.unit.hp;
-            to_change->unit.action = new_corpses.at (i).second.unit.action;
-            to_change->unit.attack_remaining_ticks = new_corpses.at (i).second.unit.attack_remaining_ticks;
-            to_change->unit.cast_cooldown_left_ticks = new_corpses.at (i).second.unit.cast_cooldown_left_ticks;
+            Corpse& corpse = addCorpse (new_corpse_id, new_corpse.unit.type, new_corpse.unit.team, new_corpse.unit.position, new_corpse.unit.orientation, new_corpse.decay_remaining_ticks);
+            corpse.unit.action = new_corpse.unit.action;
         }
     }
 }
@@ -624,6 +654,7 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         ret.trigger_range = 7.0;
         ret.damage = 10;
         ret.duration_ticks = 20;
+        ret.cooldown_ticks = 30;
         ret;
     });
     static const AttackDescription crusader = ({
@@ -633,6 +664,7 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         ret.trigger_range = 4.0;
         ret.damage = 16;
         ret.duration_ticks = 40;
+        ret.cooldown_ticks = 30;
         ret;
     });
     static const AttackDescription goon = ({
@@ -643,6 +675,7 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         ret.damage = 12;
         ret.missile_velocity = 16.0;
         ret.duration_ticks = 60;
+        ret.cooldown_ticks = 30;
         ret;
     });
     static const AttackDescription beetle = ({
@@ -652,6 +685,7 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         ret.trigger_range = 3.0;
         ret.damage = 8;
         ret.duration_ticks = 40;
+        ret.cooldown_ticks = 30;
         ret;
     });
     static const AttackDescription unkown = {};
@@ -685,7 +719,7 @@ const AttackDescription& MatchState::effectAttackDescription (AttackDescription:
         ret.range = 7.0;
         ret.damage = 0;
         ret.missile_velocity = 16.0;
-        ret.duration_ticks = 20;
+        ret.duration_ticks = 10;
         ret.cooldown_ticks = 40;
         ret;
     });
@@ -799,7 +833,12 @@ void MatchState::startAction (const MoveAction& action)
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = *it;
         if (unit.selected) {
-            unit.action = action;
+            if (std::holds_alternative<PerformingAttackAction> (unit.action))
+                std::get<PerformingAttackAction> (unit.action).next_action = action;
+            else if (std::holds_alternative<PerformingCastAction> (unit.action))
+                std::get<PerformingCastAction> (unit.action).next_action = action;
+            else
+                unit.action = action;
             QPointF target;
             if (std::holds_alternative<quint32> (action.target)) {
                 quint32 target_unit_id = std::get<quint32> (action.target);
@@ -821,7 +860,12 @@ void MatchState::startAction (const AttackAction& action)
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = *it;
         if (unit.selected) {
-            unit.action = action;
+            if (std::holds_alternative<PerformingAttackAction> (unit.action))
+                std::get<PerformingAttackAction> (unit.action).next_action = action;
+            else if (std::holds_alternative<PerformingCastAction> (unit.action))
+                std::get<PerformingCastAction> (unit.action).next_action = action;
+            else
+                unit.action = action;
             emit unitActionRequested (it.key (), action);
         }
     }
@@ -835,11 +879,21 @@ void MatchState::startAction (const CastAction& action)
             if (unit.type == Unit::Type::Contaminator && unit.cast_cooldown_left_ticks <= 0) {
                 switch (action.type) {
                 case CastAction::Type::Pestilence:
-                    unit.action = action;
+                    if (std::holds_alternative<PerformingAttackAction> (unit.action))
+                        std::get<PerformingAttackAction> (unit.action).next_action = action;
+                    else if (std::holds_alternative<PerformingCastAction> (unit.action))
+                        std::get<PerformingCastAction> (unit.action).next_action = action;
+                    else
+                        unit.action = action;
                     emit unitActionRequested (it.key (), action);
                     break;
                 case CastAction::Type::SpawnBeetle:
-                    unit.action = action;
+                    if (std::holds_alternative<PerformingAttackAction> (unit.action))
+                        std::get<PerformingAttackAction> (unit.action).next_action = action;
+                    else if (std::holds_alternative<PerformingCastAction> (unit.action))
+                        std::get<PerformingCastAction> (unit.action).next_action = action;
+                    else
+                        unit.action = action;
                     emit unitActionRequested (it.key (), action);
                     break;
                 default:
@@ -908,16 +962,32 @@ void MatchState::applyAreaBoundaryCollisions (qreal dt)
 }
 void MatchState::applyActions (qreal dt)
 {
-    // Apply action
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = *it;
+        if (unit.attack_cooldown_left_ticks > 0)
+            --unit.attack_cooldown_left_ticks;
         if (unit.cast_cooldown_left_ticks > 0)
             --unit.cast_cooldown_left_ticks;
-        if (unit.attack_remaining_ticks > 1) {
-            --unit.attack_remaining_ticks;
+        if (std::holds_alternative<StopAction> (unit.action)) {
+            StopAction& stop_action = std::get<StopAction> (unit.action);
+            std::optional<quint32> closest_target = stop_action.current_target;
+            if (!closest_target.has_value ())
+                closest_target = findClosestTarget (unit);
+            if (closest_target.has_value ()) {
+                stop_action.current_target = closest_target;
+                if (!unit.attack_cooldown_left_ticks) {
+                    quint32 target_unit_id = stop_action.current_target.value ();
+                    QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                    if (target_unit_it != units.end ()) {
+                        Unit& target_unit = *target_unit_it;
+                        if (applyAttack (unit, target_unit_id, target_unit, dt))
+                            unit.action = PerformingAttackAction (StopAction (std::get<StopAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
+                    } else {
+                        stop_action.current_target.reset ();
+                    }
+                }
+            }
         } else if (std::holds_alternative<MoveAction> (unit.action)) {
-            if (unit.attack_remaining_ticks > 0)
-                --unit.attack_remaining_ticks;
             const std::variant<QPointF, quint32>& target = std::get<MoveAction> (unit.action).target;
             if (std::holds_alternative<QPointF> (target)) {
                 const QPointF& target_position = std::get<QPointF> (target);
@@ -933,8 +1003,6 @@ void MatchState::applyActions (qreal dt)
                 }
             }
         } else if (std::holds_alternative<AttackAction> (unit.action)) {
-            if (unit.attack_remaining_ticks > 0)
-                --unit.attack_remaining_ticks;
             AttackAction& attack_action = std::get<AttackAction> (unit.action);
             const std::variant<QPointF, quint32>& target = attack_action.target;
             if (std::holds_alternative<QPointF> (target)) {
@@ -943,51 +1011,91 @@ void MatchState::applyActions (qreal dt)
                     closest_target = findClosestTarget (unit);
                 if (closest_target.has_value ()) {
                     attack_action.current_target = closest_target;
-                    quint32 target_unit_id = attack_action.current_target.value ();
-                    QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
-                    if (target_unit_it != units.end ()) {
-                        Unit& target_unit = *target_unit_it;
-                        applyAttack (unit, target_unit_id, target_unit, dt);
-                    } else {
-                        attack_action.current_target.reset ();
+                    if (!unit.attack_cooldown_left_ticks) {
+                        quint32 target_unit_id = attack_action.current_target.value ();
+                        QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                        if (target_unit_it != units.end ()) {
+                            Unit& target_unit = *target_unit_it;
+                            if (applyAttack (unit, target_unit_id, target_unit, dt))
+                                unit.action = PerformingAttackAction (AttackAction (std::get<AttackAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
+                        } else {
+                            attack_action.current_target.reset ();
+                        }
                     }
                 } else {
                     applyMovement (unit, std::get<QPointF> (target), dt, true);
                 }
             } else if (std::holds_alternative<quint32> (target)) {
-                quint32 target_unit_id = std::get<quint32> (target);
-                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
-                if (target_unit_it != units.end ()) {
-                    Unit& target_unit = *target_unit_it;
-                    applyAttack (unit, target_unit_id, target_unit, dt);
-                } else {
-                    unit.action = StopAction ();
+                if (!unit.attack_cooldown_left_ticks) {
+                    quint32 target_unit_id = std::get<quint32> (target);
+                    QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                    if (target_unit_it != units.end ()) {
+                        Unit& target_unit = *target_unit_it;
+                        if (applyAttack (unit, target_unit_id, target_unit, dt))
+                            unit.action = PerformingAttackAction (AttackAction (std::get<AttackAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
+                    } else {
+                        unit.action = StopAction ();
+                    }
                 }
             }
         } else if (std::holds_alternative<CastAction> (unit.action)) {
             const CastAction& cast_action = std::get<CastAction> (unit.action);
-            applyCast (unit, cast_action.type, cast_action.target, dt);
-        } else if (std::holds_alternative<StopAction> (unit.action)) {
-            if (unit.attack_remaining_ticks > 0)
-                --unit.attack_remaining_ticks;
-            StopAction& stop_action = std::get<StopAction> (unit.action);
-            std::optional<quint32> closest_target = stop_action.current_target;
-            if (!closest_target.has_value ())
-                closest_target = findClosestTarget (unit);
-            if (closest_target.has_value ()) {
-                stop_action.current_target = closest_target;
-                quint32 target_unit_id = stop_action.current_target.value ();
-                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
-                if (target_unit_it != units.end ()) {
-                    Unit& target_unit = *target_unit_it;
-                    applyAttack (unit, target_unit_id, target_unit, dt);
-                } else {
-                    stop_action.current_target.reset ();
+            if (applyCast (unit, cast_action.type, cast_action.target, dt)) {
+                qint64 duration_ticks;
+                switch (cast_action.type) {
+                case CastAction::Type::Pestilence:
+                    duration_ticks = MatchState::effectAttackDescription (AttackDescription::Type::PestilenceMissile).duration_ticks;
+                    break;
+                case CastAction::Type::SpawnBeetle:
+                    duration_ticks = MatchState::effectAttackDescription (AttackDescription::Type::SpawnBeetle).duration_ticks;
+                    break;
+                default:
+                    duration_ticks = 0;
                 }
+                unit.action = PerformingCastAction (cast_action.type, StopAction (), duration_ticks);
             }
-            // emit unitActionRequested (it.key(), stop_action);
-        } else if (unit.attack_remaining_ticks > 0) {
-            --unit.attack_remaining_ticks;
+        } else if (std::holds_alternative<PerformingAttackAction> (unit.action)) {
+            PerformingAttackAction& performing_attack_action = std::get<PerformingAttackAction> (unit.action);
+            --performing_attack_action.remaining_ticks;
+            if (performing_attack_action.remaining_ticks <= 0) {
+                const AttackDescription& attack_description = unitPrimaryAttackDescription (Unit::Type::Goon);
+                unit.attack_cooldown_left_ticks = attack_description.cooldown_ticks;
+                if (std::holds_alternative<StopAction> (performing_attack_action.next_action))
+                    unit.action = StopAction (std::get<StopAction> (performing_attack_action.next_action));
+                else if (std::holds_alternative<AttackAction> (performing_attack_action.next_action))
+                    unit.action = AttackAction (std::get<AttackAction> (performing_attack_action.next_action));
+                else if (std::holds_alternative<MoveAction> (performing_attack_action.next_action))
+                    unit.action = MoveAction (std::get<MoveAction> (performing_attack_action.next_action));
+                else if (std::holds_alternative<CastAction> (performing_attack_action.next_action))
+                    unit.action = CastAction (std::get<CastAction> (performing_attack_action.next_action));
+                else
+                    unit.action = StopAction ();
+            }
+        } else if (std::holds_alternative<PerformingCastAction> (unit.action)) {
+            PerformingCastAction& performing_cast_action = std::get<PerformingCastAction> (unit.action);
+            --performing_cast_action.remaining_ticks;
+            if (performing_cast_action.remaining_ticks <= 0) {
+                switch (performing_cast_action.cast_type) {
+                case CastAction::Type::Pestilence:
+                    unit.cast_cooldown_left_ticks = MatchState::effectAttackDescription (AttackDescription::Type::PestilenceMissile).cooldown_ticks;
+                    break;
+                case CastAction::Type::SpawnBeetle:
+                    unit.cast_cooldown_left_ticks = MatchState::effectAttackDescription (AttackDescription::Type::SpawnBeetle).cooldown_ticks;
+                    break;
+                default:
+                    break;
+                }
+                if (std::holds_alternative<StopAction> (performing_cast_action.next_action))
+                    unit.action = StopAction (std::get<StopAction> (performing_cast_action.next_action));
+                else if (std::holds_alternative<AttackAction> (performing_cast_action.next_action))
+                    unit.action = AttackAction (std::get<AttackAction> (performing_cast_action.next_action));
+                else if (std::holds_alternative<MoveAction> (performing_cast_action.next_action))
+                    unit.action = MoveAction (std::get<MoveAction> (performing_cast_action.next_action));
+                else if (std::holds_alternative<CastAction> (performing_cast_action.next_action))
+                    unit.action = CastAction (std::get<CastAction> (performing_cast_action.next_action));
+                else
+                    unit.action = StopAction ();
+            }
         }
     }
 }
@@ -1084,7 +1192,7 @@ void MatchState::applyMovement (Unit& unit, const QPointF& target_position, qrea
         unit.position += displacement * (path_length / displacement_length);
     }
 }
-void MatchState::applyAttack (Unit& unit, quint32 target_unit_id, Unit& target_unit, qreal dt)
+bool MatchState::applyAttack (Unit& unit, quint32 target_unit_id, Unit& target_unit, qreal dt)
 {
     const AttackDescription& attack_description = unitPrimaryAttackDescription (unit.type);
     QPointF displacement = target_unit.position - unit.position;
@@ -1107,30 +1215,27 @@ void MatchState::applyAttack (Unit& unit, quint32 target_unit_id, Unit& target_u
         switch (attack_description.type) {
         case AttackDescription::Type::SealShot: {
             dealDamage (target_unit, attack_description.damage);
-            unit.attack_remaining_ticks = attack_description.duration_ticks;
             emit soundEventEmitted (SoundEvent::SealAttack);
-        } break;
+        } return true;
         case AttackDescription::Type::CrusaderChop: {
             dealDamage (target_unit, attack_description.damage);
-            unit.attack_remaining_ticks = attack_description.duration_ticks;
             emit soundEventEmitted (SoundEvent::CrusaderAttack);
-        } break;
+        } return true;
         case AttackDescription::Type::GoonRocket: {
-            unit.attack_remaining_ticks = attack_description.duration_ticks;
             emitMissile (Missile::Type::Rocket, unit, target_unit_id, target_unit);
             emit soundEventEmitted (SoundEvent::RocketStart);
-        } break;
+        } return true;
         case AttackDescription::Type::BeetleSlice: {
             dealDamage (target_unit, attack_description.damage);
-            unit.attack_remaining_ticks = attack_description.duration_ticks;
             emit soundEventEmitted (SoundEvent::BeetleAttack);
-        } break;
+        } return true;
         default: {
         }
         }
     }
+    return false;
 }
-void MatchState::applyCast (Unit& unit, CastAction::Type cast_type, const QPointF& target, qreal dt)
+bool MatchState::applyCast (Unit& unit, CastAction::Type cast_type, const QPointF& target, qreal dt)
 {
     const AttackDescription& attack_description = ({
         const AttackDescription* ret;
@@ -1142,7 +1247,7 @@ void MatchState::applyCast (Unit& unit, CastAction::Type cast_type, const QPoint
             ret = &effectAttackDescription (AttackDescription::Type::SpawnBeetle);
             break;
         default:
-            return;
+            return false;
         }
         *ret;
     });
@@ -1162,25 +1267,26 @@ void MatchState::applyCast (Unit& unit, CastAction::Type cast_type, const QPoint
     } else {
         in_range = true;
     }
-    if (in_range && orientationsFuzzyMatch (unit.orientation, target_orientation)) {
+    if (!unit.cast_cooldown_left_ticks &&
+        !std::holds_alternative<PerformingAttackAction> (unit.action) &&
+        !std::holds_alternative<PerformingCastAction> (unit.action) &&
+        in_range &&
+        orientationsFuzzyMatch (unit.orientation, target_orientation)) {
         switch (cast_type) {
         case CastAction::Type::Pestilence:
             emitMissile (Missile::Type::Pestilence, unit, target);
-            unit.action = StopAction ();
-            unit.cast_cooldown_left_ticks = attack_description.cooldown_ticks;
             emit soundEventEmitted (SoundEvent::PestilenceMissileStart);
-            break;
+            return true;
         case CastAction::Type::SpawnBeetle:
             // createUnit (Unit::Type::Beetle, unit.team, target, unit.orientation);
             emit unitCreateRequested (unit.team, Unit::Type::Beetle, target);
-            unit.action = StopAction ();
-            unit.cast_cooldown_left_ticks = attack_description.cooldown_ticks;
             emit soundEventEmitted (SoundEvent::SpawnBeetle);
-            break;
+            return true;
         default:
-            return;
+            return false;
         }
     }
+    return false;
 }
 void MatchState::applyAreaBoundaryCollision (Unit& unit, qreal dt)
 {
@@ -1259,7 +1365,7 @@ void MatchState::applyDeath ()
 {
     for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end ();) {
         if (it->hp <= 0) {
-            corpses[it.key ()] = *it;
+            corpses.emplace (it.key (), *it);
             it = units.erase (it);
         } else {
             ++it;

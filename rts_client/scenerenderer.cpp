@@ -127,10 +127,18 @@ void SceneRenderer::drawUnitPaths (QOpenGLFunctions& gl, ColoredRenderer& colore
                     GLfloat (target.x ()),
                     GLfloat (target.y ()),
                 });
-            if (std::holds_alternative<AttackAction> (unit.action))
+            // TODO: Add cast target
+            if (std::holds_alternative<AttackAction> (unit.action)) {
                 colors.append ({1, 0, 0, 1, 1, 0, 0, 1});
-            else
+            } else if (std::holds_alternative<PerformingAttackAction> (unit.action)) {
+                const IntentiveActionVariant& next_action = std::get<PerformingAttackAction> (unit.action).next_action;
+                if (std::holds_alternative<AttackAction> (next_action))
+                    colors.append ({1, 0, 0, 1, 1, 0, 0, 1});
+                else
+                    colors.append ({0, 1, 0, 1, 0, 1, 0, 1});
+            } else {
                 colors.append ({0, 1, 0, 1, 0, 1, 0, 1});
+            }
         }
     }
     if (vertices.size ()) {
@@ -163,8 +171,23 @@ void SceneRenderer::drawSelectionBar (QOpenGLFunctions& gl, ColoredRenderer& col
 }
 const QPointF* SceneRenderer::getUnitTargetPosition (const Unit& unit, MatchState& match_state)
 {
-    if (std::holds_alternative<MoveAction> (unit.action)) {
-        const std::variant<QPointF, quint32>& action_target = std::get<MoveAction> (unit.action).target;
+    if (std::holds_alternative<StopAction> (unit.action) ||
+        std::holds_alternative<MoveAction> (unit.action) ||
+        std::holds_alternative<AttackAction> (unit.action) ||
+        std::holds_alternative<CastAction> (unit.action)) {
+        return getUnitTargetPosition (unit.action, match_state);
+    } else if (std::holds_alternative<PerformingAttackAction> (unit.action)) {
+        return getUnitTargetPosition (std::get<PerformingAttackAction> (unit.action).next_action, match_state);
+    } else if (std::holds_alternative<PerformingCastAction> (unit.action)) {
+        return getUnitTargetPosition (std::get<PerformingCastAction> (unit.action).next_action, match_state);
+    }
+    return nullptr;
+}
+// TODO: Return pair<QPointF, intention_type>
+const QPointF* SceneRenderer::getUnitTargetPosition (const UnitActionVariant& unit_action, MatchState& match_state)
+{
+    if (std::holds_alternative<MoveAction> (unit_action)) {
+        const std::variant<QPointF, quint32>& action_target = std::get<MoveAction> (unit_action).target;
         if (std::holds_alternative<QPointF> (action_target)) {
             return &std::get<QPointF> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {
@@ -176,8 +199,39 @@ const QPointF* SceneRenderer::getUnitTargetPosition (const Unit& unit, MatchStat
                 return &target_unit.position;
             }
         }
-    } else if (std::holds_alternative<AttackAction> (unit.action)) {
-        const std::variant<QPointF, quint32>& action_target = std::get<AttackAction> (unit.action).target;
+    } else if (std::holds_alternative<AttackAction> (unit_action)) {
+        const std::variant<QPointF, quint32>& action_target = std::get<AttackAction> (unit_action).target;
+        if (std::holds_alternative<QPointF> (action_target)) {
+            return &std::get<QPointF> (action_target);
+        } else if (std::holds_alternative<quint32> (action_target)) {
+            quint32 target_unit_id = std::get<quint32> (action_target);
+            const QHash<quint32, Unit>& units = match_state.unitsRef ();
+            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
+            if (target_unit_it != units.end ()) {
+                const Unit& target_unit = *target_unit_it;
+                return &target_unit.position;
+            }
+        }
+    }
+    return nullptr;
+}
+const QPointF* SceneRenderer::getUnitTargetPosition (const IntentiveActionVariant& unit_action, MatchState& match_state)
+{
+    if (std::holds_alternative<MoveAction> (unit_action)) {
+        const std::variant<QPointF, quint32>& action_target = std::get<MoveAction> (unit_action).target;
+        if (std::holds_alternative<QPointF> (action_target)) {
+            return &std::get<QPointF> (action_target);
+        } else if (std::holds_alternative<quint32> (action_target)) {
+            quint32 target_unit_id = std::get<quint32> (action_target);
+            const QHash<quint32, Unit>& units = match_state.unitsRef ();
+            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
+            if (target_unit_it != units.end ()) {
+                const Unit& target_unit = *target_unit_it;
+                return &target_unit.position;
+            }
+        }
+    } else if (std::holds_alternative<AttackAction> (unit_action)) {
+        const std::variant<QPointF, quint32>& action_target = std::get<AttackAction> (unit_action).target;
         if (std::holds_alternative<QPointF> (action_target)) {
             return &std::get<QPointF> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {

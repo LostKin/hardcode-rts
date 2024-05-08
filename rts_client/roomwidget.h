@@ -62,9 +62,7 @@ signals:
     void readinessRequested ();
     void quitRequested ();
     void createUnitRequested (Unit::Team team, Unit::Type type, QPointF position);
-    // void unitActionRequested (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
-
-    void unitActionRequested (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
+    void unitActionRequested (quint32 id, const UnitActionVariant& action);
 
 private slots:
     void selectRolePlayerRequestedHandler ();
@@ -80,7 +78,7 @@ public slots:
     void loadMatchState (const QVector<QPair<quint32, Unit>>& units, const QVector<QPair<quint32, Corpse>>& corpses, const QVector<QPair<quint32, Missile>>& missiles);
     // void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
-    void unitActionCallback (quint32 id, const std::variant<StopAction, MoveAction, AttackAction, CastAction>& action);
+    void unitActionCallback (quint32 id, const UnitActionVariant& action);
     void unitCreateCallback (Unit::Team team, Unit::Type type, QPointF position);
 
 protected:

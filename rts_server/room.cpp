@@ -20,7 +20,6 @@ Room::Room (QObject* parent)
 void Room::tick ()
 {
     quint32 tick_no = match_state->get_tick_no ();
-    match_state->tick ();
     RTS::Response response_for_red_oneof;
     RTS::Response response_for_blue_oneof;
     RTS::MatchStateResponse* response_for_red = response_for_red_oneof.mutable_match_state ();
@@ -66,6 +65,8 @@ void Room::tick ()
 
     emit sendResponseRoom (response_for_red_oneof, red_team, {});
     emit sendResponseRoom (response_for_blue_oneof, blue_team, {});
+
+    match_state->tick ();
 }
 bool Room::fillUnit (quint32 id, const Unit& unit, RTS::Unit& m_unit)
 {
@@ -108,48 +109,27 @@ bool Room::fillUnit (quint32 id, const Unit& unit, RTS::Unit& m_unit)
     default:
         return false;
     }
+
     if (std::holds_alternative<StopAction> (unit.action)) {
-        if (std::get<StopAction> (unit.action).current_target.has_value ())
-            m_unit.mutable_current_action ()->mutable_stop ()->mutable_target ()->set_id (std::get<StopAction> (unit.action).current_target.value ());
-        else
-            m_unit.mutable_current_action ()->mutable_stop ();
+        fillStopAction (std::get<StopAction> (unit.action), m_unit.mutable_current_action ()->mutable_stop ());
     } else if (std::holds_alternative<MoveAction> (unit.action)) {
-        if (std::holds_alternative<QPointF> (std::get<MoveAction> (unit.action).target)) {
-            QPointF position = std::get<QPointF> (std::get<MoveAction> (unit.action).target);
-            m_unit.mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_x (position.x ());
-            m_unit.mutable_current_action ()->mutable_move ()->mutable_position ()->mutable_position ()->set_y (position.y ());
-        } else {
-            quint32 id = std::get<quint32> (std::get<MoveAction> (unit.action).target);
-            m_unit.mutable_current_action ()->mutable_move ()->mutable_unit ()->set_id (id);
-        }
+        fillMoveAction (std::get<MoveAction> (unit.action), m_unit.mutable_current_action ()->mutable_move ());
     } else if (std::holds_alternative<AttackAction> (unit.action)) {
-        if (std::holds_alternative<QPointF> (std::get<AttackAction> (unit.action).target)) {
-            QPointF position = std::get<QPointF> (std::get<AttackAction> (unit.action).target);
-            m_unit.mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_x (position.x ());
-            m_unit.mutable_current_action ()->mutable_attack ()->mutable_position ()->mutable_position ()->set_y (position.y ());
-        } else {
-            quint32 id = std::get<quint32> (std::get<AttackAction> (unit.action).target);
-            m_unit.mutable_current_action ()->mutable_attack ()->mutable_unit ()->set_id (id);
-        }
+        fillAttackAction (std::get<AttackAction> (unit.action), m_unit.mutable_current_action ()->mutable_attack ());
     } else if (std::holds_alternative<CastAction> (unit.action)) {
-        RTS::CastType type;
-        switch (std::get<CastAction> (unit.action).type) {
-        case CastAction::Type::Pestilence:
-            type = RTS::CastType::CAST_TYPE_PESTILENCE;
-            break;
-        case CastAction::Type::SpawnBeetle:
-            type = RTS::CastType::CAST_TYPE_SPAWN_BEETLE;
-            break;
-        default:
+        if (!fillCastAction (std::get<CastAction> (unit.action), m_unit.mutable_current_action ()->mutable_cast ()))
             return false;
-        }
-        QPointF position = std::get<CastAction> (unit.action).target;
-        m_unit.mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_x (position.x ());
-        m_unit.mutable_current_action ()->mutable_cast ()->mutable_position ()->mutable_position ()->set_y (position.y ());
-        m_unit.mutable_current_action ()->mutable_cast ()->set_type (type);
+    } else if (std::holds_alternative<PerformingAttackAction> (unit.action)) {
+        if (!fillPerformingAttackAction (std::get<PerformingAttackAction> (unit.action), m_unit.mutable_current_action ()->mutable_performing_attack ()))
+            return false;
+    } else if (std::holds_alternative<PerformingCastAction> (unit.action)) {
+        if (!fillPerformingCastAction (std::get<PerformingCastAction> (unit.action), m_unit.mutable_current_action ()->mutable_performing_cast ()))
+            return false;
+    } else {
+        return false;
     }
-    m_unit.set_attack_remaining_ticks (unit.attack_remaining_ticks);
-    m_unit.set_cooldown (unit.cast_cooldown_left_ticks);
+    m_unit.set_attack_cooldown_left_ticks (unit.attack_cooldown_left_ticks);
+    m_unit.set_cast_cooldown_left_ticks (unit.cast_cooldown_left_ticks);
 
     m_unit.mutable_position ()->set_x (unit.position.x ());
     m_unit.mutable_position ()->set_y (unit.position.y ());
@@ -201,24 +181,106 @@ bool Room::fillMissile (quint32 id, const Missile& missile, RTS::Missile& m_miss
 
     return true;
 }
+void Room::fillStopAction (const StopAction& stop_action, RTS::StopAction* m_stop_action)
+{
+    if (stop_action.current_target.has_value ())
+        m_stop_action->mutable_target ()->set_id (stop_action.current_target.value ());
+}
+void Room::fillMoveAction (const MoveAction& move_action, RTS::MoveAction* m_move_action)
+{
+    if (std::holds_alternative<QPointF> (move_action.target)) {
+        const QPointF& position = std::get<QPointF> (move_action.target);
+        m_move_action->mutable_position ()->mutable_position ()->set_x (position.x ());
+        m_move_action->mutable_position ()->mutable_position ()->set_y (position.y ());
+    } else {
+        quint32 id = std::get<quint32> (move_action.target);
+        m_move_action->mutable_unit ()->set_id (id);
+    }
+}
+void Room::fillAttackAction (const AttackAction& attack_action, RTS::AttackAction* m_attack_action)
+{
+    if (std::holds_alternative<QPointF> (attack_action.target)) {
+        const QPointF& position = std::get<QPointF> (attack_action.target);
+        m_attack_action->mutable_position ()->mutable_position ()->set_x (position.x ());
+        m_attack_action->mutable_position ()->mutable_position ()->set_y (position.y ());
+    } else {
+        quint32 id = std::get<quint32> (attack_action.target);
+        m_attack_action->mutable_unit ()->set_id (id);
+    }
+}
+bool Room::fillCastAction (const CastAction& cast_action, RTS::CastAction* m_cast_action)
+{
+    RTS::CastType type;
+    switch (cast_action.type) {
+    case CastAction::Type::Pestilence:
+        type = RTS::CastType::CAST_TYPE_PESTILENCE;
+        break;
+    case CastAction::Type::SpawnBeetle:
+        type = RTS::CastType::CAST_TYPE_SPAWN_BEETLE;
+        break;
+    default:
+        return false;
+    }
+    const QPointF& position = cast_action.target;
+    m_cast_action->mutable_position ()->mutable_position ()->set_x (position.x ());
+    m_cast_action->mutable_position ()->mutable_position ()->set_y (position.y ());
+    m_cast_action->set_type (type);
+    return true;
+}
+bool Room::fillPerformingAttackAction (const PerformingAttackAction& performing_attack_action, RTS::PerformingAttackAction* m_performing_attack_action)
+{
+    if (std::holds_alternative<StopAction> (performing_attack_action.next_action)) {
+        fillStopAction (std::get<StopAction> (performing_attack_action.next_action), m_performing_attack_action->mutable_stop ());
+    } else if (std::holds_alternative<MoveAction> (performing_attack_action.next_action)) {
+        fillMoveAction (std::get<MoveAction> (performing_attack_action.next_action), m_performing_attack_action->mutable_move ());
+    } else if (std::holds_alternative<AttackAction> (performing_attack_action.next_action)) {
+        fillAttackAction (std::get<AttackAction> (performing_attack_action.next_action), m_performing_attack_action->mutable_attack ());
+    } else if (std::holds_alternative<CastAction> (performing_attack_action.next_action)) {
+        if (!fillCastAction (std::get<CastAction> (performing_attack_action.next_action), m_performing_attack_action->mutable_cast ()))
+            return false;
+    } else {
+        return false;
+    }
+    m_performing_attack_action->set_remaining_ticks (performing_attack_action.remaining_ticks);
+    return true;
+}
+bool Room::fillPerformingCastAction (const PerformingCastAction& performing_cast_action, RTS::PerformingCastAction* m_performing_cast_action)
+{
+    if (std::holds_alternative<StopAction> (performing_cast_action.next_action)) {
+        fillStopAction (std::get<StopAction> (performing_cast_action.next_action), m_performing_cast_action->mutable_stop ());
+    } else if (std::holds_alternative<MoveAction> (performing_cast_action.next_action)) {
+        fillMoveAction (std::get<MoveAction> (performing_cast_action.next_action), m_performing_cast_action->mutable_move ());
+    } else if (std::holds_alternative<AttackAction> (performing_cast_action.next_action)) {
+        fillAttackAction (std::get<AttackAction> (performing_cast_action.next_action), m_performing_cast_action->mutable_attack ());
+    } else if (std::holds_alternative<CastAction> (performing_cast_action.next_action)) {
+        if (!fillCastAction (std::get<CastAction> (performing_cast_action.next_action), m_performing_cast_action->mutable_cast ()))
+            return false;
+    } else {
+        return false;
+    }
+    RTS::CastType cast_type;
+    switch (performing_cast_action.cast_type) {
+    case CastAction::Type::Pestilence:
+        cast_type = RTS::CastType::CAST_TYPE_PESTILENCE;
+        break;
+    case CastAction::Type::SpawnBeetle:
+        cast_type = RTS::CastType::CAST_TYPE_SPAWN_BEETLE;
+        break;
+    default:
+        return false;
+    }
+    m_performing_cast_action->set_cast_type (cast_type);
+    m_performing_cast_action->set_remaining_ticks (performing_cast_action.remaining_ticks);
+    return true;
+}
 void Room::setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code)
 {
     error->set_message (error_message);
     error->set_code (error_code);
 }
-
 void Room::init_matchstate ()
 {
     match_state.reset (new MatchState (false));
-    {
-        /*match_state->createUnit (Unit::Type::Goon, Unit::Team::Red, QPointF (-15, -7), 0);
-        match_state->createUnit (Unit::Type::Contaminator, Unit::Team::Red, QPointF (1, 3), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 3), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 6), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Red, QPointF (8, 9), 0);
-        match_state->createUnit (Unit::Type::Seal, Unit::Team::Blue, QPointF (10, 5), 0);
-        match_state->createUnit (Unit::Type::Crusader, Unit::Team::Blue, QPointF (-20, -8), 0);*/
-    }
 }
 void Room::emitStatsUpdated ()
 {
@@ -262,7 +324,6 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             setError (response->mutable_error (), "Invalid role specified", RTS::ERROR_CODE_MALFORMED_MESSAGE);
             emit sendResponseRoom (response_oneof, session, request_id);
         }
-
     } break;
     case RTS::Request::MessageCase::kReady: {
         session->ready = true;
@@ -298,8 +359,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
     } break;
     case RTS::Request::MessageCase::kUnitCreate: {
         const RTS::UnitCreateRequest& request = request_oneof.unit_create ();
-        Unit::Team team = *session->current_team;
-        Unit::Type type = Unit::Type::Goon; // TODO: Handle wrong value properly
+        Unit::Type type;
         switch (request.unit_type ()) {
         case RTS::UnitType::UNIT_TYPE_CRUSADER: {
             type = Unit::Type::Crusader;
@@ -316,51 +376,75 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
         case RTS::UnitType::UNIT_TYPE_CONTAMINATOR: {
             type = Unit::Type::Contaminator;
         } break;
+        default: {
+            RTS::Response response_oneof;
+            RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
+            setError (response->mutable_error (), "Invalid role specified", RTS::ERROR_CODE_MALFORMED_MESSAGE);
+            emit sendResponseRoom (response_oneof, session, request_id);
+        } return;
         }
-        QHash<quint32, Unit>::iterator unit = match_state->createUnit (type, team, QPointF (request.position ().x (), request.position ().y ()), 0);
+        Unit::Team team = *session->current_team;
+        if (!request.has_position ()) {
+            RTS::Response response_oneof;
+            RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
+            setError (response->mutable_error (), "No position specified", RTS::ERROR_CODE_MALFORMED_MESSAGE);
+            emit sendResponseRoom (response_oneof, session, request_id);
+        }
+        const RTS::Vector2D& position = request.position ();
+        QHash<quint32, Unit>::iterator unit = match_state->createUnit (type, team, QPointF (position.x (), position.y ()), 0);
         if (*session->current_team == Unit::Team::Red) {
             red_unit_id_client_to_server_map[request.id ()] = unit.key ();
         } else if (*session->current_team == Unit::Team::Blue) {
             blue_unit_id_client_to_server_map[request.id ()] = unit.key ();
+        } else {
+            RTS::Response response_oneof;
+            RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
+            setError (response->mutable_error (), "Unexpected team specified", RTS::ERROR_CODE_MALFORMED_MESSAGE);
+            emit sendResponseRoom (response_oneof, session, request_id);
         }
     } break;
     case RTS::Request::MessageCase::kUnitAction: {
         const RTS::UnitActionRequest& request = request_oneof.unit_action ();
         const RTS::UnitAction& action = request.action ();
-        quint32 id = 0;
+        quint32 id;
         if (session->current_team == Unit::Team::Red) {
             id = red_unit_id_client_to_server_map[request.unit_id ()];
         } else if (session->current_team == Unit::Team::Blue) {
             id = blue_unit_id_client_to_server_map[request.unit_id ()];
+        } else {
+            RTS::Response response_oneof;
+            RTS::ErrorResponse* response = response_oneof.mutable_error ();
+            setError (response->mutable_error (), "Malformed message", RTS::ERROR_CODE_MALFORMED_MESSAGE);
+            emit sendResponseRoom (response_oneof, session, request_id);
+            return;
         }
         switch (action.action_case ()) {
         case RTS::UnitAction::ActionCase::kMove: {
             if (action.move ().has_position ()) {
-                match_state->setAction (request.unit_id (), MoveAction (QPointF (request.action ().move ().position ().position ().x (),
-                                                                                 request.action ().move ().position ().position ().y ())));
+                match_state->setUnitAction (request.unit_id (), MoveAction (QPointF (action.move ().position ().position ().x (),
+                                                                                     action.move ().position ().position ().y ())));
             } else if (action.move ().has_unit ()) {
-                match_state->setAction (request.unit_id (), MoveAction (action.move ().unit ().id ()));
+                match_state->setUnitAction (request.unit_id (), MoveAction (action.move ().unit ().id ()));
             } else {
                 RTS::Response response_oneof;
                 RTS::ErrorResponse* response = response_oneof.mutable_error ();
                 setError (response->mutable_error (), "Malformed message", RTS::ERROR_CODE_MALFORMED_MESSAGE);
                 emit sendResponseRoom (response_oneof, session, request_id);
             }
-
         } break;
         case RTS::UnitAction::ActionCase::kAttack: {
-            if (action.attack ().has_position ()) {
-                match_state->setAction (request.unit_id (), AttackAction (QPointF (request.action ().attack ().position ().position ().x (),
-                                                                                   request.action ().attack ().position ().position ().y ())));
-            } else if (action.attack ().has_unit ()) {
-                match_state->setAction (request.unit_id (), AttackAction (action.attack ().unit ().id ()));
+            const RTS::AttackAction& attack = action.attack ();
+            if (attack.has_position ()) {
+                const RTS::Vector2D& target_position = attack.position ().position ();
+                match_state->setUnitAction (request.unit_id (), AttackAction (QPointF (target_position.x (), target_position.y ())));
+            } else if (attack.has_unit ()) {
+                match_state->setUnitAction (request.unit_id (), AttackAction (attack.unit ().id ()));
             } else {
                 RTS::Response response_oneof;
                 RTS::ErrorResponse* response = response_oneof.mutable_error ();
                 setError (response->mutable_error (), "Malformed message", RTS::ERROR_CODE_MALFORMED_MESSAGE);
                 emit sendResponseRoom (response_oneof, session, request_id);
             }
-
         } break;
         case RTS::UnitAction::ActionCase::kCast: {
             CastAction::Type type;
@@ -372,9 +456,15 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             case (RTS::CastType::CAST_TYPE_SPAWN_BEETLE): {
                 type = CastAction::Type::SpawnBeetle;
             } break;
+            default: {
+                RTS::Response response_oneof;
+                RTS::ErrorResponse* response = response_oneof.mutable_error ();
+                setError (response->mutable_error (), "Malformed message: invalid cast type", RTS::ERROR_CODE_MALFORMED_MESSAGE);
+                emit sendResponseRoom (response_oneof, session, request_id);
+            } return;
             }
             CastAction cast = CastAction (type, QPointF (action.cast ().position ().position ().x (), action.cast ().position ().position ().y ()));
-            match_state->setAction (request.unit_id (), cast);
+            match_state->setUnitAction (request.unit_id (), cast);
         } break;
         case RTS::UnitAction::ActionCase::kStop: {
             StopAction stop = StopAction ();
@@ -383,12 +473,15 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             } else {
                 stop.current_target.reset ();
             }
-            match_state->setAction (request.unit_id (), stop);
+            match_state->setUnitAction (request.unit_id (), stop);
         } break;
+        default: {
+            RTS::Response response_oneof;
+            RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();
+            setError (response->mutable_error (), "Invalid unit action specified", RTS::ERROR_CODE_MALFORMED_MESSAGE);
+            emit sendResponseRoom (response_oneof, session, request_id);
         }
-        // match_state->select(request.unit_id(), false);
-        // match_state->move (QPointF(request.action().move().position().position().x(), request.action().move().position().position().y()));
-
+        }
     } break;
     default: {
         RTS::Response response_oneof;
@@ -398,7 +491,6 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
     }
     }
 }
-
 void Room::readyHandler ()
 {
     init_matchstate ();
