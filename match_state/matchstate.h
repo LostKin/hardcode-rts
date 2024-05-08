@@ -76,19 +76,19 @@ public:
     void setUnitAction (quint32 unit_id, const UnitActionVariant& action);
     std::optional<QPointF> selectionCenter () const;
     void attackEnemy (Unit::Team attacker_team, const QPointF& point);
-    void cast (CastAction::Type cast_type, Unit::Team attacker_team, const QPointF& point);
+    void cast (CastAction::Type cast_type, Unit::Team attacker_team, const QPointF& point); // TODO: Cast with the closest caster
     void move (const QPointF& point);
     void stop ();
     void autoAction (Unit::Team attacker_team, const QPointF& point);
     void tick ();
-    void LoadState (const QVector<QPair<quint32, Unit>>& units, const QVector<QPair<quint32, Corpse>>& corpses, const QVector<QPair<quint32, Missile>>& missiles);
+    void LoadState (const std::vector<QPair<quint32, Unit>>& units, const std::vector<QPair<quint32, Corpse>>& corpses, const std::vector<QPair<quint32, Missile>>& missiles);
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);
     void addSelectionToGroup (quint64 group);
     void moveSelectionToGroup (quint64 group, bool add);
     bool fuzzyMatchPoints (const QPointF& p1, const QPointF& p2) const;
     quint32 get_tick_no ();
-    QVector<QPair<quint32, const Unit*>> buildOrderedSelection ();
+    std::vector<QPair<quint32, const Unit*>> buildOrderedSelection ();
 
 signals:
     void soundEventEmitted (SoundEvent event);
@@ -103,9 +103,9 @@ private:
     };
 
 private:
-    void loadUnits (const QVector<QPair<quint32, Unit>>& units);
-    void loadCorpses (const QVector<QPair<quint32, Corpse>>& corpses);
-    void loadMissiles (const QVector<QPair<quint32, Missile>>& missiles);
+    void loadUnits (const std::vector<QPair<quint32, Unit>>& units);
+    void loadCorpses (const std::vector<QPair<quint32, Corpse>>& corpses);
+    void loadMissiles (const std::vector<QPair<quint32, Missile>>& missiles);
     void clearSelection ();
     void rotateUnit (Unit& unit, qreal dt, qreal dest_orientation);
     bool checkUnitInsideSelection (const Unit& unit, const QPointF& point) const;

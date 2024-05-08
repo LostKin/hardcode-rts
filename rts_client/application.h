@@ -25,7 +25,7 @@ signals:
     void queryReadiness ();
     void startCountdown (Unit::Team team);
     void startMatch ();
-    void updateMatchState (const QVector<QPair<quint32, Unit>>& units, const QVector<QPair<quint32, Corpse>>& corpses, const QVector<QPair<quint32, Missile>>& missiles);
+    void updateMatchState (const std::vector<QPair<quint32, Unit>>& units, const std::vector<QPair<quint32, Corpse>>& corpses, const std::vector<QPair<quint32, Missile>>& missiles);
 
 private:
     void showLobby (const QString& login);
@@ -33,7 +33,7 @@ private:
     void setCurrentWindow (QWidget* new_window);
     void startSingleMode (RoomWidget* room_widget);
     bool parseMatchState (const RTS::MatchStateResponse& response,
-                          QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Corpse>>& corpses, QVector<QPair<quint32, Missile>>& missiles,
+                          std::vector<QPair<quint32, Unit>>& units, std::vector<QPair<quint32, Corpse>>& corpses, std::vector<QPair<quint32, Missile>>& missiles,
                           QString& error_message);
     std::optional<std::pair<quint32, Unit>> parseUnit (const RTS::Unit& r_unit, QString& error_message);
     std::optional<std::pair<quint32, Corpse>> parseCorpse (const RTS::Corpse& r_corpse, QString& error_message);

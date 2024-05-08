@@ -50,12 +50,12 @@ void SelectionPanelRenderer::draw (QOpenGLFunctions& gl, ColoredTexturedRenderer
     } else if (selected_count) {
         int icon_rib = hud.selection_panel_icon_rib;
 
-        QVector<QPair<quint32, const Unit*>> selection = match_state.buildOrderedSelection ();
+        std::vector<QPair<quint32, const Unit*>> selection = match_state.buildOrderedSelection ();
 
         if (selection.size () > 30)
             drawTabs (gl, colored_textured_renderer, hud.selection_panel_icon_grid_pos.x () - icon_rib, hud.selection_panel_icon_grid_pos.y (), icon_rib, icon_rib, ortho_matrix);
 
-        for (size_t i = 0; i < size_t (qMin (selection.size (), 30)); ++i) {
+        for (size_t i = 0; i < size_t (qMin (selection.size (), size_t (30))); ++i) {
             const Unit* unit = selection[i].second;
             size_t row = i / 10;
             size_t col = i % 10;

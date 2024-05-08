@@ -359,11 +359,11 @@ void MatchState::redTeamUserTick (RedTeamUserData& /* user_data */)
 void MatchState::blueTeamUserTick (BlueTeamUserData& user_data)
 {
     // TODO: Define proper API
-    QVector<const Missile*> new_missiles;
+    std::vector<const Missile*> new_missiles;
     for (std::map<quint32, Missile>::iterator it = missiles.begin (); it != missiles.end (); ++it) {
         if (!user_data.old_missiles.contains (it->first)) {
             if (it->second.sender_team == Unit::Team::Red)
-                new_missiles.append (&it->second);
+                new_missiles.push_back (&it->second);
             user_data.old_missiles.insert (it->first);
         }
     }
@@ -427,7 +427,7 @@ void MatchState::tick ()
     applyDeath ();
     applyDecay ();
 }
-void MatchState::loadUnits (const QVector<QPair<quint32, Unit>>& new_units)
+void MatchState::loadUnits (const std::vector<QPair<quint32, Unit>>& new_units)
 {
     QSet<quint32> to_keep;
     for (const QPair<quint32, Unit>& new_unit_entry: new_units)
@@ -456,7 +456,7 @@ void MatchState::loadUnits (const QVector<QPair<quint32, Unit>>& new_units)
         }
     }
 }
-void MatchState::loadCorpses (const QVector<QPair<quint32, Corpse>>& new_corpses)
+void MatchState::loadCorpses (const std::vector<QPair<quint32, Corpse>>& new_corpses)
 {
     QSet<quint32> to_keep;
     for (const QPair<quint32, Corpse>& new_corpse_entry: new_corpses)
@@ -485,7 +485,7 @@ void MatchState::loadCorpses (const QVector<QPair<quint32, Corpse>>& new_corpses
         }
     }
 }
-void MatchState::loadMissiles (const QVector<QPair<quint32, Missile>>& new_missiles)
+void MatchState::loadMissiles (const std::vector<QPair<quint32, Missile>>& new_missiles)
 {
     QSet<quint32> m_to_keep;
     for (quint32 i = 0; i < new_missiles.size (); i++) {
@@ -828,7 +828,7 @@ bool MatchState::checkUnitInsideViewport (const Unit& unit, const QRectF& viewpo
         return false;
     return intersectRectangleCircle (viewport, unit.position, radius);
 }
-void MatchState::LoadState (const QVector<QPair<quint32, Unit>>& units, const QVector<QPair<quint32, Corpse>>& corpses, const QVector<QPair<quint32, Missile>>& missiles)
+void MatchState::LoadState (const std::vector<QPair<quint32, Unit>>& units, const std::vector<QPair<quint32, Corpse>>& corpses, const std::vector<QPair<quint32, Missile>>& missiles)
 {
     loadUnits (units);
     loadCorpses (corpses);
@@ -1322,7 +1322,7 @@ void MatchState::applyAreaBoundaryCollision (Unit& unit, qreal dt)
 void MatchState::applyUnitCollisions (qreal dt)
 {
     // Apply unit collisions: O (N^2)
-    QVector<QPointF> offsets;
+    std::vector<QPointF> offsets;
     for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it->second;
         qreal unit_radius = unitRadius (unit.type);
@@ -1348,7 +1348,7 @@ void MatchState::applyUnitCollisions (qreal dt)
                 off += delta;
             }
         }
-        offsets.append (off);
+        offsets.push_back (off);
     }
     {
         size_t i = 0;
@@ -1417,7 +1417,7 @@ std::optional<quint32> MatchState::findClosestTarget (const Unit& unit)
     }
     return closest_target;
 }
-QVector<QPair<quint32, const Unit*>> MatchState::buildOrderedSelection ()
+std::vector<QPair<quint32, const Unit*>> MatchState::buildOrderedSelection ()
 {
     static const Unit::Type unit_order[] = {
         Unit::Type::Contaminator,
@@ -1427,14 +1427,14 @@ QVector<QPair<quint32, const Unit*>> MatchState::buildOrderedSelection ()
         Unit::Type::Beetle,
     };
 
-    QVector<QPair<quint32, const Unit*>> selection;
+    std::vector<QPair<quint32, const Unit*>> selection;
 
     // TODO: Use radix algorithm
     for (const Unit::Type unit_type: unit_order)
         for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it) {
             const Unit& unit = it->second;
             if (unit.selected && unit.type == unit_type)
-                selection.append ({it->first, &unit});
+                selection.push_back ({it->first, &unit});
         }
 
     return selection;

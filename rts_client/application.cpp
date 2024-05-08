@@ -343,9 +343,9 @@ void Application::sessionDatagramHandler (const QSharedPointer<HCCN::ServerToCli
     } break;
     case RTS::Response::MessageCase::kMatchState: {
         const RTS::MatchStateResponse& response = response_oneof.match_state ();
-        QVector<QPair<quint32, Unit>> units;
-        QVector<QPair<quint32, Corpse>> corpses;
-        QVector<QPair<quint32, Missile>> missiles;
+        std::vector<QPair<quint32, Unit>> units;
+        std::vector<QPair<quint32, Corpse>> corpses;
+        std::vector<QPair<quint32, Missile>> missiles;
         QString error_message;
         if (!parseMatchState (response, units, corpses, missiles, error_message)) {
             QMessageBox::critical (nullptr, "Malformed message from server", error_message);
@@ -397,7 +397,7 @@ void Application::startSingleMode (RoomWidget* room_widget)
 
     quint32 unit_id = 0;
     std::mt19937 random_generator;
-    QVector<QPair<quint32, Unit>> units = {
+    std::vector<QPair<quint32, Unit>> units = {
         {unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Red, {-20, -15}, M_PI * 0.5}},
         {unit_id++, {Unit::Type::Goon, random_generator (), Unit::Team::Red, {-22, -15}, M_PI * 0.5}},
         {unit_id++, {Unit::Type::Contaminator, random_generator (), Unit::Team::Red, {-24, -15}, M_PI * 0.5}},
@@ -487,7 +487,7 @@ void Application::startSingleMode (RoomWidget* room_widget)
     emit updateMatchState (units, {}, {});
 }
 bool Application::parseMatchState (const RTS::MatchStateResponse& response,
-                                   QVector<QPair<quint32, Unit>>& units, QVector<QPair<quint32, Corpse>>& corpses, QVector<QPair<quint32, Missile>>& missiles,
+                                   std::vector<QPair<quint32, Unit>>& units, std::vector<QPair<quint32, Corpse>>& corpses, std::vector<QPair<quint32, Missile>>& missiles,
                                    QString& error_message)
 {
     for (int i = 0; i < response.units_size (); i++) {
