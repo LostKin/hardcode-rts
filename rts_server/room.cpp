@@ -29,9 +29,9 @@ void Room::tick ()
 
     auto* red_units = response_for_red->mutable_units ();
     auto* blue_units = response_for_blue->mutable_units ();
-    for (QHash<quint32, Unit>::const_iterator it = match_state->unitsRef ().cbegin (); it != match_state->unitsRef ().cend (); it++) {
-        quint32 id = it.key ();
-        const Unit& unit = *it;
+    for (std::map<quint32, Unit>::const_iterator it = match_state->unitsRef ().cbegin (); it != match_state->unitsRef ().cend (); it++) {
+        quint32 id = it->first;
+        const Unit& unit = it->second;
 
         if (!fillUnit (id, unit, *red_units->Add ()))
             red_units->RemoveLast ();
@@ -41,9 +41,9 @@ void Room::tick ()
 
     auto* red_corpses = response_for_red->mutable_corpses ();
     auto* blue_corpses = response_for_blue->mutable_corpses ();
-    for (QHash<quint32, Corpse>::const_iterator it = match_state->corpsesRef ().cbegin (); it != match_state->corpsesRef ().cend (); it++) {
-        quint32 id = it.key ();
-        const Corpse& corpse = *it;
+    for (std::map<quint32, Corpse>::const_iterator it = match_state->corpsesRef ().cbegin (); it != match_state->corpsesRef ().cend (); it++) {
+        quint32 id = it->first;
+        const Corpse& corpse = it->second;
 
         if (!fillCorpse (id, corpse, *red_corpses->Add ()))
             red_corpses->RemoveLast ();
@@ -53,9 +53,9 @@ void Room::tick ()
 
     auto* red_missiles = response_for_red->mutable_missiles ();
     auto* blue_missiles = response_for_blue->mutable_missiles ();
-    for (QHash<quint32, Missile>::const_iterator it = match_state->missilesRef ().cbegin (); it != match_state->missilesRef ().cend (); it++) {
-        quint32 id = it.key ();
-        const Missile& missile = *it;
+    for (std::map<quint32, Missile>::const_iterator it = match_state->missilesRef ().cbegin (); it != match_state->missilesRef ().cend (); it++) {
+        quint32 id = it->first;
+        const Missile& missile = it->second;
 
         if (!fillMissile (id, missile, *red_missiles->Add ()))
             red_missiles->RemoveLast ();
@@ -391,11 +391,11 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             emit sendResponseRoom (response_oneof, session, request_id);
         }
         const RTS::Vector2D& position = request.position ();
-        QHash<quint32, Unit>::iterator unit = match_state->createUnit (type, team, QPointF (position.x (), position.y ()), 0);
+        std::map<quint32, Unit>::iterator unit = match_state->createUnit (type, team, QPointF (position.x (), position.y ()), 0);
         if (*session->current_team == Unit::Team::Red) {
-            red_unit_id_client_to_server_map[request.id ()] = unit.key ();
+            red_unit_id_client_to_server_map[request.id ()] = unit->first;
         } else if (*session->current_team == Unit::Team::Blue) {
-            blue_unit_id_client_to_server_map[request.id ()] = unit.key ();
+            blue_unit_id_client_to_server_map[request.id ()] = unit->first;
         } else {
             RTS::Response response_oneof;
             RTS::SelectRoleResponse* response = response_oneof.mutable_select_role ();

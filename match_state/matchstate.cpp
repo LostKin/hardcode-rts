@@ -86,19 +86,19 @@ const QRectF& MatchState::areaRef () const
 {
     return area;
 }
-const QHash<quint32, Unit>& MatchState::unitsRef () const
+const std::map<quint32, Unit>& MatchState::unitsRef () const
 {
     return units;
 }
-const QHash<quint32, Corpse>& MatchState::corpsesRef () const
+const std::map<quint32, Corpse>& MatchState::corpsesRef () const
 {
     return corpses;
 }
-const QHash<quint32, Missile>& MatchState::missilesRef () const
+const std::map<quint32, Missile>& MatchState::missilesRef () const
 {
     return missiles;
 }
-const QHash<quint32, Explosion>& MatchState::explosionsRef () const
+const std::map<quint32, Explosion>& MatchState::explosionsRef () const
 {
     return explosions;
 }
@@ -110,42 +110,46 @@ quint32 MatchState::getRandomNumber ()
     id = id + (int (is_client) << 30);
     return id;
 }
-QHash<quint32, Unit>::iterator MatchState::createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction)
+std::map<quint32, Unit>::iterator MatchState::createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction)
 {
     quint32 id = getRandomNumber (); // TODO: Fix it
 
-    QHash<quint32, Unit>::iterator unit = units.insert (next_id++, {type, id, team, position, direction});
-    unit->hp = unitMaxHP (unit->type);
-    return unit;
+    std::pair<std::map<quint32, Unit>::iterator, bool> it_status = units.insert ({next_id++, {type, id, team, position, direction}});
+    Unit& unit = it_status.first->second;
+    unit.hp = unitMaxHP (unit.type);
+    return it_status.first;
 }
 Unit& MatchState::addUnit (quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction)
 {
-    Unit& unit = *units.insert (id, {type, quint32 (random_generator ()), team, position, direction});
+    std::pair<std::map<quint32, Unit>::iterator, bool> it_status = units.insert ({id, {type, quint32 (random_generator ()), team, position, direction}});
+    Unit& unit = it_status.first->second;
     unit.hp = unitMaxHP (unit.type);
     return unit;
 }
-Corpse& MatchState::addCorpse (quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction, quint64 decay_remaining_ticks)
+Corpse& MatchState::addCorpse (quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction, qint64 decay_remaining_ticks)
 {
-    Corpse& corpse = *corpses.insert (id, Corpse ({type, quint32 (random_generator ()), team, position, direction}, decay_remaining_ticks));
+    std::pair<std::map<quint32, Corpse>::iterator, bool> it_status = corpses.insert ({id, {{type, quint32 (random_generator ()), team, position, direction}, decay_remaining_ticks}});
+    Corpse& corpse = it_status.first->second;
     corpse.unit.hp = unitMaxHP (corpse.unit.type);
     return corpse;
 }
 Missile& MatchState::addMissile (quint32 id, Missile::Type type, Unit::Team team, const QPointF& position, qreal direction)
 {
-    Missile& missile = *missiles.insert (id, {type, team, position, 0, QPointF (0, 0)});
+    std::pair<std::map<quint32, Missile>::iterator, bool> it_status = missiles.insert ({id, {type, team, position, 0, QPointF (0, 0)}});
+    Missile& missile = it_status.first->second;
     return missile;
 }
 void MatchState::trySelect (Unit::Team team, const QPointF& point, bool add)
 {
     if (add) {
-        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-            Unit& unit = it.value ();
+        for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it->second;
             if (unit.team == team && checkUnitInsideSelection (unit, point))
                 unit.selected = !unit.selected;
         }
     } else {
-        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-            Unit& unit = it.value ();
+        for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it->second;
             if (unit.team == team && checkUnitInsideSelection (unit, point)) {
                 clearSelection ();
                 unit.selected = true;
@@ -156,10 +160,10 @@ void MatchState::trySelect (Unit::Team team, const QPointF& point, bool add)
 }
 void MatchState::setUnitAction (quint32 unit_id, const UnitActionVariant& action)
 {
-    QHash<quint32, Unit>::iterator it = units.find (unit_id);
+    std::map<quint32, Unit>::iterator it = units.find (unit_id);
     if (it == units.end ())
         return;
-    Unit& unit = *it;
+    Unit& unit = it->second;
     IntentiveActionVariant* next_action;
     if (std::holds_alternative<PerformingAttackAction> (unit.action))
         next_action = &std::get<PerformingAttackAction> (unit.action).next_action;
@@ -195,23 +199,23 @@ void MatchState::select (quint32 unit_id, bool add)
 {
     if (!add)
         clearSelection ();
-    QHash<quint32, Unit>::iterator it = units.find (unit_id);
+    std::map<quint32, Unit>::iterator it = units.find (unit_id);
     if (it != units.end ()) {
-        Unit& unit = *it;
+        Unit& unit = it->second;
         unit.selected = true;
     }
 }
 void MatchState::trimSelection (Unit::Type type, bool remove)
 {
     if (remove) {
-        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-            Unit& unit = *it;
+        for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it->second;
             if (unit.type == type)
                 unit.selected = false;
         }
     } else {
-        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-            Unit& unit = *it;
+        for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it->second;
             if (unit.type != type)
                 unit.selected = false;
         }
@@ -219,24 +223,24 @@ void MatchState::trimSelection (Unit::Type type, bool remove)
 }
 void MatchState::deselect (quint32 unit_id)
 {
-    QHash<quint32, Unit>::iterator it = units.find (unit_id);
+    std::map<quint32, Unit>::iterator it = units.find (unit_id);
     if (it != units.end ()) {
-        Unit& unit = *it;
+        Unit& unit = it->second;
         unit.selected = false;
     }
 }
 void MatchState::trySelect (Unit::Team team, const QRectF& rect, bool add)
 {
     if (add) {
-        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-            Unit& unit = *it;
+        for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it->second;
             if (unit.team == team && checkUnitInsideSelection (unit, rect))
                 unit.selected = true;
         }
     } else {
         bool selection_found = false;
-        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-            Unit& unit = *it;
+        for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it->second;
             if (unit.team == team && checkUnitInsideSelection (unit, rect)) {
                 selection_found = true;
                 break;
@@ -244,8 +248,8 @@ void MatchState::trySelect (Unit::Team team, const QRectF& rect, bool add)
         }
         if (selection_found) {
             clearSelection ();
-            for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-                Unit& unit = *it;
+            for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+                Unit& unit = it->second;
                 if (unit.team == team && checkUnitInsideSelection (unit, rect))
                     unit.selected = true;
             }
@@ -260,16 +264,16 @@ void MatchState::trySelectByType (Unit::Team team, const QPointF& point, const Q
     Unit::Type type = unit->type;
     if (!add)
         clearSelection ();
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.team == team && unit.type == type && checkUnitInsideViewport (unit, viewport))
             unit.selected = true;
     }
 }
 void MatchState::selectAll (Unit::Team team)
 {
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.team == team)
             unit.selected = true;
     }
@@ -278,8 +282,8 @@ std::optional<QPointF> MatchState::selectionCenter () const
 {
     size_t selection_count = 0;
     QPointF sum = {};
-    for (QHash<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it) {
-        const Unit& unit = *it;
+    for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it) {
+        const Unit& unit = it->second;
         if (unit.selected) {
             ++selection_count;
             sum += unit.position;
@@ -290,10 +294,10 @@ std::optional<QPointF> MatchState::selectionCenter () const
 void MatchState::attackEnemy (Unit::Team attacker_team, const QPointF& point)
 {
     std::optional<quint32> target;
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.team != attacker_team && checkUnitInsideSelection (unit, point)) {
-            target = it.key ();
+            target = it->first;
             break;
         }
     }
@@ -306,10 +310,10 @@ void MatchState::cast (CastAction::Type cast_type, Unit::Team /* attacker_team *
 void MatchState::move (const QPointF& point)
 {
     std::optional<quint32> target;
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (checkUnitInsideSelection (unit, point)) {
-            target = it.key ();
+            target = it->first;
             break;
         }
     }
@@ -317,11 +321,11 @@ void MatchState::move (const QPointF& point)
 }
 void MatchState::stop ()
 {
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.selected) {
             unit.action = StopAction ();
-            emit unitActionRequested (it.key (), StopAction ());
+            emit unitActionRequested (it->first, StopAction ());
         }
     }
 }
@@ -329,11 +333,11 @@ void MatchState::autoAction (Unit::Team attacker_team, const QPointF& point)
 {
     std::optional<quint32> target;
     bool target_is_enemy = false;
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (checkUnitInsideSelection (unit, point)) {
-            target = it.key ();
-            target_is_enemy = it->team != attacker_team;
+            target = it->first;
+            target_is_enemy = it->second.team != attacker_team;
             break;
         }
     }
@@ -356,16 +360,16 @@ void MatchState::blueTeamUserTick (BlueTeamUserData& user_data)
 {
     // TODO: Define proper API
     QVector<const Missile*> new_missiles;
-    for (QHash<quint32, Missile>::iterator it = missiles.begin (); it != missiles.end (); ++it) {
-        if (!user_data.old_missiles.contains (it.key ())) {
-            if (it->sender_team == Unit::Team::Red)
-                new_missiles.append (&*it);
-            user_data.old_missiles.insert (it.key ());
+    for (std::map<quint32, Missile>::iterator it = missiles.begin (); it != missiles.end (); ++it) {
+        if (!user_data.old_missiles.contains (it->first)) {
+            if (it->second.sender_team == Unit::Team::Red)
+                new_missiles.append (&it->second);
+            user_data.old_missiles.insert (it->first);
         }
     }
 
     for (QSet<quint32>::iterator it = user_data.old_missiles.begin (); it != user_data.old_missiles.end ();) {
-        if (!missiles.contains (*it))
+        if (!missiles.count (*it))
             it = user_data.old_missiles.erase (it);
         else
             ++it;
@@ -373,8 +377,8 @@ void MatchState::blueTeamUserTick (BlueTeamUserData& user_data)
 
     const AttackDescription& pestilence_splash_attack = MatchState::effectAttackDescription (AttackDescription::Type::PestilenceSplash);
     const AttackDescription& rocket_explosion_attack = MatchState::effectAttackDescription (AttackDescription::Type::GoonRocketExplosion);
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.team == Unit::Team::Blue) {
             for (const Missile* missile: new_missiles) {
                 if (missile->type == Missile::Type::Pestilence) {
@@ -388,7 +392,7 @@ void MatchState::blueTeamUserTick (BlueTeamUserData& user_data)
                 } else if (missile->type == Missile::Type::Rocket) {
                     qreal radius = rocket_explosion_attack.range + unitRadius (unit.type);
                     if (pointInsideCircle (unit.position, missile->target_position, radius) &&
-                        (!missile->target_unit.has_value () || missile->target_unit.value () != it.key ())) {
+                        (!missile->target_unit.has_value () || missile->target_unit.value () != it->first)) {
                         QPointF displacement = unit.position - missile->target_position;
                         vectorResize (displacement, radius * 1.05);
                         unit.action = MoveAction (missile->target_position + displacement);
@@ -428,8 +432,8 @@ void MatchState::loadUnits (const QVector<QPair<quint32, Unit>>& new_units)
     QSet<quint32> to_keep;
     for (const QPair<quint32, Unit>& new_unit_entry: new_units)
         to_keep.insert (new_unit_entry.first);
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end ();) {
-        if (to_keep.find (it.key ()) == to_keep.end ())
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end ();) {
+        if (to_keep.find (it->first) == to_keep.end ())
             it = units.erase (it);
         else
             ++it;
@@ -437,14 +441,15 @@ void MatchState::loadUnits (const QVector<QPair<quint32, Unit>>& new_units)
     for (const QPair<quint32, Unit>& new_unit_entry: new_units) {
         quint32 new_unit_id = new_unit_entry.first;
         const Unit& new_unit = new_unit_entry.second;
-        QHash<quint32, Unit>::iterator to_change = units.find (new_unit_id);
+        std::map<quint32, Unit>::iterator to_change = units.find (new_unit_id);
         if (to_change != units.end ()) {
-            to_change->position = new_unit.position;
-            to_change->orientation = new_unit.orientation;
-            to_change->hp = new_unit.hp;
-            to_change->action = new_unit.action;
-            to_change->attack_cooldown_left_ticks = new_unit.attack_cooldown_left_ticks;
-            to_change->cast_cooldown_left_ticks = new_unit.cast_cooldown_left_ticks;
+            Unit& unit_to_change = to_change->second;
+            unit_to_change.position = new_unit.position;
+            unit_to_change.orientation = new_unit.orientation;
+            unit_to_change.hp = new_unit.hp;
+            unit_to_change.action = new_unit.action;
+            unit_to_change.attack_cooldown_left_ticks = new_unit.attack_cooldown_left_ticks;
+            unit_to_change.cast_cooldown_left_ticks = new_unit.cast_cooldown_left_ticks;
         } else {
             Unit& unit = addUnit (new_unit_id, new_unit.type, new_unit.team, new_unit.position, new_unit.orientation);
             unit.action = new_unit.action;
@@ -456,8 +461,8 @@ void MatchState::loadCorpses (const QVector<QPair<quint32, Corpse>>& new_corpses
     QSet<quint32> to_keep;
     for (const QPair<quint32, Corpse>& new_corpse_entry: new_corpses)
         to_keep.insert (new_corpse_entry.first);
-    for (QHash<quint32, Corpse>::iterator it = corpses.begin (); it != corpses.end ();) {
-        if (to_keep.find (it.key ()) == to_keep.end ())
+    for (std::map<quint32, Corpse>::iterator it = corpses.begin (); it != corpses.end ();) {
+        if (to_keep.find (it->first) == to_keep.end ())
             it = corpses.erase (it);
         else
             ++it;
@@ -465,14 +470,15 @@ void MatchState::loadCorpses (const QVector<QPair<quint32, Corpse>>& new_corpses
     for (const QPair<quint32, Corpse>& new_corpse_entry: new_corpses) {
         quint32 new_corpse_id = new_corpse_entry.first;
         const Corpse& new_corpse = new_corpse_entry.second;
-        QHash<quint32, Corpse>::iterator to_change = corpses.find (new_corpse_id);
+        std::map<quint32, Corpse>::iterator to_change = corpses.find (new_corpse_id);
         if (to_change != corpses.end ()) {
-            to_change->unit.position = new_corpse.unit.position;
-            to_change->unit.orientation = new_corpse.unit.orientation;
-            to_change->unit.hp = new_corpse.unit.hp;
-            to_change->unit.action = new_corpse.unit.action;
-            to_change->unit.attack_cooldown_left_ticks = new_corpse.unit.attack_cooldown_left_ticks;
-            to_change->unit.cast_cooldown_left_ticks = new_corpse.unit.cast_cooldown_left_ticks;
+            Corpse& corpse_to_change = to_change->second;
+            corpse_to_change.unit.position = new_corpse.unit.position;
+            corpse_to_change.unit.orientation = new_corpse.unit.orientation;
+            corpse_to_change.unit.hp = new_corpse.unit.hp;
+            corpse_to_change.unit.action = new_corpse.unit.action;
+            corpse_to_change.unit.attack_cooldown_left_ticks = new_corpse.unit.attack_cooldown_left_ticks;
+            corpse_to_change.unit.cast_cooldown_left_ticks = new_corpse.unit.cast_cooldown_left_ticks;
         } else {
             Corpse& corpse = addCorpse (new_corpse_id, new_corpse.unit.type, new_corpse.unit.team, new_corpse.unit.position, new_corpse.unit.orientation, new_corpse.decay_remaining_ticks);
             corpse.unit.action = new_corpse.unit.action;
@@ -487,14 +493,14 @@ void MatchState::loadMissiles (const QVector<QPair<quint32, Missile>>& new_missi
     }
     auto m_it = missiles.begin ();
     while (m_it != missiles.end ()) {
-        if (m_to_keep.find (m_it.key ()) == m_to_keep.end ())
+        if (m_to_keep.find (m_it->first) == m_to_keep.end ())
             m_it = missiles.erase (m_it);
         else
             ++m_it;
     }
 
     for (quint32 i = 0; i < new_missiles.size (); i++) {
-        if (missilesRef ().find (new_missiles.at (i).first) == missilesRef ().end ()) {
+        if (missiles.find (new_missiles.at (i).first) == missiles.end ()) {
             Missile& missile = addMissile (new_missiles.at (i).first, new_missiles.at (i).second.type, new_missiles.at (i).second.sender_team, new_missiles.at (i).second.position, new_missiles.at (i).second.orientation);
             missile.target_position = new_missiles.at (i).second.target_position;
             if (new_missiles.at (i).second.target_unit.has_value ()) {
@@ -504,22 +510,23 @@ void MatchState::loadMissiles (const QVector<QPair<quint32, Missile>>& new_missi
             }
 
         } else {
-            QHash<quint32, Missile>::iterator to_change = missiles.find (new_missiles.at (i).first);
-            to_change.value ().position = new_missiles.at (i).second.position;
-            to_change.value ().orientation = new_missiles.at (i).second.orientation;
-            to_change.value ().target_position = new_missiles.at (i).second.target_position;
+            std::map<quint32, Missile>::iterator to_change = missiles.find (new_missiles.at (i).first);
+            Missile& missile_to_change = to_change->second;
+            missile_to_change.position = new_missiles.at (i).second.position;
+            missile_to_change.orientation = new_missiles.at (i).second.orientation;
+            missile_to_change.target_position = new_missiles.at (i).second.target_position;
             if (new_missiles.at (i).second.target_unit.has_value ()) {
-                to_change.value ().target_unit = new_missiles.at (i).second.target_unit;
+                missile_to_change.target_unit = new_missiles.at (i).second.target_unit;
             } else {
-                to_change.value ().target_unit.reset ();
+                missile_to_change.target_unit.reset ();
             }
         }
     }
 }
 void MatchState::clearSelection ()
 {
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it)
-        it->selected = false;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it)
+        it->second.selected = false;
 }
 void MatchState::rotateUnit (Unit& unit, qreal dt, qreal dest_orientation)
 {
@@ -758,16 +765,16 @@ const AttackDescription& MatchState::effectAttackDescription (AttackDescription:
 void MatchState::selectGroup (quint64 group)
 {
     quint64 group_flag = 1 << group;
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         unit.selected = (unit.groups & group_flag) ? true : false;
     }
 }
 void MatchState::bindSelectionToGroup (quint64 group)
 {
     quint64 group_flag = 1 << group;
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.selected)
             unit.groups |= group_flag;
         else
@@ -777,8 +784,8 @@ void MatchState::bindSelectionToGroup (quint64 group)
 void MatchState::addSelectionToGroup (quint64 group)
 {
     quint64 group_flag = 1 << group;
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.selected)
             unit.groups |= group_flag;
     }
@@ -786,8 +793,8 @@ void MatchState::addSelectionToGroup (quint64 group)
 void MatchState::moveSelectionToGroup (quint64 group, bool add)
 {
     quint64 group_flag = 1 << group;
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.selected)
             unit.groups = group_flag;
         else if (!add)
@@ -830,8 +837,8 @@ void MatchState::LoadState (const QVector<QPair<quint32, Unit>>& units, const QV
 void MatchState::startAction (const MoveAction& action)
 {
     // TODO: Check for team
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.selected) {
             if (std::holds_alternative<PerformingAttackAction> (unit.action))
                 std::get<PerformingAttackAction> (unit.action).next_action = action;
@@ -842,23 +849,23 @@ void MatchState::startAction (const MoveAction& action)
             QPointF target;
             if (std::holds_alternative<quint32> (action.target)) {
                 quint32 target_unit_id = std::get<quint32> (action.target);
-                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                std::map<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
                 if (target_unit_it != units.end ()) {
-                    Unit& target_unit = *target_unit_it;
+                    Unit& target_unit = target_unit_it->second;
                     target = target_unit.position;
                 }
             } else {
                 target = std::get<QPointF> (action.target);
             }
-            emit unitActionRequested (it.key (), action);
+            emit unitActionRequested (it->first, action);
         }
     }
 }
 void MatchState::startAction (const AttackAction& action)
 {
     // TODO: Check for team
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.selected) {
             if (std::holds_alternative<PerformingAttackAction> (unit.action))
                 std::get<PerformingAttackAction> (unit.action).next_action = action;
@@ -866,15 +873,15 @@ void MatchState::startAction (const AttackAction& action)
                 std::get<PerformingCastAction> (unit.action).next_action = action;
             else
                 unit.action = action;
-            emit unitActionRequested (it.key (), action);
+            emit unitActionRequested (it->first, action);
         }
     }
 }
 void MatchState::startAction (const CastAction& action)
 {
     // TODO: Check for team
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.selected) {
             if (unit.type == Unit::Type::Contaminator && unit.cast_cooldown_left_ticks <= 0) {
                 switch (action.type) {
@@ -885,7 +892,7 @@ void MatchState::startAction (const CastAction& action)
                         std::get<PerformingCastAction> (unit.action).next_action = action;
                     else
                         unit.action = action;
-                    emit unitActionRequested (it.key (), action);
+                    emit unitActionRequested (it->first, action);
                     break;
                 case CastAction::Type::SpawnBeetle:
                     if (std::holds_alternative<PerformingAttackAction> (unit.action))
@@ -894,7 +901,7 @@ void MatchState::startAction (const CastAction& action)
                         std::get<PerformingCastAction> (unit.action).next_action = action;
                     else
                         unit.action = action;
-                    emit unitActionRequested (it.key (), action);
+                    emit unitActionRequested (it->first, action);
                     break;
                 default:
                     break;
@@ -907,11 +914,11 @@ void MatchState::startAction (const CastAction& action)
 
 void MatchState::emitMissile (Missile::Type missile_type, const Unit& unit, quint32 target_unit_id, const Unit& target_unit)
 {
-    missiles.insert (next_id++, {missile_type, unit.team, unit.position, target_unit_id, target_unit.position});
+    missiles.insert ({next_id++, {missile_type, unit.team, unit.position, target_unit_id, target_unit.position}});
 }
 void MatchState::emitMissile (Missile::Type missile_type, const Unit& unit, const QPointF& target)
 {
-    missiles.insert (next_id++, {missile_type, unit.team, unit.position, target});
+    missiles.insert ({next_id++, {missile_type, unit.team, unit.position, target}});
 }
 void MatchState::emitExplosion (Explosion::Type explosion_type, Unit::Team sender_team, const QPointF& position)
 {
@@ -930,11 +937,10 @@ void MatchState::emitExplosion (Explosion::Type explosion_type, Unit::Team sende
         *ret;
     });
 
-    *explosions.insert (next_id++, {explosion_type, position, attack_description.duration_ticks});
+    explosions.insert ({next_id++, {explosion_type, position, attack_description.duration_ticks}});
 
-    for (QMutableHashIterator<quint32, Unit> it (units); it.hasNext ();) {
-        it.next ();
-        Unit& target_unit = it.value ();
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& target_unit = it->second;
         if (attack_description.friendly_fire || target_unit.team != sender_team) {
             QPointF displacement = target_unit.position - position;
             qreal displacement_length = vectorSize (displacement);
@@ -955,15 +961,15 @@ void MatchState::emitExplosion (Explosion::Type explosion_type, Unit::Team sende
 }
 void MatchState::applyAreaBoundaryCollisions (qreal dt)
 {
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         applyAreaBoundaryCollision (unit, dt);
     }
 }
 void MatchState::applyActions (qreal dt)
 {
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.attack_cooldown_left_ticks > 0)
             --unit.attack_cooldown_left_ticks;
         if (unit.cast_cooldown_left_ticks > 0)
@@ -977,9 +983,9 @@ void MatchState::applyActions (qreal dt)
                 stop_action.current_target = closest_target;
                 if (!unit.attack_cooldown_left_ticks) {
                     quint32 target_unit_id = stop_action.current_target.value ();
-                    QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                    std::map<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
                     if (target_unit_it != units.end ()) {
-                        Unit& target_unit = *target_unit_it;
+                        Unit& target_unit = target_unit_it->second;
                         if (applyAttack (unit, target_unit_id, target_unit, dt))
                             unit.action = PerformingAttackAction (StopAction (std::get<StopAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
                     } else {
@@ -994,9 +1000,9 @@ void MatchState::applyActions (qreal dt)
                 applyMovement (unit, target_position, dt, true);
             } else if (std::holds_alternative<quint32> (target)) {
                 quint32 target_unit_id = std::get<quint32> (target);
-                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                std::map<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
                 if (target_unit_it != units.end ()) {
-                    Unit& target_unit = *target_unit_it;
+                    Unit& target_unit = target_unit_it->second;
                     applyMovement (unit, target_unit.position, dt, false);
                 } else {
                     unit.action = StopAction ();
@@ -1013,9 +1019,9 @@ void MatchState::applyActions (qreal dt)
                     attack_action.current_target = closest_target;
                     if (!unit.attack_cooldown_left_ticks) {
                         quint32 target_unit_id = attack_action.current_target.value ();
-                        QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                        std::map<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
                         if (target_unit_it != units.end ()) {
-                            Unit& target_unit = *target_unit_it;
+                            Unit& target_unit = target_unit_it->second;
                             if (applyAttack (unit, target_unit_id, target_unit, dt))
                                 unit.action = PerformingAttackAction (AttackAction (std::get<AttackAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
                         } else {
@@ -1028,9 +1034,9 @@ void MatchState::applyActions (qreal dt)
             } else if (std::holds_alternative<quint32> (target)) {
                 if (!unit.attack_cooldown_left_ticks) {
                     quint32 target_unit_id = std::get<quint32> (target);
-                    QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                    std::map<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
                     if (target_unit_it != units.end ()) {
-                        Unit& target_unit = *target_unit_it;
+                        Unit& target_unit = target_unit_it->second;
                         if (applyAttack (unit, target_unit_id, target_unit, dt))
                             unit.action = PerformingAttackAction (AttackAction (std::get<AttackAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
                     } else {
@@ -1106,14 +1112,13 @@ void MatchState::applyEffects (qreal dt)
 }
 void MatchState::applyMissilesMovement (qreal dt)
 {
-    for (QMutableHashIterator<quint32, Missile> it (missiles); it.hasNext ();) {
-        it.next ();
-        Missile& missile = it.value ();
+    for (std::map<quint32, Missile>::iterator it = missiles.begin (); it != missiles.end (); ) {
+        Missile& missile = it->second;
         if (missile.target_unit.has_value ()) {
             quint32 target_unit_id = *missile.target_unit;
-            QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+            std::map<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
             if (target_unit_it != units.end ()) {
-                missile.target_position = target_unit_it->position;
+                missile.target_position = target_unit_it->second.position;
                 QPointF direction = missile.target_position - missile.position;
                 missile.orientation = qAtan2 (direction.y (), direction.x ());
             } else {
@@ -1139,9 +1144,9 @@ void MatchState::applyMissilesMovement (qreal dt)
         if (displacement_length <= path_length) {
             if (missile.target_unit.has_value ()) {
                 quint32 target_unit_id = *missile.target_unit;
-                QHash<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                std::map<quint32, Unit>::iterator target_unit_it = units.find (target_unit_id);
                 if (target_unit_it != units.end ()) {
-                    Unit& target_unit = *target_unit_it;
+                    Unit& target_unit = target_unit_it->second;
                     switch (missile.type) {
                     case Missile::Type::Rocket: {
                         const AttackDescription& attack_description = unitPrimaryAttackDescription (Unit::Type::Goon);
@@ -1162,19 +1167,21 @@ void MatchState::applyMissilesMovement (qreal dt)
             default:
                 break;
             }
-            it.remove ();
+            it = missiles.erase (it);
         } else {
             missile.position += displacement * (path_length / displacement_length);
+            ++it;
         }
     }
 }
 void MatchState::applyExplosionEffects (qreal /* dt */)
 {
-    for (QMutableHashIterator<quint32, Explosion> it (explosions); it.hasNext ();) {
-        it.next ();
-        Explosion& explosion = it.value ();
-        if (--explosion.remaining_ticks <= 0)
-            it.remove ();
+    for (std::map<quint32, Explosion>::iterator it = explosions.begin (); it != explosions.end ();) {
+        Explosion& explosion = it->second;
+        if (--explosion.remaining_ticks > 0)
+            ++it;
+        else
+            it = explosions.erase (it);
     }
 }
 void MatchState::applyMovement (Unit& unit, const QPointF& target_position, qreal dt, bool clear_action_on_completion)
@@ -1316,14 +1323,14 @@ void MatchState::applyUnitCollisions (qreal dt)
 {
     // Apply unit collisions: O (N^2)
     QVector<QPointF> offsets;
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         qreal unit_radius = unitRadius (unit.type);
         QPointF off;
-        for (QHash<quint32, Unit>::iterator related_it = units.begin (); related_it != units.end (); ++related_it) {
+        for (std::map<quint32, Unit>::iterator related_it = units.begin (); related_it != units.end (); ++related_it) {
             if (related_it == it)
                 continue;
-            Unit& related_unit = *related_it;
+            Unit& related_unit = related_it->second;
             qreal related_unit_radius = unitRadius (related_unit.type);
             qreal min_distance = unit_radius + related_unit_radius;
             QPointF delta = unit.position - related_unit.position;
@@ -1345,8 +1352,8 @@ void MatchState::applyUnitCollisions (qreal dt)
     }
     {
         size_t i = 0;
-        for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-            Unit& unit = *it;
+        for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+            Unit& unit = it->second;
             QPointF& position = unit.position;
             QPointF off = offsets[i++];
             qreal max_velocity = unitMaxVelocity (unit.type) * 0.9; // TODO: Make force depend on distance
@@ -1363,9 +1370,10 @@ void MatchState::dealDamage (Unit& unit, qint64 damage)
 
 void MatchState::applyDeath ()
 {
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end ();) {
-        if (it->hp <= 0) {
-            corpses.emplace (it.key (), *it);
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end ();) {
+        Unit& unit = it->second;
+        if (unit.hp <= 0) {
+            corpses.emplace (it->first, unit);
             it = units.erase (it);
         } else {
             ++it;
@@ -1374,19 +1382,20 @@ void MatchState::applyDeath ()
 }
 void MatchState::applyDecay ()
 {
-    for (QHash<quint32, Corpse>::iterator it = corpses.begin (); it != corpses.end ();) {
-        if (it->decay_remaining_ticks <= 1) {
+    for (std::map<quint32, Corpse>::iterator it = corpses.begin (); it != corpses.end ();) {
+        Corpse& corpse = it->second;
+        if (corpse.decay_remaining_ticks <= 1) {
             it = corpses.erase (it);
         } else {
-            --(it->decay_remaining_ticks);
+            --(corpse.decay_remaining_ticks);
             ++it;
         }
     }
 }
 Unit* MatchState::findUnitAt (Unit::Team team, const QPointF& point)
 {
-    for (QHash<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
-        Unit& unit = *it;
+    for (std::map<quint32, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
         if (unit.team == team && checkUnitInsideSelection (unit, point))
             return &unit;
     }
@@ -1398,11 +1407,12 @@ std::optional<quint32> MatchState::findClosestTarget (const Unit& unit)
     qreal radius = unitRadius (unit.type);
     qreal trigger_range = unitPrimaryAttackDescription (unit.type).trigger_range;
     qreal minimal_range = 1000000000.0;
-    for (QHash<quint32, Unit>::iterator target_it = units.begin (); target_it != units.end (); ++target_it) {
-        if (target_it->team != unit.team &&
-            unitDistance (unit, *target_it) <= qMin (radius + unitRadius (target_it->type) + trigger_range, minimal_range)) {
-            minimal_range = unitDistance (unit, *target_it);
-            closest_target = target_it.key ();
+    for (std::map<quint32, Unit>::iterator target_it = units.begin (); target_it != units.end (); ++target_it) {
+        Unit& target_unit = target_it->second;
+        if (target_unit.team != unit.team &&
+            unitDistance (unit, target_unit) <= qMin (radius + unitRadius (target_unit.type) + trigger_range, minimal_range)) {
+            minimal_range = unitDistance (unit, target_unit);
+            closest_target = target_it->first;
         }
     }
     return closest_target;
@@ -1421,9 +1431,11 @@ QVector<QPair<quint32, const Unit*>> MatchState::buildOrderedSelection ()
 
     // TODO: Use radix algorithm
     for (const Unit::Type unit_type: unit_order)
-        for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
-            if (it->selected && it->type == unit_type)
-                selection.append ({it.key (), &*it});
+        for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it) {
+            const Unit& unit = it->second;
+            if (unit.selected && unit.type == unit_type)
+                selection.append ({it->first, &unit});
+        }
 
     return selection;
 }

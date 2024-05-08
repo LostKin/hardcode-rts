@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QHash>
+#include <map>
 #include <QPointF>
 #include <QRectF>
 #include <QObject>
@@ -58,14 +58,14 @@ public:
     ~MatchState ();
     quint64 clockNS () const;
     const QRectF& areaRef () const;
-    const QHash<quint32, Unit>& unitsRef () const;
-    const QHash<quint32, Corpse>& corpsesRef () const;
+    const std::map<quint32, Unit>& unitsRef () const;
+    const std::map<quint32, Corpse>& corpsesRef () const;
     Unit& addUnit (quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
-    Corpse& addCorpse (quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction, quint64 decay_remaining_ticks);
+    Corpse& addCorpse (quint32 id, Unit::Type type, Unit::Team team, const QPointF& position, qreal direction, qint64 decay_remaining_ticks);
     Missile& addMissile (quint32 id, Missile::Type type, Unit::Team team, const QPointF& position, qreal direction);
-    const QHash<quint32, Missile>& missilesRef () const;
-    const QHash<quint32, Explosion>& explosionsRef () const;
-    QHash<quint32, Unit>::iterator createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
+    const std::map<quint32, Missile>& missilesRef () const;
+    const std::map<quint32, Explosion>& explosionsRef () const;
+    std::map<quint32, Unit>::iterator createUnit (Unit::Type type, Unit::Team team, const QPointF& position, qreal direction);
     void trySelect (Unit::Team team, const QPointF& point, bool add);
     void trySelect (Unit::Team team, const QRectF& rect, bool add);
     void trySelectByType (Unit::Team team, const QPointF& point, const QRectF& viewport, bool add);
@@ -141,10 +141,10 @@ private:
     quint32 tick_no = 0;
     quint64 clock_ns = 0;
     QRectF area = {-64, -48, 128, 96};
-    QHash<quint32, Unit> units;
-    QHash<quint32, Corpse> corpses;
-    QHash<quint32, Missile> missiles;
-    QHash<quint32, Explosion> explosions;
+    std::map<quint32, Unit> units;
+    std::map<quint32, Corpse> corpses;
+    std::map<quint32, Missile> missiles;
+    std::map<quint32, Explosion> explosions;
     RedTeamUserData red_team_user_data;
     BlueTeamUserData blue_team_user_data;
     quint32 next_id = 0;

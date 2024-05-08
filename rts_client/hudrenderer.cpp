@@ -322,15 +322,16 @@ void HUDRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
     qint64 cast_cooldown_left_ticks = 0x7fffffffffffffffLL;
     quint64 active_actions = 0;
     const Unit* last_selected_unit = nullptr;
-    const QHash<quint32, Unit>& units = match_state.unitsRef ();
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
-        if (it->selected) {
-            if (std::holds_alternative<AttackAction> (it->action) || std::holds_alternative<PerformingAttackAction> (it->action)) {
+    const std::map<quint32, Unit>& units = match_state.unitsRef ();
+    for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it) {
+        const Unit& unit = it->second;
+        if (unit.selected) {
+            if (std::holds_alternative<AttackAction> (unit.action) || std::holds_alternative<PerformingAttackAction> (unit.action)) {
                 active_actions |= 1 << quint64 (ActionButtonId::Attack);
-            } else if (std::holds_alternative<MoveAction> (it->action)) {
+            } else if (std::holds_alternative<MoveAction> (unit.action)) {
                 active_actions |= 1 << quint64 (ActionButtonId::Move);
-            } else if (std::holds_alternative<CastAction> (it->action)) {
-                switch (std::get<CastAction> (it->action).type) {
+            } else if (std::holds_alternative<CastAction> (unit.action)) {
+                switch (std::get<CastAction> (unit.action).type) {
                 case CastAction::Type::Pestilence:
                     active_actions |= 1 << quint64 (ActionButtonId::Pestilence);
                     break;
@@ -340,8 +341,8 @@ void HUDRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
                 default:
                     break;
                 }
-            } else if (std::holds_alternative<PerformingCastAction> (it->action)) {
-                switch (std::get<PerformingCastAction> (it->action).cast_type) {
+            } else if (std::holds_alternative<PerformingCastAction> (unit.action)) {
+                switch (std::get<PerformingCastAction> (unit.action).cast_type) {
                 case CastAction::Type::Pestilence:
                     active_actions |= 1 << quint64 (ActionButtonId::Pestilence);
                     break;
@@ -355,12 +356,12 @@ void HUDRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
                 active_actions |= 1 << quint64 (ActionButtonId::Stop);
             }
 
-            if (it->type == Unit::Type::Contaminator) {
+            if (unit.type == Unit::Type::Contaminator) {
                 contaminator_selected = true;
-                cast_cooldown_left_ticks = qMin (cast_cooldown_left_ticks, it->cast_cooldown_left_ticks);
+                cast_cooldown_left_ticks = qMin (cast_cooldown_left_ticks, unit.cast_cooldown_left_ticks);
             }
             ++selected_count;
-            last_selected_unit = &*it;
+            last_selected_unit = &unit;
         }
     }
 

@@ -25,9 +25,9 @@ void MinimapRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_rende
     const QRectF& area = match_state.areaRef ();
     QPointF area_to_minimap_scale = {hud.minimap_screen_area.width () / area.width (), hud.minimap_screen_area.height () / area.height ()};
     colored_renderer.fillRectangle (gl, hud.minimap_screen_area, QColor (), ortho_matrix);
-    const QHash<quint32, Unit>& units = match_state.unitsRef ();
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
-        const Unit& unit = *it;
+    const std::map<quint32, Unit>& units = match_state.unitsRef ();
+    for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it) {
+        const Unit& unit = it->second;
         QPointF pos = hud.minimap_screen_area.topLeft () + (unit.position - area.topLeft ()) * area_to_minimap_scale;
         QColor color = (team == unit.team) ? QColor (0, 0xff, 0) : QColor (0xff, 0, 0);
         if (unit.type == Unit::Type::Contaminator)

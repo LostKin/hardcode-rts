@@ -28,13 +28,14 @@ void GroupOverlayRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_
     Unit::Type group_unit_counts[GROUP_COUNT];
     for (qint64 i = 0; i < GROUP_COUNT; ++i)
         group_unit_counts[i] = Unit::Type::Beetle;
-    const QHash<quint32, Unit>& units = match_state.unitsRef ();
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
-        quint64 groups = it->groups;
+    const std::map<quint32, Unit>& units = match_state.unitsRef ();
+    for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it) {
+        const Unit& unit = it->second;
+        quint64 groups = unit.groups;
         for (qint64 i = 0; i < GROUP_COUNT; ++i) {
             if (groups & (1 << (i + 1))) {
                 group_sizes[i]++;
-                group_unit_counts[i] = qMax (group_unit_counts[i], it->type);
+                group_unit_counts[i] = qMax (group_unit_counts[i], unit.type);
             }
         }
     }

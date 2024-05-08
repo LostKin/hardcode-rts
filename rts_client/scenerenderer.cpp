@@ -76,37 +76,37 @@ void SceneRenderer::drawCorpses (QOpenGLFunctions& gl, TexturedRenderer& texture
                                  MatchState& match_state,
                                  const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
-    const QHash<quint32, Corpse>& corpses = match_state.corpsesRef ();
-    for (QHash<quint32, Corpse>::const_iterator it = corpses.constBegin (); it != corpses.constEnd (); ++it)
-        unit_set_renderer->drawCorpse (gl, textured_renderer, it.value (), ortho_matrix, coord_map);
+    const std::map<quint32, Corpse>& corpses = match_state.corpsesRef ();
+    for (std::map<quint32, Corpse>::const_iterator it = corpses.cbegin (); it != corpses.cend (); ++it)
+        unit_set_renderer->drawCorpse (gl, textured_renderer, it->second, ortho_matrix, coord_map);
 }
 void SceneRenderer::drawUnits (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer,
                                MatchState& match_state,
                                const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
-    const QHash<quint32, Unit>& units = match_state.unitsRef ();
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
-        unit_set_renderer->draw (gl, textured_renderer, it.value (), match_state.clockNS (), ortho_matrix, coord_map);
+    const std::map<quint32, Unit>& units = match_state.unitsRef ();
+    for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it)
+        unit_set_renderer->draw (gl, textured_renderer, it->second, match_state.clockNS (), ortho_matrix, coord_map);
 }
 void SceneRenderer::drawUnitSelection (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
                                        MatchState& match_state,
                                        const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
-    const QHash<quint32, Unit>& units = match_state.unitsRef ();
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
-        unit_set_renderer->drawSelection (gl, colored_renderer, it.value (), ortho_matrix, coord_map);
+    const std::map<quint32, Unit>& units = match_state.unitsRef ();
+    for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it)
+        unit_set_renderer->drawSelection (gl, colored_renderer, it->second, ortho_matrix, coord_map);
 }
 void SceneRenderer::drawEffects (QOpenGLFunctions& gl, ColoredTexturedRenderer& colored_textured_renderer, TexturedRenderer& textured_renderer,
                                  MatchState& match_state,
                                  const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
-    const QHash<quint32, Missile>& missiles = match_state.missilesRef ();
-    for (QHash<quint32, Missile>::const_iterator it = missiles.constBegin (); it != missiles.constEnd (); ++it)
-        effect_renderer->drawMissile (gl, textured_renderer, it.value (), match_state.clockNS (), ortho_matrix, coord_map);
+    const std::map<quint32, Missile>& missiles = match_state.missilesRef ();
+    for (std::map<quint32, Missile>::const_iterator it = missiles.cbegin (); it != missiles.cend (); ++it)
+        effect_renderer->drawMissile (gl, textured_renderer, it->second, match_state.clockNS (), ortho_matrix, coord_map);
 
-    const QHash<quint32, Explosion>& explosions = match_state.explosionsRef ();
-    for (QHash<quint32, Explosion>::const_iterator it = explosions.constBegin (); it != explosions.constEnd (); ++it)
-        effect_renderer->drawExplosion (gl, colored_textured_renderer, it.value (), match_state.clockNS (), ortho_matrix, coord_map);
+    const std::map<quint32, Explosion>& explosions = match_state.explosionsRef ();
+    for (std::map<quint32, Explosion>::const_iterator it = explosions.cbegin (); it != explosions.cend (); ++it)
+        effect_renderer->drawExplosion (gl, colored_textured_renderer, it->second, match_state.clockNS (), ortho_matrix, coord_map);
 }
 void SceneRenderer::drawUnitPaths (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
                                    MatchState& match_state, Unit::Team team,
@@ -114,9 +114,9 @@ void SceneRenderer::drawUnitPaths (QOpenGLFunctions& gl, ColoredRenderer& colore
 {
     QVector<GLfloat> vertices;
     QVector<GLfloat> colors;
-    const QHash<quint32, Unit>& units = match_state.unitsRef ();
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it) {
-        const Unit& unit = *it;
+    const std::map<quint32, Unit>& units = match_state.unitsRef ();
+    for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it) {
+        const Unit& unit = it->second;
         const QPointF* target_position;
         if (unit.team == team && (target_position = getUnitTargetPosition (unit, match_state))) {
             QPointF current = coord_map.toScreenCoords (unit.position);
@@ -151,9 +151,9 @@ void SceneRenderer::drawUnitStats (QOpenGLFunctions& gl, ColoredRenderer& colore
                                    MatchState& match_state,
                                    const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
-    const QHash<quint32, Unit>& units = match_state.unitsRef ();
-    for (QHash<quint32, Unit>::const_iterator it = units.constBegin (); it != units.constEnd (); ++it)
-        unit_set_renderer->drawHPBar (gl, colored_renderer, it.value (), ortho_matrix, coord_map);
+    const std::map<quint32, Unit>& units = match_state.unitsRef ();
+    for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it)
+        unit_set_renderer->drawHPBar (gl, colored_renderer, it->second, ortho_matrix, coord_map);
 }
 void SceneRenderer::drawSelectionBar (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
                                       const QPoint& cursor_position, const std::optional<QPoint>& selection_start,
@@ -192,10 +192,10 @@ const QPointF* SceneRenderer::getUnitTargetPosition (const UnitActionVariant& un
             return &std::get<QPointF> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {
             quint32 target_unit_id = std::get<quint32> (action_target);
-            const QHash<quint32, Unit>& units = match_state.unitsRef ();
-            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
+            const std::map<quint32, Unit>& units = match_state.unitsRef ();
+            std::map<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
             if (target_unit_it != units.end ()) {
-                const Unit& target_unit = *target_unit_it;
+                const Unit& target_unit = target_unit_it->second;
                 return &target_unit.position;
             }
         }
@@ -205,10 +205,10 @@ const QPointF* SceneRenderer::getUnitTargetPosition (const UnitActionVariant& un
             return &std::get<QPointF> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {
             quint32 target_unit_id = std::get<quint32> (action_target);
-            const QHash<quint32, Unit>& units = match_state.unitsRef ();
-            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
+            const std::map<quint32, Unit>& units = match_state.unitsRef ();
+            std::map<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
             if (target_unit_it != units.end ()) {
-                const Unit& target_unit = *target_unit_it;
+                const Unit& target_unit = target_unit_it->second;
                 return &target_unit.position;
             }
         }
@@ -223,10 +223,10 @@ const QPointF* SceneRenderer::getUnitTargetPosition (const IntentiveActionVarian
             return &std::get<QPointF> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {
             quint32 target_unit_id = std::get<quint32> (action_target);
-            const QHash<quint32, Unit>& units = match_state.unitsRef ();
-            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
+            const std::map<quint32, Unit>& units = match_state.unitsRef ();
+            std::map<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
             if (target_unit_it != units.end ()) {
-                const Unit& target_unit = *target_unit_it;
+                const Unit& target_unit = target_unit_it->second;
                 return &target_unit.position;
             }
         }
@@ -236,10 +236,10 @@ const QPointF* SceneRenderer::getUnitTargetPosition (const IntentiveActionVarian
             return &std::get<QPointF> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {
             quint32 target_unit_id = std::get<quint32> (action_target);
-            const QHash<quint32, Unit>& units = match_state.unitsRef ();
-            QHash<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
+            const std::map<quint32, Unit>& units = match_state.unitsRef ();
+            std::map<quint32, Unit>::const_iterator target_unit_it = units.find (target_unit_id);
             if (target_unit_it != units.end ()) {
-                const Unit& target_unit = *target_unit_it;
+                const Unit& target_unit = target_unit_it->second;
                 return &target_unit.position;
             }
         }
