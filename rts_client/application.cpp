@@ -11,6 +11,7 @@
 #include <QMessageBox>
 #include <QSettings>
 
+
 Application::Application (int& argc, char** argv)
     : QApplication (argc, argv)
 {
@@ -147,7 +148,7 @@ void Application::joinRoomCallback (quint32 room_id)
 
     network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
 }
-void Application::createUnitCallback (Unit::Team team, Unit::Type type, QPointF position)
+void Application::createUnitCallback (Unit::Team team, Unit::Type type, const Position& position)
 {
     if (!session_id.has_value ())
         return;
@@ -212,8 +213,8 @@ void Application::unitActionCallback (quint32 id, const UnitActionVariant& actio
         MoveAction move_action = std::get<MoveAction> (action);
         RTS::MoveAction* move = unit_action->mutable_move ();
         if (move_action.target.index () == 0) {
-            move->mutable_position ()->mutable_position ()->set_x (std::get<QPointF> (move_action.target).x ());
-            move->mutable_position ()->mutable_position ()->set_y (std::get<QPointF> (move_action.target).y ());
+            move->mutable_position ()->mutable_position ()->set_x (std::get<Position> (move_action.target).x ());
+            move->mutable_position ()->mutable_position ()->set_y (std::get<Position> (move_action.target).y ());
         } else {
             move->mutable_unit ()->set_id (std::get<quint32> (move_action.target));
         }
@@ -221,8 +222,8 @@ void Application::unitActionCallback (quint32 id, const UnitActionVariant& actio
         AttackAction attack_action = std::get<AttackAction> (action);
         RTS::AttackAction* attack = unit_action->mutable_attack ();
         if (attack_action.target.index () == 0) {
-            attack->mutable_position ()->mutable_position ()->set_x (std::get<QPointF> (attack_action.target).x ());
-            attack->mutable_position ()->mutable_position ()->set_y (std::get<QPointF> (attack_action.target).y ());
+            attack->mutable_position ()->mutable_position ()->set_x (std::get<Position> (attack_action.target).x ());
+            attack->mutable_position ()->mutable_position ()->set_y (std::get<Position> (attack_action.target).y ());
         } else {
             attack->mutable_unit ()->set_id (std::get<quint32> (attack_action.target));
         }
@@ -553,7 +554,7 @@ std::optional<std::pair<quint32, Unit>> Application::parseUnit (const RTS::Unit&
     }
 
     quint32 id = m_unit.has_client_id () ? m_unit.client_id ().id () : m_unit.id ();
-    Unit unit = Unit (type, 0, team, QPointF (m_unit.position ().x (), m_unit.position ().y ()), m_unit.orientation ());
+    Unit unit = Unit (type, 0, team, Position (m_unit.position ().x (), m_unit.position ().y ()), m_unit.orientation ());
     unit.hp = m_unit.health ();
     if (!parseUnitAction (m_unit.current_action (), unit.action, error_message))
         return std::nullopt;
@@ -605,7 +606,7 @@ std::optional<std::pair<quint32, Missile>> Application::parseMissile (const RTS:
     }
 
     quint32 id = m_missile.id ();
-    Missile missile (type, team, QPointF (m_missile.position ().x (), m_missile.position ().y ()), 0, QPointF (m_missile.target_position ().x (), m_missile.target_position ().y ()));
+    Missile missile (type, team, Position (m_missile.position ().x (), m_missile.position ().y ()), 0, Position (m_missile.target_position ().x (), m_missile.target_position ().y ()));
 
     if (m_missile.has_target_unit ())
         missile.target_unit = m_missile.target_unit ().id ();
@@ -659,26 +660,26 @@ StopAction Application::parseUnitActionStop (const RTS::StopAction& m_stop_actio
 }
 MoveAction Application::parseUnitActionMove (const RTS::MoveAction& m_move_action)
 {
-    MoveAction move (QPointF (0, 0));
+    MoveAction move (Position (0, 0));
     if (m_move_action.target_case () == RTS::MoveAction::kPosition)
-        move.target = QPointF (m_move_action.position ().position ().x (), m_move_action.position ().position ().y ());
+        move.target = Position (m_move_action.position ().position ().x (), m_move_action.position ().position ().y ());
     else
         move.target = (quint32) m_move_action.unit ().id ();
     return move;
 }
 AttackAction Application::parseUnitActionAttack (const RTS::AttackAction& m_attack_action)
 {
-    AttackAction attack (QPointF (0, 0));
+    AttackAction attack (Position (0, 0));
     if (m_attack_action.target_case () == RTS::AttackAction::kPosition)
-        attack.target = QPointF (m_attack_action.position ().position ().x (), m_attack_action.position ().position ().y ());
+        attack.target = Position (m_attack_action.position ().position ().x (), m_attack_action.position ().position ().y ());
     else
         attack.target = (quint32) m_attack_action.unit ().id ();
     return attack;
 }
 std::optional<CastAction> Application::parseUnitActionCast (const RTS::CastAction& m_cast_action, QString& error_message)
 {
-    CastAction cast (CastAction::Type::Unknown, QPointF (0, 0));
-    cast.target = QPointF (m_cast_action.position ().position ().x (), m_cast_action.position ().position ().y ());
+    CastAction cast (CastAction::Type::Unknown, Position (0, 0));
+    cast.target = Position (m_cast_action.position ().position ().x (), m_cast_action.position ().position ().y ());
     switch (m_cast_action.type ()) {
     case RTS::CastType::CAST_TYPE_PESTILENCE:
         cast.type = CastAction::Type::Pestilence;

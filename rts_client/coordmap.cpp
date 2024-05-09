@@ -1,17 +1,31 @@
 #include "coordmap.h"
 
 
-QPointF CoordMap::toMapCoords (const QPointF& point) const
+Position CoordMap::toMapCoords (const Position& point) const
 {
-    qreal scale = viewport_scale * arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY;
-    return viewport_center + (point - arena_viewport_center) / scale;
+    double scale = POINTS_PER_VIEWPORT_VERTICALLY / (viewport_scale * arena_viewport.height ());
+    return viewport_center + (point - arena_viewport_center)*scale;
 }
-QRectF CoordMap::toMapCoords (const QRectF& rect) const
+Position CoordMap::toMapCoords (const QPoint& point) const
 {
-    return QRectF (toMapCoords (rect.topLeft ()), toMapCoords (rect.bottomRight ()));
+    double scale = POINTS_PER_VIEWPORT_VERTICALLY / (viewport_scale * arena_viewport.height ());
+    return viewport_center + (Position (point.x (), point.y ()) - arena_viewport_center)*scale;
 }
-QPointF CoordMap::toScreenCoords (const QPointF& point) const
+Rectangle CoordMap::toMapCoords (const Rectangle& rect) const
 {
-    qreal scale = viewport_scale * arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY;
+    return {toMapCoords (rect.topLeft ()), toMapCoords (rect.bottomRight ())};
+}
+Rectangle CoordMap::toMapCoords (const QRect& rect) const
+{
+    return {toMapCoords (rect.topLeft ()), toMapCoords (rect.bottomRight ())};
+}
+Position CoordMap::toScreenCoords (const Position& point) const
+{
+    double scale = viewport_scale * arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY;
     return arena_viewport_center + (point - viewport_center)*scale;
+}
+Position CoordMap::toScreenCoords (const QPoint& point) const
+{
+    double scale = viewport_scale * arena_viewport.height () / POINTS_PER_VIEWPORT_VERTICALLY;
+    return arena_viewport_center + (Position (point.x (), point.y ()) - viewport_center)*scale;
 }

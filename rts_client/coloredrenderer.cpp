@@ -267,6 +267,10 @@ void ColoredRenderer::fillRectangle (QOpenGLFunctions& gl, const QRectF& rect, c
 {
     fillRectangle (gl, rect.x (), rect.y (), rect.width (), rect.height (), color, ortho_matrix);
 }
+void ColoredRenderer::fillRectangle (QOpenGLFunctions& gl, const Rectangle& rect, const QColor& color, const QMatrix4x4& ortho_matrix)
+{
+    fillRectangle (gl, rect.left (), rect.top (), rect.width (), rect.height (), color, ortho_matrix);
+}
 void ColoredRenderer::drawCircle (QOpenGLFunctions& gl, qreal x, qreal y, qreal radius, const QColor& color, const QMatrix4x4& ortho_matrix)
 {
     const GLfloat x_f = x;

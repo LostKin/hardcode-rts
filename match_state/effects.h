@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QtMath>
 
 struct Missile {
     enum class Type {
@@ -8,31 +7,31 @@ struct Missile {
         Pestilence,
     };
 
-    Missile (Missile::Type type, Unit::Team sender_team, const QPointF& position, uint32_t target_unit, const QPointF& target_position)
+    Missile (Missile::Type type, Unit::Team sender_team, const Position& position, uint32_t target_unit, const Position& target_position)
         : type (type)
         , sender_team (sender_team)
         , position (position)
         , target_unit (target_unit)
         , target_position (target_position)
     {
-        QPointF direction = target_position - position;
-        orientation = qAtan2 (direction.y (), direction.x ());
+        Offset direction = target_position - position;
+        orientation = qAtan2 (direction.dY (), direction.dX ()); // TODO: Add method Offset::orientation ()
     }
-    Missile (Missile::Type type, Unit::Team sender_team, const QPointF& position, const QPointF& target_position)
+    Missile (Missile::Type type, Unit::Team sender_team, const Position& position, const Position& target_position)
         : type (type)
         , sender_team (sender_team)
         , position (position)
         , target_position (target_position)
     {
-        QPointF direction = target_position - position;
-        orientation = qAtan2 (direction.y (), direction.x ());
+        Offset direction = target_position - position;
+        orientation = qAtan2 (direction.dY (), direction.dX ());
     }
 
     Missile::Type type;
     Unit::Team sender_team;
-    QPointF position;
+    Position position;
     std::optional<uint32_t> target_unit = {};
-    QPointF target_position;
+    Position target_position;
     double orientation;
 };
 
@@ -42,7 +41,7 @@ struct Explosion {
         Pestilence,
     };
 
-    Explosion (Type type, const QPointF& position, int64_t duration)
+    Explosion (Type type, const Position& position, int64_t duration)
         : type (type)
         , position (position)
         , remaining_ticks (duration)
@@ -50,6 +49,6 @@ struct Explosion {
     }
 
     Type type;
-    QPointF position;
+    Position position;
     int64_t remaining_ticks = 0;
 };

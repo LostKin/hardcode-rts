@@ -1,9 +1,7 @@
 #pragma once
 
-#include <QPointF>
-#include <variant>
-
 #include "actions.h"
+#include "position.h"
 
 class Unit
 {
@@ -24,7 +22,7 @@ public:
     };
 
 public:
-    Unit (Type type, uint64_t phase_offset, Team team, const QPointF& position, double orientation)
+    Unit (Type type, uint64_t phase_offset, Team team, const Position& position, double orientation)
         : type (type)
         , phase_offset (phase_offset)
         , team (team)
@@ -37,10 +35,10 @@ public:
     Type type;
     uint64_t phase_offset;
     Team team;
-    QPointF position;
+    Position position;
     double orientation = 0.0;
     bool selected = false;
-    UnitActionVariant action;
+    UnitActionVariant action = StopAction ();
     int64_t hp = 0;
     int64_t attack_cooldown_left_ticks = 0;
     int64_t cast_cooldown_left_ticks = 0;

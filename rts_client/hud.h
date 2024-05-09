@@ -1,9 +1,10 @@
 #pragma once
 
+#include "rectangle.h"
+
 #include <QSize>
 #include <QRect>
 #include <QPoint>
-#include <QRectF>
 
 
 enum class ActionButtonId {
@@ -30,7 +31,7 @@ public:
     QRect selection_panel_rect = {0, 0, 1, 1};
     int selection_panel_icon_rib = 1;
     QPoint selection_panel_icon_grid_pos = {0, 0};
-    QRectF minimap_screen_area = {0, 0, 1, 1};
+    Rectangle minimap_screen_area = {0, 0, 1, 1};
 
     ActionButtonId pressed_action_button = ActionButtonId::None;
     ActionButtonId current_action_button = ActionButtonId::None;

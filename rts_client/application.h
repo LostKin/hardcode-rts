@@ -58,7 +58,7 @@ private slots:
     void joinSpectatorCallback ();
     void readinessCallback ();
     void matchStartCallback ();
-    void createUnitCallback (Unit::Team team, Unit::Type type, QPointF positon);
+    void createUnitCallback (Unit::Team team, Unit::Type type, const Position& positon);
     void savedCredentials (const QVector<AuthorizationCredentials>& credentials);
     void unitActionCallback (quint32 id, const UnitActionVariant& action);
 

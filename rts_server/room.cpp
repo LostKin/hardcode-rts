@@ -188,8 +188,8 @@ void Room::fillStopAction (const StopAction& stop_action, RTS::StopAction* m_sto
 }
 void Room::fillMoveAction (const MoveAction& move_action, RTS::MoveAction* m_move_action)
 {
-    if (std::holds_alternative<QPointF> (move_action.target)) {
-        const QPointF& position = std::get<QPointF> (move_action.target);
+    if (std::holds_alternative<Position> (move_action.target)) {
+        const Position& position = std::get<Position> (move_action.target);
         m_move_action->mutable_position ()->mutable_position ()->set_x (position.x ());
         m_move_action->mutable_position ()->mutable_position ()->set_y (position.y ());
     } else {
@@ -199,8 +199,8 @@ void Room::fillMoveAction (const MoveAction& move_action, RTS::MoveAction* m_mov
 }
 void Room::fillAttackAction (const AttackAction& attack_action, RTS::AttackAction* m_attack_action)
 {
-    if (std::holds_alternative<QPointF> (attack_action.target)) {
-        const QPointF& position = std::get<QPointF> (attack_action.target);
+    if (std::holds_alternative<Position> (attack_action.target)) {
+        const Position& position = std::get<Position> (attack_action.target);
         m_attack_action->mutable_position ()->mutable_position ()->set_x (position.x ());
         m_attack_action->mutable_position ()->mutable_position ()->set_y (position.y ());
     } else {
@@ -221,7 +221,7 @@ bool Room::fillCastAction (const CastAction& cast_action, RTS::CastAction* m_cas
     default:
         return false;
     }
-    const QPointF& position = cast_action.target;
+    const Position& position = cast_action.target;
     m_cast_action->mutable_position ()->mutable_position ()->set_x (position.x ());
     m_cast_action->mutable_position ()->mutable_position ()->set_y (position.y ());
     m_cast_action->set_type (type);
@@ -391,7 +391,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             emit sendResponseRoom (response_oneof, session, request_id);
         }
         const RTS::Vector2D& position = request.position ();
-        std::map<uint32_t, Unit>::iterator unit = match_state->createUnit (type, team, QPointF (position.x (), position.y ()), 0);
+        std::map<uint32_t, Unit>::iterator unit = match_state->createUnit (type, team, Position (position.x (), position.y ()), 0);
         if (*session->current_team == Unit::Team::Red) {
             red_unit_id_client_to_server_map[request.id ()] = unit->first;
         } else if (*session->current_team == Unit::Team::Blue) {
@@ -421,7 +421,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
         switch (action.action_case ()) {
         case RTS::UnitAction::ActionCase::kMove: {
             if (action.move ().has_position ()) {
-                match_state->setUnitAction (request.unit_id (), MoveAction (QPointF (action.move ().position ().position ().x (),
+                match_state->setUnitAction (request.unit_id (), MoveAction (Position (action.move ().position ().position ().x (),
                                                                                      action.move ().position ().position ().y ())));
             } else if (action.move ().has_unit ()) {
                 match_state->setUnitAction (request.unit_id (), MoveAction (action.move ().unit ().id ()));
@@ -436,7 +436,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             const RTS::AttackAction& attack = action.attack ();
             if (attack.has_position ()) {
                 const RTS::Vector2D& target_position = attack.position ().position ();
-                match_state->setUnitAction (request.unit_id (), AttackAction (QPointF (target_position.x (), target_position.y ())));
+                match_state->setUnitAction (request.unit_id (), AttackAction (Position (target_position.x (), target_position.y ())));
             } else if (attack.has_unit ()) {
                 match_state->setUnitAction (request.unit_id (), AttackAction (attack.unit ().id ()));
             } else {
@@ -463,7 +463,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
                 emit sendResponseRoom (response_oneof, session, request_id);
             } return;
             }
-            CastAction cast = CastAction (type, QPointF (action.cast ().position ().position ().x (), action.cast ().position ().position ().y ()));
+            CastAction cast = CastAction (type, Position (action.cast ().position ().position ().x (), action.cast ().position ().position ().y ()));
             match_state->setUnitAction (request.unit_id (), cast);
         } break;
         case RTS::UnitAction::ActionCase::kStop: {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rectangle.h"
+
 #include <QSharedPointer>
 #include <QOpenGLFunctions>
 
@@ -18,6 +20,7 @@ public:
     void fillRectangle (QOpenGLFunctions& gl, qreal x, qreal y, qreal w, qreal h, const QColor& color, const QMatrix4x4& ortho_matrix);
     void fillRectangle (QOpenGLFunctions& gl, const QRect& rect, const QColor& color, const QMatrix4x4& ortho_matrix);
     void fillRectangle (QOpenGLFunctions& gl, const QRectF& rect, const QColor& color, const QMatrix4x4& ortho_matrix);
+    void fillRectangle (QOpenGLFunctions& gl, const Rectangle& rect, const QColor& color, const QMatrix4x4& ortho_matrix);
     void drawCircle (QOpenGLFunctions& gl, qreal x, qreal y, qreal radius, const QColor& color, const QMatrix4x4& ortho_matrix);
 
 private:

@@ -98,7 +98,7 @@ void UnitRenderer::drawSelection (QOpenGLFunctions& gl, ColoredRenderer& colored
         }
         qreal map_to_screen_factor = coord_map.arena_viewport.height () / coord_map.POINTS_PER_VIEWPORT_VERTICALLY;
         qreal scale = coord_map.viewport_scale * sprite_scale * MatchState::unitDiameter (unit.type) * SQRT_2 * map_to_screen_factor;
-        QPointF center = coord_map.toScreenCoords (unit.position);
+        Position center = coord_map.toScreenCoords (unit.position);
         colored_renderer.drawCircle (gl, center.x (), center.y (), scale * 0.5, {0, 255, 0}, ortho_matrix);
     }
 }
@@ -108,7 +108,7 @@ void UnitRenderer::drawHPBar (QOpenGLFunctions& gl, ColoredRenderer& colored_ren
     if (unit.hp >= MatchState::unitMaxHP (unit.type))
         return;
 
-    QPointF center = coord_map.toScreenCoords (unit.position);
+    Position center = coord_map.toScreenCoords (unit.position);
     qreal hp_ratio = qreal (unit.hp) / MatchState::unitMaxHP (unit.type);
     qreal hitbar_height = coord_map.viewport_scale * 0.16 * coord_map.arena_viewport.height () / coord_map.POINTS_PER_VIEWPORT_VERTICALLY;
     qreal radius = coord_map.viewport_scale * MatchState::unitDiameter (unit.type) * 0.42 * coord_map.arena_viewport.height () / coord_map.POINTS_PER_VIEWPORT_VERTICALLY;
@@ -277,7 +277,7 @@ void UnitRenderer::drawBody (QOpenGLFunctions& gl, TexturedRenderer& textured_re
         texture = corpse.get ();
     }
 
-    QPointF center = coord_map.toScreenCoords (unit.position);
+    Position center = coord_map.toScreenCoords (unit.position);
 
     qreal a1_sin, a1_cos;
     qreal a2_sin, a2_cos;
@@ -350,7 +350,7 @@ void UnitRenderer::drawCooldownShade (QOpenGLFunctions& gl, TexturedRenderer& te
         return;
     }
 
-    QPointF center = coord_map.toScreenCoords (unit.position);
+    Position center = coord_map.toScreenCoords (unit.position);
 
     qreal max_cooldown_ticks = qMax (MatchState::effectAttackDescription (AttackDescription::Type::PestilenceMissile).cooldown_ticks,
                                      MatchState::effectAttackDescription (AttackDescription::Type::SpawnBeetle).cooldown_ticks);

@@ -35,10 +35,10 @@ void SceneRenderer::drawBackground (QOpenGLFunctions& gl, TexturedRenderer& text
                                     MatchState& match_state,
                                     const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
-    const QRectF& area = match_state.areaRef ();
+    const Rectangle& area = match_state.areaRef ();
 
     qreal scale = coord_map.viewport_scale * coord_map.arena_viewport.height () / coord_map.POINTS_PER_VIEWPORT_VERTICALLY;
-    QPointF center = coord_map.arena_viewport_center - coord_map.viewport_center*scale;
+    Position center = coord_map.arena_viewport_center - Offset (coord_map.viewport_center.x (), coord_map.viewport_center.y ())*scale;
     const GLfloat vertices[] = {
         GLfloat (center.x () + scale * area.left ()),
         GLfloat (center.y () + scale * area.top ()),
@@ -117,10 +117,10 @@ void SceneRenderer::drawUnitPaths (QOpenGLFunctions& gl, ColoredRenderer& colore
     const std::map<quint32, Unit>& units = match_state.unitsRef ();
     for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it) {
         const Unit& unit = it->second;
-        const QPointF* target_position;
+        const Position* target_position;
         if (unit.team == team && (target_position = getUnitTargetPosition (unit, match_state))) {
-            QPointF current = coord_map.toScreenCoords (unit.position);
-            QPointF target = coord_map.toScreenCoords (*target_position);
+            Position current = coord_map.toScreenCoords (unit.position);
+            Position target = coord_map.toScreenCoords (*target_position);
             vertices.append ({
                     GLfloat (current.x ()),
                     GLfloat (current.y ()),
@@ -169,7 +169,7 @@ void SceneRenderer::drawSelectionBar (QOpenGLFunctions& gl, ColoredRenderer& col
         );
     }
 }
-const QPointF* SceneRenderer::getUnitTargetPosition (const Unit& unit, MatchState& match_state)
+const Position* SceneRenderer::getUnitTargetPosition (const Unit& unit, MatchState& match_state)
 {
     if (std::holds_alternative<StopAction> (unit.action) ||
         std::holds_alternative<MoveAction> (unit.action) ||
@@ -184,12 +184,12 @@ const QPointF* SceneRenderer::getUnitTargetPosition (const Unit& unit, MatchStat
     return nullptr;
 }
 // TODO: Return pair<QPointF, intention_type>
-const QPointF* SceneRenderer::getUnitTargetPosition (const UnitActionVariant& unit_action, MatchState& match_state)
+const Position* SceneRenderer::getUnitTargetPosition (const UnitActionVariant& unit_action, MatchState& match_state)
 {
     if (std::holds_alternative<MoveAction> (unit_action)) {
-        const std::variant<QPointF, quint32>& action_target = std::get<MoveAction> (unit_action).target;
-        if (std::holds_alternative<QPointF> (action_target)) {
-            return &std::get<QPointF> (action_target);
+        const std::variant<Position, quint32>& action_target = std::get<MoveAction> (unit_action).target;
+        if (std::holds_alternative<Position> (action_target)) {
+            return &std::get<Position> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {
             quint32 target_unit_id = std::get<quint32> (action_target);
             const std::map<quint32, Unit>& units = match_state.unitsRef ();
@@ -200,9 +200,9 @@ const QPointF* SceneRenderer::getUnitTargetPosition (const UnitActionVariant& un
             }
         }
     } else if (std::holds_alternative<AttackAction> (unit_action)) {
-        const std::variant<QPointF, quint32>& action_target = std::get<AttackAction> (unit_action).target;
-        if (std::holds_alternative<QPointF> (action_target)) {
-            return &std::get<QPointF> (action_target);
+        const std::variant<Position, quint32>& action_target = std::get<AttackAction> (unit_action).target;
+        if (std::holds_alternative<Position> (action_target)) {
+            return &std::get<Position> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {
             quint32 target_unit_id = std::get<quint32> (action_target);
             const std::map<quint32, Unit>& units = match_state.unitsRef ();
@@ -215,12 +215,12 @@ const QPointF* SceneRenderer::getUnitTargetPosition (const UnitActionVariant& un
     }
     return nullptr;
 }
-const QPointF* SceneRenderer::getUnitTargetPosition (const IntentiveActionVariant& unit_action, MatchState& match_state)
+const Position* SceneRenderer::getUnitTargetPosition (const IntentiveActionVariant& unit_action, MatchState& match_state)
 {
     if (std::holds_alternative<MoveAction> (unit_action)) {
-        const std::variant<QPointF, quint32>& action_target = std::get<MoveAction> (unit_action).target;
-        if (std::holds_alternative<QPointF> (action_target)) {
-            return &std::get<QPointF> (action_target);
+        const std::variant<Position, quint32>& action_target = std::get<MoveAction> (unit_action).target;
+        if (std::holds_alternative<Position> (action_target)) {
+            return &std::get<Position> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {
             quint32 target_unit_id = std::get<quint32> (action_target);
             const std::map<quint32, Unit>& units = match_state.unitsRef ();
@@ -231,9 +231,9 @@ const QPointF* SceneRenderer::getUnitTargetPosition (const IntentiveActionVarian
             }
         }
     } else if (std::holds_alternative<AttackAction> (unit_action)) {
-        const std::variant<QPointF, quint32>& action_target = std::get<AttackAction> (unit_action).target;
-        if (std::holds_alternative<QPointF> (action_target)) {
-            return &std::get<QPointF> (action_target);
+        const std::variant<Position, quint32>& action_target = std::get<AttackAction> (unit_action).target;
+        if (std::holds_alternative<Position> (action_target)) {
+            return &std::get<Position> (action_target);
         } else if (std::holds_alternative<quint32> (action_target)) {
             quint32 target_unit_id = std::get<quint32> (action_target);
             const std::map<quint32, Unit>& units = match_state.unitsRef ();

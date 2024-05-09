@@ -1,7 +1,8 @@
 #pragma once
 
+#include "position.h"
+
 #include <variant>
-#include <QPointF>
 
 
 struct StopAction {
@@ -13,7 +14,7 @@ struct StopAction {
 };
 
 struct MoveAction {
-    MoveAction (const QPointF& target_position)
+    MoveAction (const Position& target_position)
         : target (target_position)
     {
     }
@@ -22,11 +23,11 @@ struct MoveAction {
     {
     }
 
-    std::variant<QPointF, uint32_t> target;
+    std::variant<Position, uint32_t> target;
 };
 
 struct AttackAction {
-    AttackAction (const QPointF& target_position)
+    AttackAction (const Position& target_position)
         : target (target_position)
     {
     }
@@ -35,7 +36,7 @@ struct AttackAction {
     {
     }
 
-    std::variant<QPointF, uint32_t> target;
+    std::variant<Position, uint32_t> target;
     std::optional<uint32_t> current_target = {};
 };
 
@@ -46,13 +47,13 @@ struct CastAction {
         SpawnBeetle,
     };
 
-    CastAction (Type type, const QPointF& target_position)
+    CastAction (Type type, const Position& target_position)
         : type (type), target (target_position)
     {
     }
 
     Type type;
-    QPointF target;
+    Position target;
 };
 
 typedef std::variant<StopAction, MoveAction, AttackAction, CastAction> IntentiveActionVariant;

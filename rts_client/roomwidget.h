@@ -61,7 +61,7 @@ signals:
     void cancelJoinTeamRequested ();
     void readinessRequested ();
     void quitRequested ();
-    void createUnitRequested (Unit::Team team, Unit::Type type, QPointF position);
+    void createUnitRequested (Unit::Team team, Unit::Type type, const Position& position);
     void unitActionRequested (quint32 id, const UnitActionVariant& action);
 
 private slots:
@@ -79,7 +79,7 @@ public slots:
     // void unitActionCallback (quint32 id, ActionType type, std::variant<QPointF, quint32> target);
 
     void unitActionCallback (quint32 id, const UnitActionVariant& action);
-    void unitCreateCallback (Unit::Team team, Unit::Type type, QPointF position);
+    void unitCreateCallback (Unit::Team team, Unit::Type type, const Position& position);
 
 protected:
     virtual void initResources () override;
@@ -114,10 +114,10 @@ private:
     bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const;
     bool getActionButtonUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
     bool getSelectionPanelUnitUnderCursor (const QPoint& cursor_pos, int& row, int& col) const;
-    bool getMinimapPositionUnderCursor (const QPoint& cursor_pos, QPointF& area_pos) const;
-    QPointF getMinimapPositionFromCursor (const QPoint& cursor_pos) const;
+    bool getMinimapPositionUnderCursor (const QPoint& cursor_pos, Position& area_pos) const;
+    Position getMinimapPositionFromCursor (const QPoint& cursor_pos) const;
     bool cursorIsAboveScene (const QPoint& cursor_pos) const;
-    void centerViewportAt (const QPointF& point);
+    void centerViewportAt (const Position& point);
     void centerViewportAtSelected ();
     void selectGroup (quint64 group);
     void bindSelectionToGroup (quint64 group);

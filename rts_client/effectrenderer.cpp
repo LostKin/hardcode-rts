@@ -56,7 +56,7 @@ void EffectRenderer::drawExplosion (QOpenGLFunctions& gl, ColoredTexturedRendere
         return;
     }
 
-    QPointF center = coord_map.toScreenCoords (explosion.position);
+    Position center = coord_map.toScreenCoords (explosion.position);
 
     qreal a1_sin, a1_cos;
     qreal a2_sin, a2_cos;
@@ -139,7 +139,7 @@ void EffectRenderer::drawMissile (QOpenGLFunctions& gl, TexturedRenderer& textur
         return;
     }
 
-    QPointF center = coord_map.toScreenCoords (missile.position);
+    Position center = coord_map.toScreenCoords (missile.position);
 
     qreal a1_sin, a1_cos;
     qreal a2_sin, a2_cos;

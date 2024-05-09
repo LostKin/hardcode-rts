@@ -9,4 +9,8 @@ HEADERS += \
     $$PWD/effects.h \
     $$PWD/unit.h \
     $$PWD/corpse.h \
-    $$PWD/matchstate.h
+    $$PWD/matchstate.h \
+    $$PWD/offset.h \
+    $$PWD/position.h \
+    $$PWD/positionaverage.h \
+    $$PWD/rectangle.h

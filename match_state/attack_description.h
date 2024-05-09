@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QtGlobal>
 
 struct AttackDescription {
     enum class Type {

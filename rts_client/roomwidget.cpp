@@ -25,6 +25,7 @@
 #include <math.h>
 #include <mutex>
 
+
 static constexpr qreal SQRT_2 = 1.4142135623731;
 static constexpr qreal SQRT_1_2 = 0.70710678118655;
 static constexpr qreal PI_X_3_4 = 3.0 / 4.0 * M_PI;
@@ -44,11 +45,6 @@ static const QMap<SoundEvent, QStringList> sound_map = {
     {SoundEvent::PestilenceMissileStart, {":/audio/units/contaminator/pestilence.wav"}},
     {SoundEvent::SpawnBeetle, {":/audio/units/contaminator/spawn-beetle.wav"}},
 };
-
-static QPointF operator* (const QPointF& a, const QPointF& b)
-{
-    return {a.x () * b.x (), a.y () * b.y ()};
-}
 
 
 RoomWidget::RoomWidget (QWidget* parent)
@@ -75,7 +71,7 @@ void RoomWidget::unitActionCallback (quint32 id, const UnitActionVariant& action
     emit unitActionRequested (id, action);
 }
 
-void RoomWidget::unitCreateCallback (Unit::Team team, Unit::Type type, QPointF position)
+void RoomWidget::unitCreateCallback (Unit::Team team, Unit::Type type, const Position& position)
 {
     emit createUnitRequested (team, type, position);
 }
@@ -287,9 +283,12 @@ void RoomWidget::initResources ()
 }
 void RoomWidget::updateSize (int w, int h)
 {
-    coord_map.viewport_size = {w, h};
-    coord_map.arena_viewport = {0, 0, w, h - 220};
-    coord_map.arena_viewport_center = QRectF (coord_map.arena_viewport).center ();
+    {
+        coord_map.viewport_size = {w, h};
+        coord_map.arena_viewport = {0, 0, w, h - 220};
+        QPointF center (coord_map.arena_viewport.center ());
+        coord_map.arena_viewport_center = {center.x (), center.y ()};
+    }
 
     if (w >= 3656)
         hud.margin = 24;
@@ -327,18 +326,17 @@ void RoomWidget::updateSize (int w, int h)
         hud.selection_panel_icon_grid_pos = {hud.selection_panel_rect.x () + hmargin, hud.selection_panel_rect.y () + vmargin};
     }
     if (match_state) {
-        const QRectF& area = match_state->areaRef ();
+        const Rectangle& area = match_state->areaRef ();
         qreal aspect = area.width () / area.height ();
         QPointF center = QRectF (hud.minimap_panel_rect).center ();
         QSizeF size = hud.minimap_panel_rect.size ();
-        if (size.width () / size.height () < aspect) {
+        if (size.width () / size.height () < aspect)
             size.setHeight (size.height () / aspect);
-        } else {
+        else
             size.setWidth (size.width () * aspect);
-        }
-        hud.minimap_screen_area = {center.x () - size.width () * 0.5, center.y () - size.height () * 0.5, size.width (), size.height ()};
+        hud.minimap_screen_area = Rectangle (center.x () - size.width () * 0.5, center.x () + size.width () * 0.5, center.y () - size.height () * 0.5, center.y () + size.height () * 0.5);
     } else {
-        hud.minimap_screen_area = hud.minimap_panel_rect;
+        hud.minimap_screen_area = Rectangle (hud.minimap_panel_rect.left (), hud.minimap_panel_rect.right (), hud.minimap_panel_rect.top (), hud.minimap_panel_rect.bottom ());
     }
 }
 void RoomWidget::draw ()
@@ -551,7 +549,7 @@ void RoomWidget::matchKeyPressEvent (QKeyEvent* event)
 {
     switch (event->key ()) {
     case Qt::Key_A:
-        match_state->attackEnemy (team, coord_map.toMapCoords (cursor_position));
+        match_state->attackEnemy (team, coord_map.toMapCoords (Position (cursor_position.x (), cursor_position.y ())));
         break;
     case Qt::Key_E:
         match_state->cast (CastAction::Type::Pestilence, team, coord_map.toMapCoords (cursor_position));
@@ -636,14 +634,14 @@ void RoomWidget::matchKeyReleaseEvent (QKeyEvent* event)
 void RoomWidget::matchMouseMoveEvent (QMouseEvent* /* event */)
 {
     if (minimap_viewport_selection_pressed) {
-        QPointF area_pos = getMinimapPositionFromCursor (cursor_position);
+        Position area_pos = getMinimapPositionFromCursor (cursor_position);
         centerViewportAt (area_pos);
     }
 }
 void RoomWidget::matchMousePressEvent (QMouseEvent* event)
 {
     int row, col;
-    QPointF area_pos;
+    Position area_pos;
     if (getActionButtonUnderCursor (cursor_position, row, col)) {
         switch (event->button ()) {
         case Qt::LeftButton: {
@@ -704,12 +702,12 @@ void RoomWidget::matchMousePressEvent (QMouseEvent* event)
 void RoomWidget::matchMouseReleaseEvent (QMouseEvent* event)
 {
     if (selection_start.has_value ()) {
-        QPointF p1 = coord_map.toMapCoords (*selection_start);
-        QPointF p2 = coord_map.toMapCoords (cursor_position);
+        Position p1 = coord_map.toMapCoords (*selection_start);
+        Position p2 = coord_map.toMapCoords (cursor_position);
         if (match_state->fuzzyMatchPoints (p1, p2)) {
             match_state->trySelect (team, p1, shift_pressed);
         } else {
-            match_state->trySelect (team, {qMin (p1.x (), p2.x ()), qMin (p1.y (), p2.y ()), qAbs (p1.x () - p2.x ()), qAbs (p1.y () - p2.y ())}, shift_pressed);
+            match_state->trySelect (team, Rectangle (qMin (p1.x (), p2.x ()), qMax (p1.x (), p2.x ()), qMin (p1.y (), p2.y ()), qMax (p1.y (), p2.y ())), shift_pressed);
         }
     } else {
         int row, col;
@@ -860,9 +858,9 @@ void RoomWidget::matchFrameUpdate (qreal dt)
     qreal off = 4000.0;
     if (dx && dy)
         off *= SQRT_1_2;
-    qreal scale = coord_map.viewport_scale * MAP_TO_SCREEN_FACTOR;
-    coord_map.viewport_center += QPointF (dx * off * dt, dy * off * dt)/scale;
-    const QRectF& area = match_state->areaRef ();
+    qreal scale = off * dt/(coord_map.viewport_scale * MAP_TO_SCREEN_FACTOR);
+    coord_map.viewport_center += Offset (dx, dy)*scale;
+    const Rectangle& area = match_state->areaRef ();
     if (coord_map.viewport_center.x () < area.left ())
         coord_map.viewport_center.setX (area.left ());
     else if (coord_map.viewport_center.x () > area.right ())
@@ -899,22 +897,26 @@ bool RoomWidget::getSelectionPanelUnitUnderCursor (const QPoint& cursor_pos, int
     col /= hud.selection_panel_icon_rib;
     return row < 3 && col < 10;
 }
-bool RoomWidget::getMinimapPositionUnderCursor (const QPoint& cursor_pos, QPointF& area_pos) const
+bool RoomWidget::getMinimapPositionUnderCursor (const QPoint& cursor_pos, Position& area_pos) const
 {
     if (cursor_pos.x () >= hud.minimap_screen_area.left () &&
         cursor_pos.x () <= hud.minimap_screen_area.right () &&
         cursor_pos.y () >= hud.minimap_screen_area.top () &&
         cursor_pos.y () <= hud.minimap_screen_area.bottom ()) {
-        const QRectF& area = match_state->areaRef ();
-        area_pos = area.topLeft () + (cursor_pos - hud.minimap_screen_area.topLeft ()) * QPointF (area.width () / hud.minimap_screen_area.width (), area.height () / hud.minimap_screen_area.height ());
+        const Rectangle& area = match_state->areaRef ();
+        area_pos = area.topLeft () +
+            (Position (cursor_pos.x (), cursor_pos.y ()) - hud.minimap_screen_area.topLeft ()) *
+            Scale (area.width () / hud.minimap_screen_area.width (), area.height () / hud.minimap_screen_area.height ());
         return true;
     }
     return false;
 }
-QPointF RoomWidget::getMinimapPositionFromCursor (const QPoint& cursor_pos) const
+Position RoomWidget::getMinimapPositionFromCursor (const QPoint& cursor_pos) const
 {
-    const QRectF& area = match_state->areaRef ();
-    QPointF area_pos = area.topLeft () + (cursor_pos - hud.minimap_screen_area.topLeft ()) * QPointF (area.width () / hud.minimap_screen_area.width (), area.height () / hud.minimap_screen_area.height ());
+    const Rectangle& area = match_state->areaRef ();
+    Position area_pos = area.topLeft () +
+        (Position (cursor_pos.x (), cursor_pos.y ()) - hud.minimap_screen_area.topLeft ()) *
+        Scale (area.width () / hud.minimap_screen_area.width (), area.height () / hud.minimap_screen_area.height ());
     if (area_pos.x () > area.right ())
         area_pos.setX (area.right ());
     if (area_pos.x () < area.left ())
@@ -935,13 +937,13 @@ bool RoomWidget::cursorIsAboveScene (const QPoint& cursor_pos) const
     else
         return cursor_pos.y () < (coord_map.viewport_size.height () - hud.selection_panel_rect.height () - margin_x2);
 }
-void RoomWidget::centerViewportAt (const QPointF& point)
+void RoomWidget::centerViewportAt (const Position& point)
 {
     coord_map.viewport_center = point;
 }
 void RoomWidget::centerViewportAtSelected ()
 {
-    std::optional<QPointF> center = match_state->selectionCenter ();
+    std::optional<Position> center = match_state->selectionCenter ();
     if (center.has_value ())
         centerViewportAt (*center);
 }
@@ -960,7 +962,7 @@ void RoomWidget::groupEvent (quint64 group_num)
 }
 void RoomWidget::zoom (int delta)
 {
-    QPointF area_pos;
+    Position area_pos;
     if (getMinimapPositionUnderCursor (cursor_position, area_pos)) {
         coord_map.viewport_scale_power += delta;
         coord_map.viewport_scale_power = qBound (-10, coord_map.viewport_scale_power, 10);
@@ -968,9 +970,9 @@ void RoomWidget::zoom (int delta)
     } else if (cursorIsAboveScene (cursor_position)) {
         coord_map.viewport_scale_power += delta;
         coord_map.viewport_scale_power = qBound (-10, coord_map.viewport_scale_power, 10);
-        QPointF offset_before = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
+        Offset offset_before = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
         coord_map.viewport_scale = pow (1.125, coord_map.viewport_scale_power);
-        QPointF offset_after = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
+        Offset offset_after = coord_map.toMapCoords (cursor_position) - coord_map.viewport_center;
 
         coord_map.viewport_center -= offset_after - offset_before;
     }
