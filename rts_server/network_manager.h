@@ -13,7 +13,7 @@ class NetworkManager: public QObject
     Q_OBJECT
 
 public:
-    NetworkManager (const QString& host, quint16 port, QObject* parent = nullptr);
+    NetworkManager (const QString& host, uint16_t port, QObject* parent = nullptr);
     bool start (QString& error_message);
     QSharedPointer<HCCN::ClientToServer::Message> takeDatagram ();
 
@@ -27,7 +27,7 @@ private slots:
 
 private:
     const QString host;
-    const quint16 port;
+    const uint16_t port;
 
     QUdpSocket socket;
     int return_code = 0;

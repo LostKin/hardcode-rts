@@ -5,7 +5,7 @@
 #include <QCoreApplication>
 #include <QNetworkDatagram>
 
-NetworkManager::NetworkManager (const QString& host, quint16 port, QObject* parent)
+NetworkManager::NetworkManager (const QString& host, uint16_t port, QObject* parent)
     : QObject (parent)
     , host (host)
     , port (port)

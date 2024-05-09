@@ -7,7 +7,7 @@
 #include <QTimer>
 
 
-static constexpr quint32 kTickDurationMs = 20;
+static constexpr uint32_t kTickDurationMs = 20;
 
 
 Room::Room (QObject* parent)
@@ -19,7 +19,7 @@ Room::Room (QObject* parent)
 
 void Room::tick ()
 {
-    quint32 tick_no = match_state->get_tick_no ();
+    uint32_t tick_no = match_state->get_tick_no ();
     RTS::Response response_for_red_oneof;
     RTS::Response response_for_blue_oneof;
     RTS::MatchStateResponse* response_for_red = response_for_red_oneof.mutable_match_state ();
@@ -29,8 +29,8 @@ void Room::tick ()
 
     auto* red_units = response_for_red->mutable_units ();
     auto* blue_units = response_for_blue->mutable_units ();
-    for (std::map<quint32, Unit>::const_iterator it = match_state->unitsRef ().cbegin (); it != match_state->unitsRef ().cend (); it++) {
-        quint32 id = it->first;
+    for (std::map<uint32_t, Unit>::const_iterator it = match_state->unitsRef ().cbegin (); it != match_state->unitsRef ().cend (); it++) {
+        uint32_t id = it->first;
         const Unit& unit = it->second;
 
         if (!fillUnit (id, unit, *red_units->Add ()))
@@ -41,8 +41,8 @@ void Room::tick ()
 
     auto* red_corpses = response_for_red->mutable_corpses ();
     auto* blue_corpses = response_for_blue->mutable_corpses ();
-    for (std::map<quint32, Corpse>::const_iterator it = match_state->corpsesRef ().cbegin (); it != match_state->corpsesRef ().cend (); it++) {
-        quint32 id = it->first;
+    for (std::map<uint32_t, Corpse>::const_iterator it = match_state->corpsesRef ().cbegin (); it != match_state->corpsesRef ().cend (); it++) {
+        uint32_t id = it->first;
         const Corpse& corpse = it->second;
 
         if (!fillCorpse (id, corpse, *red_corpses->Add ()))
@@ -53,8 +53,8 @@ void Room::tick ()
 
     auto* red_missiles = response_for_red->mutable_missiles ();
     auto* blue_missiles = response_for_blue->mutable_missiles ();
-    for (std::map<quint32, Missile>::const_iterator it = match_state->missilesRef ().cbegin (); it != match_state->missilesRef ().cend (); it++) {
-        quint32 id = it->first;
+    for (std::map<uint32_t, Missile>::const_iterator it = match_state->missilesRef ().cbegin (); it != match_state->missilesRef ().cend (); it++) {
+        uint32_t id = it->first;
         const Missile& missile = it->second;
 
         if (!fillMissile (id, missile, *red_missiles->Add ()))
@@ -68,10 +68,10 @@ void Room::tick ()
 
     match_state->tick ();
 }
-bool Room::fillUnit (quint32 id, const Unit& unit, RTS::Unit& m_unit)
+bool Room::fillUnit (uint32_t id, const Unit& unit, RTS::Unit& m_unit)
 {
     RTS::Team m_team;
-    QMap<quint32, quint32>* unit_id_client_to_server_map;
+    QMap<uint32_t, uint32_t>* unit_id_client_to_server_map;
     switch (unit.team) {
     case Unit::Team::Red: {
         m_team = RTS::Team::TEAM_RED;
@@ -86,7 +86,7 @@ bool Room::fillUnit (quint32 id, const Unit& unit, RTS::Unit& m_unit)
     }
     m_unit.set_team (m_team);
     {
-        QMap<quint32, quint32>::const_iterator it = unit_id_client_to_server_map->find (id);
+        QMap<uint32_t, uint32_t>::const_iterator it = unit_id_client_to_server_map->find (id);
         if (it != unit_id_client_to_server_map->cend ())
             m_unit.mutable_client_id ()->set_id (it.key ());
     }
@@ -139,12 +139,12 @@ bool Room::fillUnit (quint32 id, const Unit& unit, RTS::Unit& m_unit)
 
     return true;
 }
-bool Room::fillCorpse (quint32 id, const Corpse& corpse, RTS::Corpse& m_corpse)
+bool Room::fillCorpse (uint32_t id, const Corpse& corpse, RTS::Corpse& m_corpse)
 {
     m_corpse.set_decay_remaining_ticks (corpse.decay_remaining_ticks);
     return Room::fillUnit (id, corpse.unit, *m_corpse.mutable_unit ());
 }
-bool Room::fillMissile (quint32 id, const Missile& missile, RTS::Missile& m_missile)
+bool Room::fillMissile (uint32_t id, const Missile& missile, RTS::Missile& m_missile)
 {
     switch (missile.type) {
     case Missile::Type::Pestilence:
@@ -193,7 +193,7 @@ void Room::fillMoveAction (const MoveAction& move_action, RTS::MoveAction* m_mov
         m_move_action->mutable_position ()->mutable_position ()->set_x (position.x ());
         m_move_action->mutable_position ()->mutable_position ()->set_y (position.y ());
     } else {
-        quint32 id = std::get<quint32> (move_action.target);
+        uint32_t id = std::get<uint32_t> (move_action.target);
         m_move_action->mutable_unit ()->set_id (id);
     }
 }
@@ -204,7 +204,7 @@ void Room::fillAttackAction (const AttackAction& attack_action, RTS::AttackActio
         m_attack_action->mutable_position ()->mutable_position ()->set_x (position.x ());
         m_attack_action->mutable_position ()->mutable_position ()->set_y (position.y ());
     } else {
-        quint32 id = std::get<quint32> (attack_action.target);
+        uint32_t id = std::get<uint32_t> (attack_action.target);
         m_attack_action->mutable_unit ()->set_id (id);
     }
 }
@@ -284,14 +284,14 @@ void Room::init_matchstate ()
 }
 void Room::emitStatsUpdated ()
 {
-    quint32 ready_player_count = 0;
+    uint32_t ready_player_count = 0;
     for (const QSharedPointer<Session>& session: players) {
         if (session->ready)
             ++ready_player_count;
     }
     emit statsUpdated (players.count (), ready_player_count, spectators.count ());
 }
-void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session, quint64 request_id)
+void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session, uint64_t request_id)
 {
     switch (request_oneof.message_case ()) {
     case RTS::Request::MessageCase::kSelectRole: {
@@ -391,7 +391,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
             emit sendResponseRoom (response_oneof, session, request_id);
         }
         const RTS::Vector2D& position = request.position ();
-        std::map<quint32, Unit>::iterator unit = match_state->createUnit (type, team, QPointF (position.x (), position.y ()), 0);
+        std::map<uint32_t, Unit>::iterator unit = match_state->createUnit (type, team, QPointF (position.x (), position.y ()), 0);
         if (*session->current_team == Unit::Team::Red) {
             red_unit_id_client_to_server_map[request.id ()] = unit->first;
         } else if (*session->current_team == Unit::Team::Blue) {
@@ -406,7 +406,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
     case RTS::Request::MessageCase::kUnitAction: {
         const RTS::UnitActionRequest& request = request_oneof.unit_action ();
         const RTS::UnitAction& action = request.action ();
-        quint32 id;
+        uint32_t id;
         if (session->current_team == Unit::Team::Red) {
             id = red_unit_id_client_to_server_map[request.unit_id ()];
         } else if (session->current_team == Unit::Team::Blue) {

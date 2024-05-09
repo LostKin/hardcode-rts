@@ -23,15 +23,15 @@ const QString& RoomThread::errorMessage () const
 {
     return error_message;
 }
-quint32 RoomThread::playerCount () const
+uint32_t RoomThread::playerCount () const
 {
     return player_count;
 }
-quint32 RoomThread::readyPlayerCount () const
+uint32_t RoomThread::readyPlayerCount () const
 {
     return ready_player_count;
 }
-quint32 RoomThread::spectatorCount () const
+uint32_t RoomThread::spectatorCount () const
 {
     return spectator_count;
 }
@@ -39,15 +39,15 @@ void RoomThread::run ()
 {
     return_code = exec ();
 }
-void RoomThread::receiveRequestHandler (const RTS::Request& request_oneof, const QSharedPointer<Session>& session, quint64 request_id)
+void RoomThread::receiveRequestHandler (const RTS::Request& request_oneof, const QSharedPointer<Session>& session, uint64_t request_id)
 {
     emit sendRequest (request_oneof, session, request_id);
 }
-void RoomThread::sendResponseHandler (const RTS::Response& response, const QSharedPointer<Session>& session, quint64 request_id)
+void RoomThread::sendResponseHandler (const RTS::Response& response, const QSharedPointer<Session>& session, uint64_t request_id)
 {
     emit sendResponse (response, session, request_id);
 }
-void RoomThread::updateStats (quint32 player_count, quint32 ready_player_count, quint32 spectator_count)
+void RoomThread::updateStats (uint32_t player_count, uint32_t ready_player_count, uint32_t spectator_count)
 {
     this->player_count = player_count;
     this->ready_player_count = ready_player_count;

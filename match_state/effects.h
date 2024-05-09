@@ -8,7 +8,7 @@ struct Missile {
         Pestilence,
     };
 
-    Missile (Missile::Type type, Unit::Team sender_team, const QPointF& position, quint32 target_unit, const QPointF& target_position)
+    Missile (Missile::Type type, Unit::Team sender_team, const QPointF& position, uint32_t target_unit, const QPointF& target_position)
         : type (type)
         , sender_team (sender_team)
         , position (position)
@@ -31,9 +31,9 @@ struct Missile {
     Missile::Type type;
     Unit::Team sender_team;
     QPointF position;
-    std::optional<quint32> target_unit = {};
+    std::optional<uint32_t> target_unit = {};
     QPointF target_position;
-    qreal orientation;
+    double orientation;
 };
 
 struct Explosion {
@@ -42,7 +42,7 @@ struct Explosion {
         Pestilence,
     };
 
-    Explosion (Type type, const QPointF& position, qint64 duration)
+    Explosion (Type type, const QPointF& position, int64_t duration)
         : type (type)
         , position (position)
         , remaining_ticks (duration)
@@ -51,5 +51,5 @@ struct Explosion {
 
     Type type;
     QPointF position;
-    qint64 remaining_ticks = 0;
+    int64_t remaining_ticks = 0;
 };

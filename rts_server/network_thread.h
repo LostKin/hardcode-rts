@@ -12,7 +12,7 @@ class NetworkThread: public QThread
     Q_OBJECT
 
 public:
-    NetworkThread (const QString& host, quint16 port, QObject* parent = nullptr);
+    NetworkThread (const QString& host, uint16_t port, QObject* parent = nullptr);
     const QString& errorMessage ();
     void sendDatagram (const QSharedPointer<HCCN::ServerToClient::Message>& datagram);
 
@@ -25,7 +25,7 @@ protected:
 
 private:
     const QString host;
-    const quint16 port;
+    const uint16_t port;
 
     int return_code = 0;
     QString error_message;

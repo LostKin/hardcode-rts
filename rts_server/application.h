@@ -32,28 +32,28 @@ private:
 
 private slots:
     void sessionTransportClientToServerMessageHandler (const QSharedPointer<HCCN::ClientToServer::Message>& datagram);
-    void sendResponseHandler (const RTS::Response& response_oneof, QSharedPointer<Session> session, quint64 request_id);
+    void sendResponseHandler (const RTS::Response& response_oneof, QSharedPointer<Session> session, uint64_t request_id);
 
 private:
     QSharedPointer<NetworkThread> network_thread;
-    QMap<quint32, QSharedPointer<RoomThread>> rooms;
+    QMap<uint32_t, QSharedPointer<RoomThread>> rooms;
     QMap<QByteArray, QByteArray> user_passwords;
-    quint64 next_session_id;
-    quint64 next_response_id;
-    QMap<quint64, QSharedPointer<Session>> sessions;
-    QMap<QByteArray, quint64> login_session_ids;
+    uint64_t next_session_id;
+    uint64_t next_response_id;
+    QMap<uint64_t, QSharedPointer<Session>> sessions;
+    QMap<QByteArray, uint64_t> login_session_ids;
 
-    quint64 nextSessionId ();
+    uint64_t nextSessionId ();
     bool clientMatch (const HCCN::ClientToServer::Message& client_transport_message, const Session& session);
     void sendReply (const HCCN::ClientToServer::Message& client_transport_message,
-                    const std::optional<quint64>& session_id, const std::optional<quint64>& request_id, quint64 response_id, const std::string& msg);
+                    const std::optional<uint64_t>& session_id, const std::optional<uint64_t>& request_id, uint64_t response_id, const std::string& msg);
     void sendReply (const Session& session,
-                    const std::optional<quint64>& session_id, const std::optional<quint64>& request_id, quint64 response_id, const std::string& msg);
+                    const std::optional<uint64_t>& session_id, const std::optional<uint64_t>& request_id, uint64_t response_id, const std::string& msg);
     void sendReplyError (const HCCN::ClientToServer::Message& client_transport_message, const std::string& error_message, RTS::ErrorCode error_code);
     void sendReplySessionExpired (const HCCN::ClientToServer::Message& client_transport_message,
-                                  const quint64 session_id, const std::optional<quint64>& request_id, quint64 response_id);
-    void sendReplyRoomList (const Session& session, const quint64 session_id, const std::optional<quint64>& request_id, quint64 response_id);
-    QSharedPointer<Session> validateSessionRequest (const HCCN::ClientToServer::Message& client_transport_message, quint64* session_id_ptr);
+                                  const uint64_t session_id, const std::optional<uint64_t>& request_id, uint64_t response_id);
+    void sendReplyRoomList (const Session& session, const uint64_t session_id, const std::optional<uint64_t>& request_id, uint64_t response_id);
+    QSharedPointer<Session> validateSessionRequest (const HCCN::ClientToServer::Message& client_transport_message, uint64_t* session_id_ptr);
     void loadRoomList ();
     void storeRoomList ();
 };

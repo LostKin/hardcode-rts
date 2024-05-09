@@ -16,11 +16,11 @@ struct AttackDescription {
     };
 
     Type type = Type::Unknown;
-    qreal range = 0.0;
-    qreal trigger_range = 0.0;
-    qreal missile_velocity = 0.0;
-    qint64 damage = 0;
-    qint64 duration_ticks = 0;
+    double range = 0.0;
+    double trigger_range = 0.0;
+    double missile_velocity = 0.0;
+    int64_t damage = 0;
+    int64_t duration_ticks = 0;
     bool friendly_fire = true;
-    qint64 cooldown_ticks = 0;
+    int64_t cooldown_ticks = 0;
 };

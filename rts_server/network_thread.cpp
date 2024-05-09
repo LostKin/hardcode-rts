@@ -5,7 +5,7 @@
 #include <QThread>
 #include <QUdpSocket>
 
-NetworkThread::NetworkThread (const QString& host, quint16 port, QObject* parent)
+NetworkThread::NetworkThread (const QString& host, uint16_t port, QObject* parent)
     : QThread (parent)
     , host (host)
     , port (port)

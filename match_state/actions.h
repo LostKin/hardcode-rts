@@ -9,7 +9,7 @@ struct StopAction {
     {
     }
 
-    std::optional<quint32> current_target = {};
+    std::optional<uint32_t> current_target = {};
 };
 
 struct MoveAction {
@@ -17,12 +17,12 @@ struct MoveAction {
         : target (target_position)
     {
     }
-    MoveAction (quint32 target_unit_id)
+    MoveAction (uint32_t target_unit_id)
         : target (target_unit_id)
     {
     }
 
-    std::variant<QPointF, quint32> target;
+    std::variant<QPointF, uint32_t> target;
 };
 
 struct AttackAction {
@@ -30,13 +30,13 @@ struct AttackAction {
         : target (target_position)
     {
     }
-    AttackAction (quint32 target_unit_id)
+    AttackAction (uint32_t target_unit_id)
         : target (target_unit_id)
     {
     }
 
-    std::variant<QPointF, quint32> target;
-    std::optional<quint32> current_target = {};
+    std::variant<QPointF, uint32_t> target;
+    std::optional<uint32_t> current_target = {};
 };
 
 struct CastAction {
@@ -58,48 +58,48 @@ struct CastAction {
 typedef std::variant<StopAction, MoveAction, AttackAction, CastAction> IntentiveActionVariant;
 
 struct PerformingAttackAction {
-    PerformingAttackAction (const StopAction& next_action, qint64 duration_ticks)
+    PerformingAttackAction (const StopAction& next_action, int64_t duration_ticks)
         : next_action (next_action), remaining_ticks (duration_ticks)
     {
     }
-    PerformingAttackAction (const MoveAction& next_action, qint64 duration_ticks)
+    PerformingAttackAction (const MoveAction& next_action, int64_t duration_ticks)
         : next_action (next_action), remaining_ticks (duration_ticks)
     {
     }
-    PerformingAttackAction (const AttackAction& next_action, qint64 duration_ticks)
+    PerformingAttackAction (const AttackAction& next_action, int64_t duration_ticks)
         : next_action (next_action), remaining_ticks (duration_ticks)
     {
     }
-    PerformingAttackAction (const CastAction& next_action, qint64 duration_ticks)
+    PerformingAttackAction (const CastAction& next_action, int64_t duration_ticks)
         : next_action (next_action), remaining_ticks (duration_ticks)
     {
     }
 
     IntentiveActionVariant next_action;
-    qint64 remaining_ticks = 0;
+    int64_t remaining_ticks = 0;
 };
 
 struct PerformingCastAction {
-    PerformingCastAction (CastAction::Type cast_type, const StopAction& next_action, quint64 duration_ticks)
+    PerformingCastAction (CastAction::Type cast_type, const StopAction& next_action, uint64_t duration_ticks)
         : cast_type (cast_type), next_action (next_action), remaining_ticks (duration_ticks)
     {
     }
-    PerformingCastAction (CastAction::Type cast_type, const MoveAction& next_action, quint64 duration_ticks)
+    PerformingCastAction (CastAction::Type cast_type, const MoveAction& next_action, uint64_t duration_ticks)
         : cast_type (cast_type), next_action (next_action), remaining_ticks (duration_ticks)
     {
     }
-    PerformingCastAction (CastAction::Type cast_type, const AttackAction& next_action, quint64 duration_ticks)
+    PerformingCastAction (CastAction::Type cast_type, const AttackAction& next_action, uint64_t duration_ticks)
         : cast_type (cast_type), next_action (next_action), remaining_ticks (duration_ticks)
     {
     }
-    PerformingCastAction (CastAction::Type cast_type, const CastAction& next_action, quint64 duration_ticks)
+    PerformingCastAction (CastAction::Type cast_type, const CastAction& next_action, uint64_t duration_ticks)
         : cast_type (cast_type), next_action (next_action), remaining_ticks (duration_ticks)
     {
     }
 
     CastAction::Type cast_type;
     IntentiveActionVariant next_action;
-    qint64 remaining_ticks;
+    int64_t remaining_ticks;
 };
 
 typedef std::variant<StopAction, MoveAction, AttackAction, CastAction, PerformingAttackAction, PerformingCastAction> UnitActionVariant;

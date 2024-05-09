@@ -8,11 +8,11 @@
 // TODO: Locking sessions
 struct Session {
     Session () = delete;
-    Session (quint64 session_id)
+    Session (uint64_t session_id)
         : session_id (session_id)
     {
     }
-    Session (QHostAddress client_address, quint16 client_port, QByteArray login, quint64 session_id)
+    Session (QHostAddress client_address, uint16_t client_port, QByteArray login, uint64_t session_id)
         : client_address (client_address)
         , client_port (client_port)
         , login (login)
@@ -21,10 +21,10 @@ struct Session {
     }
 
     QHostAddress client_address;
-    quint16 client_port;
+    uint16_t client_port;
     QByteArray login;
-    quint64 session_id;
-    std::optional<quint32> current_room = {};
+    uint64_t session_id;
+    std::optional<uint32_t> current_room = {};
     RTS::Role current_role = RTS::ROLE_UNSPECIFIED;
     std::optional<Unit::Team> current_team = {};
     bool query_room_list_requested = false;
