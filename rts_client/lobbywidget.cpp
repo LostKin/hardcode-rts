@@ -42,6 +42,7 @@ LobbyWidget::LobbyWidget (const QString& login, QWidget* parent)
     }
     {
         room_list_table = new RoomListTable (this);
+        connect (room_list_table, &RoomListTable::joinRoomRequested, this, &LobbyWidget::joinRoomRequested);
         layout->addWidget (room_list_table, 1);
     }
     {

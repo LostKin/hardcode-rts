@@ -14,7 +14,6 @@
 ** TODO Избавление от Qt на сервере
 *** TODO Избавиться от сигналов в match_state
 *** TODO Избавиться от QObject в match_state
-*** TODO Избавиться от Qt-шных типов в match_state
 *** TODO Переделать match_state на CMake
 ** TODO Разбить программы работающие с текструами на 2 варианта каждую
 ** TODO Рефакторинг match state

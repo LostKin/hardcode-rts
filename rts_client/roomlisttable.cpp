@@ -93,6 +93,6 @@ void RoomListTable::cellDoubleClicked (int row, int column)
     if (!name_item)
         return;
     uint32_t room_id = name_item->data (Qt::UserRole).toUInt ();
-    if (column >= 0 && column <= 1)
+    if (column >= 0 && column <= 5)
         emit joinRoomRequested (room_id);
 }

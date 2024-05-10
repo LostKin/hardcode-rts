@@ -42,6 +42,7 @@ AuthorizationWidget::AuthorizationWidget (const QVector<AuthorizationCredentials
                 ++new_idx;
             }
             connect (table, SIGNAL (currentItemChanged (QTableWidgetItem*, QTableWidgetItem*)), this, SLOT (authorizationCredentialsItemSelected (QTableWidgetItem*)));
+            connect (table, &QTableWidget::cellDoubleClicked, this, &AuthorizationWidget::handleCellDoubleClick);
             layout->addWidget (table, 1);
         }
         {
@@ -187,4 +188,17 @@ void AuthorizationWidget::authorizationCredentialsItemSelected (QTableWidgetItem
     port_spin_box->setValue (port);
     login_line_edit->setText (login);
     password_line_edit->setText (password);
+}
+void AuthorizationWidget::handleCellDoubleClick (int row, int column)
+{
+    QTableWidgetItem* item = table->item (row, column);
+    if (!item)
+        return;
+
+    QString host = item->data (int (CredsRole::Host)).toString ();
+    quint16 port = item->data (int (CredsRole::Port)).toUInt ();
+    QString login = item->data (int (CredsRole::Login)).toString ();
+    QString password = item->data (int (CredsRole::Password)).toString ();
+
+    emit loginRequested ({host, port, login, password});
 }

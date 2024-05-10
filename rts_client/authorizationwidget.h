@@ -35,6 +35,7 @@ private slots:
     void addCredentialsClicked ();
     void removeCredentialsClicked ();
     void authorizationCredentialsItemSelected (QTableWidgetItem* item);
+    void handleCellDoubleClick (int row, int column);
 
 private:
     QTableWidget* table;
