@@ -2,6 +2,10 @@ INCLUDEPATH += $$PWD
 
 SOURCES += \
     $$PWD/matchstate.cpp \
+    $$PWD/matchstate_clientfromplayer.cpp \
+    $$PWD/matchstate_clientfromserver.cpp \
+    $$PWD/matchstate_serverfromclient.cpp \
+    $$PWD/matchstate_tick.cpp
 
 HEADERS += \
     $$PWD/actions.h \
@@ -13,4 +17,5 @@ HEADERS += \
     $$PWD/offset.h \
     $$PWD/position.h \
     $$PWD/positionaverage.h \
-    $$PWD/rectangle.h
+    $$PWD/rectangle.h \
+    $$PWD/scale.h

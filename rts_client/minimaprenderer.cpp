@@ -8,12 +8,6 @@
 #include <QColor>
 
 
-static Position operator* (const Position& a, const Position& b)
-{
-    return {a.x () * b.x (), a.y () * b.y ()};
-}
-
-
 MinimapRenderer::MinimapRenderer ()
 {
 }

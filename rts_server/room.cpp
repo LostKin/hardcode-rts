@@ -19,7 +19,7 @@ Room::Room (QObject* parent)
 
 void Room::tick ()
 {
-    uint32_t tick_no = match_state->get_tick_no ();
+    uint32_t tick_no = match_state->getTickNo ();
     RTS::Response response_for_red_oneof;
     RTS::Response response_for_blue_oneof;
     RTS::MatchStateResponse* response_for_red = response_for_red_oneof.mutable_match_state ();
@@ -280,7 +280,7 @@ void Room::setError (RTS::Error* error, const std::string& error_message, RTS::E
 }
 void Room::init_matchstate ()
 {
-    match_state.reset (new MatchState (false));
+    match_state.reset (new MatchState ());
 }
 void Room::emitStatsUpdated ()
 {

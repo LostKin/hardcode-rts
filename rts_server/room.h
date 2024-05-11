@@ -52,7 +52,6 @@ private:
     QMap<uint32_t, uint32_t> red_unit_id_client_to_server_map;
     QMap<uint32_t, uint32_t> blue_unit_id_client_to_server_map;
     QVector<QSharedPointer<Session>> spectators; // not gonna use for now
-    // QVector<std::optional<Session*> > teams;
     void setError (RTS::Error* error, const std::string& error_message, RTS::ErrorCode error_code);
     void init_matchstate ();
     void emitStatsUpdated ();
