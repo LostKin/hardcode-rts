@@ -52,9 +52,7 @@ void MatchState::setUnitAction (uint32_t unit_id, const UnitActionVariant& actio
 
 uint32_t MatchState::getRandomNumber ()
 {
-    qDebug () << is_client;
     uint32_t id = uint32_t (random_generator ());
     id = id % (1 << 30);
-    id = id + (int (is_client) << 30);
     return id;
 }

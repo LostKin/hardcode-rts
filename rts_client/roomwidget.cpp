@@ -143,7 +143,7 @@ void RoomWidget::startMatch (Unit::Team team)
 {
     this->team = team;
     pressed_button = ButtonId::None;
-    match_state = QSharedPointer<MatchState> (new MatchState (true));
+    match_state = QSharedPointer<MatchState> (new MatchState ());
     connect (&*match_state, &MatchState::unitActionRequested, this, &RoomWidget::unitActionCallback);
     connect (&*match_state, &MatchState::unitCreateRequested, this, &RoomWidget::unitCreateCallback);
     connect (&*match_state, SIGNAL (soundEventEmitted (SoundEvent)), this, SLOT (playSound (SoundEvent)));
