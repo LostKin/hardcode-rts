@@ -48,13 +48,16 @@ static const QMap<SoundEvent, QStringList> sound_map = {
 
 
 RoomWidget::RoomWidget (QWidget* parent)
-    : OpenGLWidget (parent)
+    : QOpenGLWidget (parent)
 {
+    setMinimumSize (512, 512);
+    setUpdateBehavior (QOpenGLWidget::NoPartialUpdate);
     setAttribute (Qt::WA_KeyCompression, false);
 
     last_frame.invalidate ();
     setMouseTracking (true);
     setCursor (QCursor (Qt::BlankCursor));
+    connect (this, SIGNAL (frameSwapped ()), this, SLOT (update ()));
     connect (&match_timer, SIGNAL (timeout ()), this, SLOT (tick ()));
     connect (this, &RoomWidget::selectRolePlayerRequested, this, &RoomWidget::selectRolePlayerRequestedHandler);
     connect (this, &RoomWidget::spectateRequested, this, &RoomWidget::spectateRequestedHandler);
@@ -64,6 +67,35 @@ RoomWidget::RoomWidget (QWidget* parent)
 }
 RoomWidget::~RoomWidget ()
 {
+}
+
+void RoomWidget::initializeGL ()
+{
+    gl.initializeOpenGLFunctions ();
+
+    gl.glClearColor (0, 0, 0, 1);
+
+    initResources ();
+}
+void RoomWidget::resizeGL (int w, int h)
+{
+    const qreal retinaScale = devicePixelRatio ();
+    pixels_w = w * retinaScale;
+    pixels_h = h * retinaScale;
+    ortho_matrix.setToIdentity ();
+    ortho_matrix.ortho (0, pixels_w, pixels_h, 0, -1, 1);
+    updateSize (pixels_w, pixels_h);
+}
+void RoomWidget::paintGL ()
+{
+    gl.glViewport (0, 0, pixels_w, pixels_h);
+    gl.glClear (GL_COLOR_BUFFER_BIT);
+
+    draw ();
+}
+QSize RoomWidget::pixelsSize ()
+{
+    return QSize (pixels_w, pixels_h);
 }
 
 void RoomWidget::unitActionCallback (quint32 id, const UnitActionVariant& action)
@@ -158,6 +190,19 @@ void RoomWidget::loadMatchState (const std::vector<QPair<quint32, Unit>>& units,
 {
     match_state->loadState (units, corpses, missiles);
     return;
+}
+QSharedPointer<QOpenGLTexture> RoomWidget::loadTexture2DRectangle (const QString& path)
+{
+    QImage image = QImage (path).convertToFormat (QImage::Format_RGBA8888);
+    QOpenGLTexture* texture = new QOpenGLTexture (QOpenGLTexture::TargetRectangle);
+    texture->setFormat (QOpenGLTexture::QOpenGLTexture::RGBAFormat);
+    texture->setSize (image.width (), image.height ());
+    texture->allocateStorage ();
+    texture->setData (QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, image.bits ());
+    texture->setLevelOfDetailRange (0, 0);
+    texture->setMinificationFilter (QOpenGLTexture::Nearest);
+    texture->setMagnificationFilter (QOpenGLTexture::Nearest);
+    return QSharedPointer<QOpenGLTexture> (texture);
 }
 quint64 RoomWidget::moveAnimationPeriodNS (Unit::Type type)
 {
@@ -367,7 +412,7 @@ void RoomWidget::draw ()
         break;
     }
 
-    textured_renderer->fillRectangle (*this, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
 }
 void RoomWidget::keyPressEvent (QKeyEvent* event)
 {
@@ -744,39 +789,39 @@ void RoomWidget::matchWheelEvent (QWheelEvent* event)
 }
 void RoomWidget::drawRoleSelection ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
-    textured_renderer->fillRectangle (*this, 30, 30, (pressed_button == ButtonId::JoinBlueTeam) ? textures.buttons.join_as_player_pressed.get () : textures.buttons.join_as_player.get (), ortho_matrix);
-    textured_renderer->fillRectangle (*this, 30, 230, (pressed_button == ButtonId::Spectate) ? textures.buttons.spectate_pressed.get () : textures.buttons.spectate.get (), ortho_matrix);
-    textured_renderer->fillRectangle (*this, 30, 400, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 30, (pressed_button == ButtonId::JoinBlueTeam) ? textures.buttons.join_as_player_pressed.get () : textures.buttons.join_as_player.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 230, (pressed_button == ButtonId::Spectate) ? textures.buttons.spectate_pressed.get () : textures.buttons.spectate.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 400, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
 }
 void RoomWidget::drawRoleSelectionRequested ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
-    textured_renderer->fillRectangle (*this, 30, 30, textures.labels.join_team_requested.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 30, textures.labels.join_team_requested.get (), ortho_matrix);
 
-    textured_renderer->fillRectangle (*this, 30, 230, (pressed_button == ButtonId::Cancel) ? textures.buttons.cancel_pressed.get () : textures.buttons.cancel.get (), ortho_matrix);
-    textured_renderer->fillRectangle (*this, 30, 400, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 230, (pressed_button == ButtonId::Cancel) ? textures.buttons.cancel_pressed.get () : textures.buttons.cancel.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 400, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
 }
 void RoomWidget::drawConfirmingReadiness ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
-    textured_renderer->fillRectangle (*this, 30, 30, (pressed_button == ButtonId::Ready) ? textures.buttons.ready_pressed.get () : textures.buttons.ready.get (), ortho_matrix);
-    textured_renderer->fillRectangle (*this, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 30, (pressed_button == ButtonId::Ready) ? textures.buttons.ready_pressed.get () : textures.buttons.ready.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
 }
 void RoomWidget::drawReady ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
-    textured_renderer->fillRectangle (*this, 30, 30, textures.labels.ready.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 30, textures.labels.ready.get (), ortho_matrix);
 
-    textured_renderer->fillRectangle (*this, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
 }
 void RoomWidget::drawAwaitingMatch ()
 {
-    textured_renderer->fillRectangle (*this, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
 
     qint64 nsecs_elapsed = match_countdown_start.nsecsElapsed ();
     QOpenGLTexture* label_texture;
@@ -793,9 +838,9 @@ void RoomWidget::drawAwaitingMatch ()
     else
         label_texture = textures.labels.starting_in_0.get ();
 
-    textured_renderer->fillRectangle (*this, 30, 30, label_texture, ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 30, label_texture, ortho_matrix);
 
-    textured_renderer->fillRectangle (*this, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+    textured_renderer->fillRectangle (gl, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
 }
 void RoomWidget::drawMatchStarted ()
 {
@@ -803,11 +848,11 @@ void RoomWidget::drawMatchStarted ()
         frameUpdate (last_frame.nsecsElapsed () * 0.000000001);
     last_frame.restart ();
 
-    scene_renderer->draw (*this, *colored_renderer, *colored_textured_renderer, *textured_renderer,
+    scene_renderer->draw (gl, *colored_renderer, *colored_textured_renderer, *textured_renderer,
                           *match_state, team, cursor_position, selection_start,
                           ortho_matrix, coord_map);
 
-    hud_renderer->draw (*this, *colored_renderer, *colored_textured_renderer, *textured_renderer, *this,
+    hud_renderer->draw (gl, *colored_renderer, *colored_textured_renderer, *textured_renderer, *this,
                         hud, *match_state, team, ortho_matrix, coord_map);
 }
 void RoomWidget::tick ()

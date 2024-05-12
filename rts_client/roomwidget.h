@@ -1,13 +1,16 @@
 #pragma once
 
-#include "openglwidget.h"
-
 #include "matchstate.h"
 #include "coordmap.h"
 #include "hud.h"
 
 #include <QElapsedTimer>
 #include <QTimer>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLWidget>
+#include <QOpenGLTexture>
 
 class ColoredRenderer;
 class ColoredTexturedRenderer;
@@ -16,7 +19,7 @@ class SceneRenderer;
 class HUDRenderer;
 
 
-class RoomWidget: public OpenGLWidget
+class RoomWidget: public QOpenGLWidget
 {
     Q_OBJECT
 
@@ -82,9 +85,9 @@ public slots:
     void unitCreateCallback (Unit::Team team, Unit::Type type, const Position& position);
 
 protected:
-    virtual void initResources () override;
-    virtual void updateSize (int w, int h) override;
-    virtual void draw () override;
+    virtual void initializeGL () override;
+    virtual void resizeGL (int w, int h) override;
+    virtual void paintGL () override;
     virtual void keyPressEvent (QKeyEvent* event) override;
     virtual void keyReleaseEvent (QKeyEvent* event) override;
     virtual void mouseMoveEvent (QMouseEvent* event) override;
@@ -93,6 +96,11 @@ protected:
     virtual void wheelEvent (QWheelEvent* event) override;
 
 private:
+    QSize pixelsSize ();
+    void initResources ();
+    void updateSize (int w, int h);
+    void draw ();
+    QSharedPointer<QOpenGLTexture> loadTexture2DRectangle (const QString& path);
     static quint64 moveAnimationPeriodNS (Unit::Type type);
     static quint64 attackAnimationPeriodNS (Unit::Type type);
     static quint64 missileAnimationPeriodNS (Missile::Type type);
@@ -161,6 +169,10 @@ private:
         } buttons;
     } textures;
 
+    int pixels_w = 1;
+    int pixels_h = 1;
+    QOpenGLFunctions gl;
+    QMatrix4x4 ortho_matrix; // TODO: Fix this
     HUD hud;
     State state = State::RoleSelection;
     ButtonId pressed_button = ButtonId::None;

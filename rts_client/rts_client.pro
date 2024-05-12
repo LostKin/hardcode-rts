@@ -16,7 +16,6 @@ SOURCES += \
     network_thread.cpp \
     network_manager.cpp \
     application.cpp \
-    openglwidget.cpp \
     authorizationcredentials.cpp \
     authorizationwidget.cpp \
     authorizationprogresswidget.cpp \
@@ -48,7 +47,6 @@ HEADERS += \
     network_thread.h \
     network_manager.h \
     application.h \
-    openglwidget.h \
     authorizationcredentials.h \
     authorizationwidget.h \
     authorizationprogresswidget.h \
