@@ -5,6 +5,7 @@ CONFIG += qt
 CONFIG += debug_and_release
 
 include (../match_state/match_state.pri)
+include (../rtsn/rtsn.pri)
 include (../libhccn/libhccn.pri)
 
 SOURCES += \

@@ -12,6 +12,7 @@
 #include <QSharedPointer>
 #include <QTimer>
 
+
 class Room: public QObject
 {
     Q_OBJECT
@@ -27,17 +28,6 @@ signals:
     void sendResponseRoom (const RTS::Response& response, const QSharedPointer<Session>& session, uint64_t request_id);
     void receiveRequest (const RTS::Request& request, const QSharedPointer<Session>& session, uint64_t request_id);
     void statsUpdated (uint32_t player_count, uint32_t ready_player_count, uint32_t spectator_count);
-
-private:
-    bool fillUnit (uint32_t id, const Unit& unit, RTS::Unit& m_unit);
-    bool fillCorpse (uint32_t id, const Corpse& corpse, RTS::Corpse& m_corpse);
-    bool fillMissile (uint32_t id, const Missile& missile, RTS::Missile& m_missile);
-    void fillStopAction (const StopAction& stop_action, RTS::StopAction* m_stop_action);
-    void fillMoveAction (const MoveAction& move_action, RTS::MoveAction* m_move_action);
-    void fillAttackAction (const AttackAction& attack_action, RTS::AttackAction* m_attack_action);
-    bool fillCastAction (const CastAction& cast_action, RTS::CastAction* m_cast_action);
-    bool fillPerformingAttackAction (const PerformingAttackAction& performing_attack_action, RTS::PerformingAttackAction* m_performing_attack_action);
-    bool fillPerformingCastAction (const PerformingCastAction& performing_cast_action, RTS::PerformingCastAction* m_performing_cast_action);
 
 private slots:
     void readyHandler ();

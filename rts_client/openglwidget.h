@@ -24,8 +24,6 @@ protected:
 
 protected:
     QSize pixelsSize ();
-    QSharedPointer<QOpenGLTexture> loadTexture2D (const QString& path);
-    QSharedPointer<QOpenGLTexture> loadTexture2D (const QImage& image);
     QSharedPointer<QOpenGLTexture> loadTexture2DRectangle (const QString& path);
 
 private:
