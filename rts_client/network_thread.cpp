@@ -32,7 +32,7 @@ void NetworkThread::run ()
 void NetworkThread::recieveDatagrams ()
 {
     NetworkManager* network_manager = (NetworkManager*) sender ();
-    while (QSharedPointer<HCCN::ServerToClient::Message> network_message = network_manager->takeDatagram ()) {
+    while (std::shared_ptr<HCCN::ServerToClient::Message> network_message = network_manager->takeDatagram ()) {
         emit datagramReceived (network_message);
     }
 }

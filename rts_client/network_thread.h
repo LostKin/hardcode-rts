@@ -18,7 +18,7 @@ public:
 
 signals:
     void sendDatagramSignal (const HCCN::ClientToServer::Message& datagram);
-    void datagramReceived (const QSharedPointer<HCCN::ServerToClient::Message>& datagram);
+    void datagramReceived (const std::shared_ptr<HCCN::ServerToClient::Message>& datagram);
 
 protected:
     void run () override;

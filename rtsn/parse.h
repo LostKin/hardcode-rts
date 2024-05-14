@@ -4,15 +4,14 @@
 #include "responses.pb.h"
 #include "matchstate.h"
 
-#include <QPair>
 #include <vector>
 #include <optional>
 
 
-namespace RTSN {
-    namespace Parse {
-        bool matchState (const RTS::MatchStateResponse& response,
-                         std::vector<QPair<quint32, Unit>>& units, std::vector<QPair<quint32, Corpse>>& corpses, std::vector<QPair<quint32, Missile>>& missiles,
-                         QString& error_message);
-    }
+namespace RTSN::Parse {
+
+bool matchState (const RTS::MatchStateResponse& response,
+                 std::vector<std::pair<uint32_t, Unit>>& units, std::vector<std::pair<uint32_t, Corpse>>& corpses, std::vector<std::pair<uint32_t, Missile>>& missiles,
+                 std::string& error_message);
+
 }

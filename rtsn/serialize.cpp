@@ -94,11 +94,11 @@ static bool fillPerformingCastAction (const PerformingCastAction& performing_cas
     return true;
 }
 static bool fillUnit (uint32_t id, const Unit& unit, RTS::Unit& m_unit,
-                      const QMap<uint32_t, uint32_t>& red_unit_id_client_to_server_map,
-                      const QMap<uint32_t, uint32_t>& blue_unit_id_client_to_server_map)
+                      const std::map<uint32_t, uint32_t>& red_unit_id_client_to_server_map,
+                      const std::map<uint32_t, uint32_t>& blue_unit_id_client_to_server_map)
 {
     RTS::Team m_team;
-    const QMap<uint32_t, uint32_t>* unit_id_client_to_server_map;
+    const std::map<uint32_t, uint32_t>* unit_id_client_to_server_map;
     switch (unit.team) {
     case Unit::Team::Red: {
         m_team = RTS::Team::TEAM_RED;
@@ -113,9 +113,9 @@ static bool fillUnit (uint32_t id, const Unit& unit, RTS::Unit& m_unit,
     }
     m_unit.set_team (m_team);
     {
-        QMap<uint32_t, uint32_t>::const_iterator it = unit_id_client_to_server_map->find (id);
+        std::map<uint32_t, uint32_t>::const_iterator it = unit_id_client_to_server_map->find (id);
         if (it != unit_id_client_to_server_map->cend ())
-            m_unit.mutable_client_id ()->set_id (it.key ());
+            m_unit.mutable_client_id ()->set_id (it->first);
     }
     switch (unit.type) {
     case Unit::Type::Seal:
@@ -167,8 +167,8 @@ static bool fillUnit (uint32_t id, const Unit& unit, RTS::Unit& m_unit,
     return true;
 }
 static bool fillCorpse (uint32_t id, const Corpse& corpse, RTS::Corpse& m_corpse,
-                        const QMap<uint32_t, uint32_t>& red_unit_id_client_to_server_map,
-                        const QMap<uint32_t, uint32_t>& blue_unit_id_client_to_server_map)
+                        const std::map<uint32_t, uint32_t>& red_unit_id_client_to_server_map,
+                        const std::map<uint32_t, uint32_t>& blue_unit_id_client_to_server_map)
 {
     m_corpse.set_decay_remaining_ticks (corpse.decay_remaining_ticks);
     return fillUnit (id, corpse.unit, *m_corpse.mutable_unit (), red_unit_id_client_to_server_map, blue_unit_id_client_to_server_map);
@@ -211,11 +211,11 @@ static bool fillMissile (uint32_t id, const Missile& missile, RTS::Missile& m_mi
     return true;
 }
 
-namespace RTSN {
-namespace Serialize {
+namespace RTSN::Serialize {
+
 void matchState (const MatchState* match_state, RTS::Response& response_oneof,
-                 const QMap<uint32_t, uint32_t>& red_unit_id_client_to_server_map,
-                 const QMap<uint32_t, uint32_t>& blue_unit_id_client_to_server_map)
+                 const std::map<uint32_t, uint32_t>& red_unit_id_client_to_server_map,
+                 const std::map<uint32_t, uint32_t>& blue_unit_id_client_to_server_map)
 {
     RTS::MatchStateResponse* response = response_oneof.mutable_match_state ();
 
@@ -251,5 +251,5 @@ void matchState (const MatchState* match_state, RTS::Response& response_oneof,
             m_missiles->RemoveLast ();
     }
 }
-}
+
 }

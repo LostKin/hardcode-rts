@@ -60,18 +60,16 @@ void Application::selectRolePlayer ()
     RTS::Request request_oneof;
     RTS::SelectRoleRequest* request = request_oneof.mutable_select_role ();
     request->set_role (RTS::Role::ROLE_PLAYER);
-    std::string message;
-    request_oneof.SerializeToString (&message);
-    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
+    std::string message = request_oneof.SerializeAsString ();
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, {message.data (), message.data () + message.size ()}});
 }
 void Application::readinessCallback ()
 {
     RTS::Request request_oneof;
     RTS::ReadyRequest* request = request_oneof.mutable_ready ();
     (void) request;
-    std::string message;
-    request_oneof.SerializeToString (&message);
-    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
+    std::string message = request_oneof.SerializeAsString ();
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, {message.data (), message.data () + message.size ()}});
 }
 void Application::matchStartCallback ()
 {
@@ -117,7 +115,7 @@ void Application::loginCallback (const AuthorizationCredentials& credentials) //
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram ({this->host_address, this->port, {}, request_id++, QByteArray::fromStdString (message)});
+    network_thread->sendDatagram ({this->host_address, this->port, {}, request_id++, {message.data (), message.data () + message.size ()}});
 
     setCurrentWindow (authorization_progress_widget);
 }
@@ -133,7 +131,7 @@ void Application::createRoomCallback (const QString& name)
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, {message.data (), message.data () + message.size ()}});
 }
 void Application::joinRoomCallback (quint32 room_id)
 {
@@ -147,7 +145,7 @@ void Application::joinRoomCallback (quint32 room_id)
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, {message.data (), message.data () + message.size ()}});
 }
 void Application::createUnitCallback (Unit::Team team, Unit::Type type, const Position& position)
 {
@@ -184,7 +182,7 @@ void Application::createUnitCallback (Unit::Team team, Unit::Type type, const Po
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, {message.data (), message.data () + message.size ()}});
 }
 void Application::savedCredentials (const QVector<AuthorizationCredentials>& credentials)
 {
@@ -255,14 +253,13 @@ void Application::unitActionCallback (quint32 id, const UnitActionVariant& actio
     std::string message;
     request_oneof.SerializeToString (&message);
 
-    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, QByteArray::fromStdString (message)});
+    network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, {message.data (), message.data () + message.size ()}});
 }
 
-void Application::sessionDatagramHandler (const QSharedPointer<HCCN::ServerToClient::Message>& message)
+void Application::sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToClient::Message>& message)
 {
-    const QByteArray& data = message->message;
     RTS::Response response_oneof;
-    if (!response_oneof.ParseFromArray (data.data (), data.size ())) {
+    if (!response_oneof.ParseFromArray (message->message.data (), message->message.size ())) {
         qDebug () << "Invalid response from server: failed to parse protobuf message";
         return;
     }
@@ -286,7 +283,7 @@ void Application::sessionDatagramHandler (const QSharedPointer<HCCN::ServerToCli
             std::string message;
             request_oneof.SerializeToString (&message);
 
-            network_thread->sendDatagram ({this->host_address, this->port, *this->session_id, request_id++, QByteArray::fromStdString (message)});
+            network_thread->sendDatagram ({this->host_address, this->port, *this->session_id, request_id++, {message.data (), message.data () + message.size ()}});
         } break;
         default: {
             qDebug () << "Response -> AuthorizationResponse -> UNKNOWN:" << response.response_case ();
@@ -345,12 +342,12 @@ void Application::sessionDatagramHandler (const QSharedPointer<HCCN::ServerToCli
     } break;
     case RTS::Response::MessageCase::kMatchState: {
         const RTS::MatchStateResponse& response = response_oneof.match_state ();
-        std::vector<QPair<quint32, Unit>> units;
-        std::vector<QPair<quint32, Corpse>> corpses;
-        std::vector<QPair<quint32, Missile>> missiles;
-        QString error_message;
+        std::vector<std::pair<quint32, Unit>> units;
+        std::vector<std::pair<quint32, Corpse>> corpses;
+        std::vector<std::pair<quint32, Missile>> missiles;
+        std::string error_message;
         if (!RTSN::Parse::matchState (response, units, corpses, missiles, error_message)) {
-            QMessageBox::critical (nullptr, "Malformed message from server", error_message);
+            QMessageBox::critical (nullptr, "Malformed message from server", QString::fromStdString (error_message));
             return;
         }
         emit updateMatchState (units, corpses, missiles);
@@ -399,7 +396,7 @@ void Application::startSingleMode (RoomWidget* room_widget)
 
     quint32 unit_id = 0;
     std::mt19937 random_generator;
-    std::vector<QPair<quint32, Unit>> units = {
+    std::vector<std::pair<quint32, Unit>> units = {
         {unit_id++, {Unit::Type::Seal, random_generator (), Unit::Team::Red, {-20, -15}, M_PI * 0.5}},
         {unit_id++, {Unit::Type::Goon, random_generator (), Unit::Team::Red, {-22, -15}, M_PI * 0.5}},
         {unit_id++, {Unit::Type::Contaminator, random_generator (), Unit::Team::Red, {-24, -15}, M_PI * 0.5}},

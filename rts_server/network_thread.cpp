@@ -5,18 +5,19 @@
 #include <QThread>
 #include <QUdpSocket>
 
-NetworkThread::NetworkThread (const QString& host, uint16_t port, QObject* parent)
+
+NetworkThread::NetworkThread (const std::string& host, uint16_t port, QObject* parent)
     : QThread (parent)
     , host (host)
     , port (port)
 {
 }
 
-const QString& NetworkThread::errorMessage ()
+const std::string& NetworkThread::errorMessage ()
 {
     return error_message;
 }
-void NetworkThread::sendDatagram (const QSharedPointer<HCCN::ServerToClient::Message>& datagram)
+void NetworkThread::sendDatagram (const std::shared_ptr<HCCN::ServerToClient::Message>& datagram)
 {
     emit sendDatagramSignal (datagram);
 }
@@ -34,6 +35,6 @@ void NetworkThread::run ()
 void NetworkThread::recieveDatagrams ()
 {
     NetworkManager* network_manager = (NetworkManager*) sender ();
-    while (QSharedPointer<HCCN::ClientToServer::Message> network_message = network_manager->takeDatagram ())
+    while (std::shared_ptr<HCCN::ClientToServer::Message> network_message = network_manager->takeDatagram ())
         emit datagramReceived (network_message);
 }

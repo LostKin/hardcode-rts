@@ -3,49 +3,50 @@
 #include "common.h"
 
 #include <optional>
+#include <vector>
 #include <QHostAddress>
-#include <QByteArray>
 #include <QNetworkDatagram>
+
 
 namespace HCCN::ServerToClient {
 
 struct Message {
     Message () = default;
-    Message (const QHostAddress& host, quint16 port, const std::optional<quint64>& session_id, const std::optional<quint64>& request_id, quint64 response_id, const QByteArray& message);
-    QVector<QNetworkDatagram> encode () const;
+    Message (const QHostAddress& host, uint16_t port, const std::optional<uint64_t>& session_id, const std::optional<uint64_t>& request_id, uint64_t response_id, const std::vector<char>& message);
+    std::vector<QNetworkDatagram> encode () const;
 
     QHostAddress host;
-    quint16 port;
-    std::optional<quint64> session_id;
-    std::optional<quint64> request_id;
-    quint64 response_id;
-    QByteArray message;
+    uint16_t port;
+    std::optional<uint64_t> session_id;
+    std::optional<uint64_t> request_id;
+    uint64_t response_id;
+    std::vector<char> message;
 };
 
 struct MessageFragment {
-    static QSharedPointer<MessageFragment> parse (const QNetworkDatagram& datagram);
+    static std::shared_ptr<MessageFragment> parse (const QNetworkDatagram& datagram);
 
     QHostAddress host;
-    quint16 port;
-    std::optional<quint64> session_id;
-    std::optional<quint64> request_id;
-    quint64 response_id;
-    QByteArray fragment;
+    uint16_t port;
+    std::optional<uint64_t> session_id;
+    std::optional<uint64_t> request_id;
+    uint64_t response_id;
+    std::vector<char> fragment;
     bool is_tail;
-    quint64 fragment_number;
+    uint64_t fragment_number;
 };
 
 struct MessageFragmentCollector {
 public:
-    void insert (const QSharedPointer<MessageFragment>& fragment);
+    void insert (const std::shared_ptr<MessageFragment>& fragment);
     bool complete ();
     bool valid ();
-    QSharedPointer<Message> build ();
+    std::shared_ptr<Message> build ();
 
 private:
-    QMap<quint64, QSharedPointer<MessageFragment>> tail;
-    quint64 max_fragment_index = 0;
-    QSharedPointer<MessageFragment> head;
+    std::map<uint64_t, std::shared_ptr<MessageFragment>> tail;
+    uint64_t max_fragment_index = 0;
+    std::shared_ptr<MessageFragment> head;
 };
 
 } // namespace HCCN::ServerToClient

@@ -14,7 +14,7 @@ static MoveAction parseUnitActionMove (const RTS::MoveAction& m_move_action)
     if (m_move_action.target_case () == RTS::MoveAction::kPosition)
         move.target = Position (m_move_action.position ().position ().x (), m_move_action.position ().position ().y ());
     else
-        move.target = (quint32) m_move_action.unit ().id ();
+        move.target = (uint32_t) m_move_action.unit ().id ();
     return move;
 }
 static AttackAction parseUnitActionAttack (const RTS::AttackAction& m_attack_action)
@@ -23,10 +23,10 @@ static AttackAction parseUnitActionAttack (const RTS::AttackAction& m_attack_act
     if (m_attack_action.target_case () == RTS::AttackAction::kPosition)
         attack.target = Position (m_attack_action.position ().position ().x (), m_attack_action.position ().position ().y ());
     else
-        attack.target = (quint32) m_attack_action.unit ().id ();
+        attack.target = (uint32_t) m_attack_action.unit ().id ();
     return attack;
 }
-static std::optional<CastAction> parseUnitActionCast (const RTS::CastAction& m_cast_action, QString& error_message)
+static std::optional<CastAction> parseUnitActionCast (const RTS::CastAction& m_cast_action, std::string& error_message)
 {
     CastAction cast (CastAction::Type::Unknown, Position (0, 0));
     cast.target = Position (m_cast_action.position ().position ().x (), m_cast_action.position ().position ().y ());
@@ -43,9 +43,9 @@ static std::optional<CastAction> parseUnitActionCast (const RTS::CastAction& m_c
     }
     return cast;
 }
-static std::optional<PerformingAttackAction> parseUnitActionPerformingAttack (const RTS::PerformingAttackAction& m_peforming_attack_action, QString& error_message)
+static std::optional<PerformingAttackAction> parseUnitActionPerformingAttack (const RTS::PerformingAttackAction& m_peforming_attack_action, std::string& error_message)
 {
-    qint64 remaining_ticks = m_peforming_attack_action.remaining_ticks ();
+    int64_t remaining_ticks = m_peforming_attack_action.remaining_ticks ();
     switch (m_peforming_attack_action.next_action_case ()) {
     case RTS::UnitAction::kStop: {
         return PerformingAttackAction (parseUnitActionStop (m_peforming_attack_action.stop ()), remaining_ticks);
@@ -68,9 +68,9 @@ static std::optional<PerformingAttackAction> parseUnitActionPerformingAttack (co
     }
     }
 }
-static std::optional<PerformingCastAction> parseUnitActionPerformingCast (const RTS::PerformingCastAction& m_peforming_cast_action, QString& error_message)
+static std::optional<PerformingCastAction> parseUnitActionPerformingCast (const RTS::PerformingCastAction& m_peforming_cast_action, std::string& error_message)
 {
-    qint64 remaining_ticks = m_peforming_cast_action.remaining_ticks ();
+    int64_t remaining_ticks = m_peforming_cast_action.remaining_ticks ();
     CastAction::Type cast_type;
     switch (m_peforming_cast_action.cast_type ()) {
     case RTS::CastType::CAST_TYPE_PESTILENCE:
@@ -105,7 +105,7 @@ static std::optional<PerformingCastAction> parseUnitActionPerformingCast (const 
     }
     }
 }
-static bool parseUnitAction (const RTS::UnitAction& m_current_action, UnitActionVariant& unit_action, QString& error_message)
+static bool parseUnitAction (const RTS::UnitAction& m_current_action, UnitActionVariant& unit_action, std::string& error_message)
 {
     switch (m_current_action.action_case ()) {
     case RTS::UnitAction::kStop: {
@@ -141,7 +141,7 @@ static bool parseUnitAction (const RTS::UnitAction& m_current_action, UnitAction
     }
     return true;
 }
-static std::optional<std::pair<quint32, Unit>> parseUnit (const RTS::Unit& m_unit, QString& error_message)
+static std::optional<std::pair<uint32_t, Unit>> parseUnit (const RTS::Unit& m_unit, std::string& error_message)
 {
     Unit::Team team;
     switch (m_unit.team ()) {
@@ -183,26 +183,26 @@ static std::optional<std::pair<quint32, Unit>> parseUnit (const RTS::Unit& m_uni
         return std::nullopt;
     }
 
-    quint32 id = m_unit.has_client_id () ? m_unit.client_id ().id () : m_unit.id ();
+    uint32_t id = m_unit.has_client_id () ? m_unit.client_id ().id () : m_unit.id ();
     Unit unit = Unit (type, 0, team, Position (m_unit.position ().x (), m_unit.position ().y ()), m_unit.orientation ());
     unit.hp = m_unit.health ();
     if (!parseUnitAction (m_unit.current_action (), unit.action, error_message))
         return std::nullopt;
     unit.attack_cooldown_left_ticks = m_unit.attack_cooldown_left_ticks ();
     unit.cast_cooldown_left_ticks = m_unit.cast_cooldown_left_ticks ();
-    return std::pair<quint32, Unit> (id, unit);
+    return std::pair<uint32_t, Unit> (id, unit);
 }
-static std::optional<std::pair<quint32, Corpse>> parseCorpse (const RTS::Corpse& m_corpse, QString& error_message)
+static std::optional<std::pair<uint32_t, Corpse>> parseCorpse (const RTS::Corpse& m_corpse, std::string& error_message)
 {
     if (!m_corpse.has_unit ())
         return std::nullopt;
-    std::optional<std::pair<quint32, Unit>> parsed_unit = parseUnit (m_corpse.unit (), error_message);
+    std::optional<std::pair<uint32_t, Unit>> parsed_unit = parseUnit (m_corpse.unit (), error_message);
     if (!parsed_unit.has_value ())
         return std::nullopt;
     Corpse corpse (parsed_unit->second, m_corpse.decay_remaining_ticks ());
-    return std::pair<quint32, Corpse> (parsed_unit->first, corpse);
+    return std::pair<uint32_t, Corpse> (parsed_unit->first, corpse);
 }
-static std::optional<std::pair<quint32, Missile>> parseMissile (const RTS::Missile& m_missile, QString& error_message)
+static std::optional<std::pair<uint32_t, Missile>> parseMissile (const RTS::Missile& m_missile, std::string& error_message)
 {
     Unit::Team team;
     switch (m_missile.team ()) {
@@ -235,7 +235,7 @@ static std::optional<std::pair<quint32, Missile>> parseMissile (const RTS::Missi
         return std::nullopt;
     }
 
-    quint32 id = m_missile.id ();
+    uint32_t id = m_missile.id ();
     Missile missile (type, team, Position (m_missile.position ().x (), m_missile.position ().y ()), 0, Position (m_missile.target_position ().x (), m_missile.target_position ().y ()));
 
     if (m_missile.has_target_unit ())
@@ -243,34 +243,34 @@ static std::optional<std::pair<quint32, Missile>> parseMissile (const RTS::Missi
     else
         missile.target_unit.reset ();
 
-    return std::pair<quint32, Missile> (id, missile);
+    return std::pair<uint32_t, Missile> (id, missile);
 }
 
-namespace RTSN {
-namespace Parse {
+namespace RTSN::Parse {
+
 bool matchState (const RTS::MatchStateResponse& response,
-                 std::vector<QPair<quint32, Unit>>& units, std::vector<QPair<quint32, Corpse>>& corpses, std::vector<QPair<quint32, Missile>>& missiles,
-                 QString& error_message)
+                 std::vector<std::pair<uint32_t, Unit>>& units, std::vector<std::pair<uint32_t, Corpse>>& corpses, std::vector<std::pair<uint32_t, Missile>>& missiles,
+                 std::string& error_message)
 {
     for (int i = 0; i < response.units_size (); i++) {
-        std::optional<std::pair<quint32, Unit>> id_unit = parseUnit (response.units (i), error_message);
+        std::optional<std::pair<uint32_t, Unit>> id_unit = parseUnit (response.units (i), error_message);
         if (id_unit == std::nullopt)
             return false;
         units.emplace_back (id_unit->first, id_unit->second);
     }
     for (int i = 0; i < response.corpses_size (); i++) {
-        std::optional<std::pair<quint32, Corpse>> id_corpse = parseCorpse (response.corpses (i), error_message);
+        std::optional<std::pair<uint32_t, Corpse>> id_corpse = parseCorpse (response.corpses (i), error_message);
         if (id_corpse == std::nullopt)
             return false;
         corpses.emplace_back (id_corpse->first, id_corpse->second);
     }
     for (int i = 0; i < response.missiles_size (); i++) {
-        std::optional<std::pair<quint32, Missile>> id_missile = parseMissile (response.missiles (i), error_message);
+        std::optional<std::pair<uint32_t, Missile>> id_missile = parseMissile (response.missiles (i), error_message);
         if (id_missile == std::nullopt)
             return false;
         missiles.emplace_back (id_missile->first, id_missile->second);
     }
     return true;
 }
-}
+
 }

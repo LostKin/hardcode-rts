@@ -12,7 +12,7 @@ struct Session {
         : session_id (session_id)
     {
     }
-    Session (QHostAddress client_address, uint16_t client_port, QByteArray login, uint64_t session_id)
+    Session (QHostAddress client_address, uint16_t client_port, const std::string& login, uint64_t session_id)
         : client_address (client_address)
         , client_port (client_port)
         , login (login)
@@ -22,7 +22,7 @@ struct Session {
 
     QHostAddress client_address;
     uint16_t client_port;
-    QByteArray login;
+    std::string login;
     uint64_t session_id;
     std::optional<uint32_t> current_room = {};
     RTS::Role current_role = RTS::ROLE_UNSPECIFIED;

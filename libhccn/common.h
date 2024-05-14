@@ -2,7 +2,6 @@
 
 #include <optional>
 #include <QHostAddress>
-#include <QByteArray>
 #include <QNetworkDatagram>
 
 namespace HCCN {

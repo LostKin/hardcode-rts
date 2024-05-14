@@ -15,7 +15,7 @@ class NetworkManager: public QObject
 public:
     NetworkManager (QObject* parent = nullptr);
     bool start (QString& error_message);
-    QSharedPointer<HCCN::ServerToClient::Message> takeDatagram ();
+    std::shared_ptr<HCCN::ServerToClient::Message> takeDatagram ();
 
 signals:
     void sendDatagram (const HCCN::ClientToServer::Message& transport_message);
@@ -24,8 +24,8 @@ signals:
 private:
     QUdpSocket socket;
     int return_code = 0;
-    QHash<HCCN::TransportMessageIdentifier, QSharedPointer<HCCN::ServerToClient::MessageFragmentCollector>> input_fragment_queue;
-    QQueue<QSharedPointer<HCCN::ServerToClient::Message>> input_queue;
+    QHash<HCCN::TransportMessageIdentifier, std::shared_ptr<HCCN::ServerToClient::MessageFragmentCollector>> input_fragment_queue;
+    QQueue<std::shared_ptr<HCCN::ServerToClient::Message>> input_queue;
     QMutex input_queue_mutex;
 
 private slots:

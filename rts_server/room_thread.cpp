@@ -3,9 +3,9 @@
 
 #include <QThread>
 #include <QUdpSocket>
-#include <QDebug>
 
-RoomThread::RoomThread (const QString& name, QObject* parent)
+
+RoomThread::RoomThread (const std::string& name, QObject* parent)
     : QThread (parent)
     , name_ (name)
 {
@@ -15,11 +15,11 @@ RoomThread::RoomThread (const QString& name, QObject* parent)
     connect (&*room, &Room::statsUpdated, this, &RoomThread::updateStats);
 }
 
-const QString& RoomThread::name () const
+const std::string& RoomThread::name () const
 {
     return name_;
 }
-const QString& RoomThread::errorMessage () const
+const std::string& RoomThread::errorMessage () const
 {
     return error_message;
 }
@@ -39,11 +39,11 @@ void RoomThread::run ()
 {
     return_code = exec ();
 }
-void RoomThread::receiveRequestHandler (const RTS::Request& request_oneof, const QSharedPointer<Session>& session, uint64_t request_id)
+void RoomThread::receiveRequestHandler (const RTS::Request& request_oneof, const std::shared_ptr<Session>& session, uint64_t request_id)
 {
     emit sendRequest (request_oneof, session, request_id);
 }
-void RoomThread::sendResponseHandler (const RTS::Response& response, const QSharedPointer<Session>& session, uint64_t request_id)
+void RoomThread::sendResponseHandler (const RTS::Response& response, const std::shared_ptr<Session>& session, uint64_t request_id)
 {
     emit sendResponse (response, session, request_id);
 }

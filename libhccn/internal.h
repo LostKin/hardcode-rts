@@ -1,13 +1,13 @@
 #pragma once
 
 #include <optional>
+#include <vector>
 #include <QHostAddress>
-#include <QByteArray>
 #include <QNetworkDatagram>
 
 namespace HCCN::Internal {
 
-bool ParseUint64Id (const QByteArray& data, qsizetype& off, quint64& value);
-size_t EncodeUint64Id (char* encoded, quint64 id);
+bool ParseUint64Id (const std::vector<char>& data, size_t& off, uint64_t& value);
+size_t EncodeUint64Id (char* encoded, uint64_t id);
 
 } // namespace HCCN::Internal

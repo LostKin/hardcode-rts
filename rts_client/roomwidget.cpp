@@ -186,7 +186,7 @@ void RoomWidget::startMatch (Unit::Team team)
     last_frame.restart ();
     state = State::MatchStarted;
 }
-void RoomWidget::loadMatchState (const std::vector<QPair<quint32, Unit>>& units, const std::vector<QPair<quint32, Corpse>>& corpses, const std::vector<QPair<quint32, Missile>>& missiles)
+void RoomWidget::loadMatchState (const std::vector<std::pair<quint32, Unit>>& units, const std::vector<std::pair<quint32, Corpse>>& corpses, const std::vector<std::pair<quint32, Missile>>& missiles)
 {
     match_state->loadState (units, corpses, missiles);
     return;
@@ -698,7 +698,7 @@ void RoomWidget::matchMousePressEvent (QMouseEvent* event)
         }
         }
     } else if (getSelectionPanelUnitUnderCursor (cursor_position, row, col)) {
-        std::vector<QPair<quint32, const Unit*>> selection = match_state->buildOrderedSelection ();
+        std::vector<std::pair<quint32, const Unit*>> selection = match_state->buildOrderedSelection ();
         if (selection.size () > 1) {
             size_t i = row * 10 + col;
             if (i < selection.size ()) {

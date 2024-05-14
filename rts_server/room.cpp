@@ -41,13 +41,13 @@ void Room::init_matchstate ()
 void Room::emitStatsUpdated ()
 {
     uint32_t ready_player_count = 0;
-    for (const QSharedPointer<Session>& session: players) {
+    for (const std::shared_ptr<Session>& session: players) {
         if (session->ready)
             ++ready_player_count;
     }
-    emit statsUpdated (players.count (), ready_player_count, spectators.count ());
+    emit statsUpdated (players.size (), ready_player_count, spectators.size ());
 }
-void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QSharedPointer<Session> session, uint64_t request_id)
+void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, std::shared_ptr<Session> session, uint64_t request_id)
 {
     switch (request_oneof.message_case ()) {
     case RTS::Request::MessageCase::kSelectRole: {
@@ -62,7 +62,7 @@ void Room::receiveRequestHandlerRoom (const RTS::Request& request_oneof, QShared
                 return;
             }
             session->current_role = RTS::Role::ROLE_PLAYER;
-            players.append (session);
+            players.push_back (session);
             emitStatsUpdated ();
 
             RTS::Response response_oneof;

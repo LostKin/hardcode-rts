@@ -25,7 +25,7 @@ signals:
     void queryReadiness ();
     void startCountdown (Unit::Team team);
     void startMatch ();
-    void updateMatchState (const std::vector<QPair<quint32, Unit>>& units, const std::vector<QPair<quint32, Corpse>>& corpses, const std::vector<QPair<quint32, Missile>>& missiles);
+    void updateMatchState (const std::vector<std::pair<quint32, Unit>>& units, const std::vector<std::pair<quint32, Corpse>>& corpses, const std::vector<std::pair<quint32, Missile>>& missiles);
 
 private:
     void showLobby (const QString& login);
@@ -40,7 +40,7 @@ private slots:
     void loginCallback (const AuthorizationCredentials& credentials);
     void createRoomCallback (const QString& name);
     void joinRoomCallback (quint32 name);
-    void sessionDatagramHandler (const QSharedPointer<HCCN::ServerToClient::Message>& message);
+    void sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToClient::Message>& message);
     void selectRolePlayerCallback ();
     void joinSpectatorCallback ();
     void readinessCallback ();

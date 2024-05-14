@@ -7,28 +7,29 @@
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 
+
 class NetworkThread: public QThread
 {
     Q_OBJECT
 
 public:
-    NetworkThread (const QString& host, uint16_t port, QObject* parent = nullptr);
-    const QString& errorMessage ();
-    void sendDatagram (const QSharedPointer<HCCN::ServerToClient::Message>& datagram);
+    NetworkThread (const std::string& host, uint16_t port, QObject* parent = nullptr);
+    const std::string& errorMessage ();
+    void sendDatagram (const std::shared_ptr<HCCN::ServerToClient::Message>& datagram);
 
 signals:
-    void sendDatagramSignal (const QSharedPointer<HCCN::ServerToClient::Message>& datagram);
-    void datagramReceived (const QSharedPointer<HCCN::ClientToServer::Message>& datagram);
+    void sendDatagramSignal (const std::shared_ptr<HCCN::ServerToClient::Message>& datagram);
+    void datagramReceived (const std::shared_ptr<HCCN::ClientToServer::Message>& datagram);
 
 protected:
     void run () override;
 
 private:
-    const QString host;
+    const std::string host;
     const uint16_t port;
 
     int return_code = 0;
-    QString error_message;
+    std::string error_message;
 
 private slots:
     void recieveDatagrams ();
