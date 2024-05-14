@@ -106,7 +106,7 @@ private:
     static quint64 missileAnimationPeriodNS (Missile::Type type);
     void matchKeyPressEvent (QKeyEvent* event);
     void matchKeyReleaseEvent (QKeyEvent* event);
-    void matchMouseMoveEvent (QMouseEvent* event);
+    void matchMouseMoveEvent (const QPoint& previous_cursor_position, QMouseEvent* event);
     void matchMousePressEvent (QMouseEvent* event);
     void matchMouseReleaseEvent (QMouseEvent* event);
     void matchWheelEvent (QWheelEvent* event);
@@ -186,6 +186,7 @@ private:
     QTimer match_timer;
     QElapsedTimer last_frame;
     std::optional<QPoint> selection_start;
+    bool camera_move_modifier_pressed = false;
     bool ctrl_pressed = false;
     bool alt_pressed = false;
     bool shift_pressed = false;

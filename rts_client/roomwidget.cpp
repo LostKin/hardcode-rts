@@ -448,10 +448,11 @@ void RoomWidget::mouseMoveEvent (QMouseEvent* event)
     ctrl_pressed = modifiers & Qt::ControlModifier;
     shift_pressed = modifiers & Qt::ShiftModifier;
     alt_pressed = modifiers & Qt::AltModifier;
+    QPoint previous_cursor_position = cursor_position;
     cursor_position = event->pos ();
     switch (state) {
     case State::MatchStarted: {
-        matchMouseMoveEvent (event);
+        matchMouseMoveEvent (previous_cursor_position, event);
     } break;
     default: {
     }
@@ -676,11 +677,17 @@ void RoomWidget::matchKeyReleaseEvent (QKeyEvent* event)
     switch (event->key ()) {
     }
 }
-void RoomWidget::matchMouseMoveEvent (QMouseEvent* /* event */)
+void RoomWidget::matchMouseMoveEvent (const QPoint& previous_cursor_position, QMouseEvent* /* event */)
 {
     if (minimap_viewport_selection_pressed) {
         Position area_pos = getMinimapPositionFromCursor (cursor_position);
         centerViewportAt (area_pos);
+    } else {
+        if (camera_move_modifier_pressed) {
+            const Rectangle& area = match_state->areaRef ();
+            coord_map.viewport_center += Offset ((cursor_position.x () - previous_cursor_position.x ())*area.width ()/hud.minimap_screen_area.width (),
+                                                 (cursor_position.y () - previous_cursor_position.y ())*area.height ()/hud.minimap_screen_area.height ());
+        }
     }
 }
 void RoomWidget::matchMousePressEvent (QMouseEvent* event)
@@ -739,6 +746,9 @@ void RoomWidget::matchMousePressEvent (QMouseEvent* event)
         case Qt::RightButton: {
             match_state->autoAction (team, coord_map.toMapCoords (cursor_position));
         } break;
+        case Qt::MiddleButton: {
+            camera_move_modifier_pressed = true;
+        } break;
         default: {
         }
         }
@@ -771,6 +781,9 @@ void RoomWidget::matchMouseReleaseEvent (QMouseEvent* event)
         } else if (cursorIsAboveScene (cursor_position)) {
             switch (event->button ()) {
             case Qt::LeftButton: {
+            } break;
+            case Qt::MiddleButton: {
+                camera_move_modifier_pressed = false;
             } break;
             default: {
             }
