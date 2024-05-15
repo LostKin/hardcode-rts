@@ -51,7 +51,6 @@ public:
     static int unitHitBarCount (Unit::Type type);
     static int unitMaxHP (Unit::Type type);
     static const AttackDescription& unitPrimaryAttackDescription (Unit::Type type);
-    static uint64_t animationPeriodNS (Unit::Type type);
     static const AttackDescription& effectAttackDescription (AttackDescription::Type type);
 
 private:

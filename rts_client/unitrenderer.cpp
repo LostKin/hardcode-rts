@@ -270,6 +270,11 @@ void UnitRenderer::drawBody (QOpenGLFunctions& gl, TexturedRenderer& textured_re
             quint64 period = attackAnimationPeriodNS (unit.type);
             quint64 phase = (clock_ns + unit.phase_offset) % period;
             texture = (phase < period / 2) ? shooting1.get () : shooting2.get ();
+        } else if (std::holds_alternative<PerformingCastAction> (unit.action)) {
+            const PerformingCastAction& action = std::get<PerformingCastAction> (unit.action);
+            qint64 remaining_ticks = action.remaining_ticks;
+            qint64 cast_duration_ticks = MatchState::effectAttackDescription (AttackDescription::Type::PestilenceMissile).duration_ticks;
+            texture = (remaining_ticks > cast_duration_ticks / 2) ? shooting1.get () : shooting2.get ();
         } else {
             texture = standing.get ();
         }
