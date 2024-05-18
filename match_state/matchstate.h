@@ -77,6 +77,7 @@ private:
 
 // Update on client: at player input
 public:
+    std::optional<std::pair<uint32_t, const Unit&>> unitUnderCursor (const Position& point) const;
     void trySelect (Unit::Team team, const Position& point, bool add);
     void trySelect (Unit::Team team, const Rectangle& rect, bool add);
     void trySelectByType (Unit::Team team, const Position& point, const Rectangle& viewport, bool add);

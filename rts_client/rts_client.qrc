@@ -19,6 +19,12 @@
         <file>images/icons/tabs.png</file>
 
         <file>images/cursors/crosshair.png</file>
+        <file>images/cursors/friend-selection.png</file>
+        <file>images/cursors/enemy-selection.png</file>
+        <file>images/cursors/primary-selection.png</file>
+        <file>images/cursors/rectangle-selection.png</file>
+        <file>images/cursors/attack.png</file>
+        <file>images/cursors/attack-enemy.png</file>
 
         <file>images/labels/join-team-requested.png</file>
         <file>images/labels/ready.png</file>

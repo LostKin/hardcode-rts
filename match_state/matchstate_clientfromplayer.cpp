@@ -34,6 +34,15 @@ static bool intersectRectangleCircle (const Rectangle& rect, const Position& cen
     }
 }
 
+std::optional<std::pair<uint32_t, const Unit&>> MatchState::unitUnderCursor (const Position& point) const
+{
+    for (std::map<uint32_t, Unit>::const_iterator it = units.begin (); it != units.end (); ++it) {
+        const Unit& unit = it->second;
+        if (checkUnitInsideSelection (unit, point))
+            return std::pair<uint32_t, const Unit&> (it->first, unit);
+    }
+    return std::nullopt;
+}
 void MatchState::trySelect (Unit::Team team, const Position& point, bool add)
 {
     if (add) {

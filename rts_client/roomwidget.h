@@ -144,6 +144,12 @@ private:
         QSharedPointer<QOpenGLTexture> grass;
         struct {
             QSharedPointer<QOpenGLTexture> crosshair;
+            QSharedPointer<QOpenGLTexture> friend_selection;
+            QSharedPointer<QOpenGLTexture> enemy_selection;
+            QSharedPointer<QOpenGLTexture> primary_selection;
+            QSharedPointer<QOpenGLTexture> rectangle_selection;
+            QSharedPointer<QOpenGLTexture> attack;
+            QSharedPointer<QOpenGLTexture> attack_enemy;
         } cursors;
         struct {
             QSharedPointer<QOpenGLTexture> join_team_requested;

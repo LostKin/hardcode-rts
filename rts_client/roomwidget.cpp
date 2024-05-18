@@ -286,6 +286,12 @@ void RoomWidget::loadTextures ()
     textures.grass = loadTexture2DRectangle (":/images/grass.png");
 
     textures.cursors.crosshair = loadTexture2DRectangle (":/images/cursors/crosshair.png");
+    textures.cursors.friend_selection = loadTexture2DRectangle (":/images/cursors/friend-selection.png");
+    textures.cursors.enemy_selection = loadTexture2DRectangle (":/images/cursors/enemy-selection.png");
+    textures.cursors.primary_selection = loadTexture2DRectangle (":/images/cursors/primary-selection.png");
+    textures.cursors.rectangle_selection = loadTexture2DRectangle (":/images/cursors/rectangle-selection.png");
+    textures.cursors.attack = loadTexture2DRectangle (":/images/cursors/attack.png");
+    textures.cursors.attack_enemy = loadTexture2DRectangle (":/images/cursors/attack-enemy.png");
 
     textures.labels.join_team_requested = loadTexture2DRectangle (":/images/labels/join-team-requested.png");
     textures.labels.ready = loadTexture2DRectangle (":/images/labels/ready.png");
@@ -411,8 +417,6 @@ void RoomWidget::draw ()
     default:
         break;
     }
-
-    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
 }
 void RoomWidget::keyPressEvent (QKeyEvent* event)
 {
@@ -807,6 +811,8 @@ void RoomWidget::drawRoleSelection ()
     textured_renderer->fillRectangle (gl, 30, 30, (pressed_button == ButtonId::JoinBlueTeam) ? textures.buttons.join_as_player_pressed.get () : textures.buttons.join_as_player.get (), ortho_matrix);
     textured_renderer->fillRectangle (gl, 30, 230, (pressed_button == ButtonId::Spectate) ? textures.buttons.spectate_pressed.get () : textures.buttons.spectate.get (), ortho_matrix);
     textured_renderer->fillRectangle (gl, 30, 400, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+
+    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
 }
 void RoomWidget::drawRoleSelectionRequested ()
 {
@@ -816,6 +822,8 @@ void RoomWidget::drawRoleSelectionRequested ()
 
     textured_renderer->fillRectangle (gl, 30, 230, (pressed_button == ButtonId::Cancel) ? textures.buttons.cancel_pressed.get () : textures.buttons.cancel.get (), ortho_matrix);
     textured_renderer->fillRectangle (gl, 30, 400, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+
+    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
 }
 void RoomWidget::drawConfirmingReadiness ()
 {
@@ -823,6 +831,8 @@ void RoomWidget::drawConfirmingReadiness ()
 
     textured_renderer->fillRectangle (gl, 30, 30, (pressed_button == ButtonId::Ready) ? textures.buttons.ready_pressed.get () : textures.buttons.ready.get (), ortho_matrix);
     textured_renderer->fillRectangle (gl, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+
+    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
 }
 void RoomWidget::drawReady ()
 {
@@ -831,6 +841,8 @@ void RoomWidget::drawReady ()
     textured_renderer->fillRectangle (gl, 30, 30, textures.labels.ready.get (), ortho_matrix);
 
     textured_renderer->fillRectangle (gl, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+
+    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
 }
 void RoomWidget::drawAwaitingMatch ()
 {
@@ -854,6 +866,8 @@ void RoomWidget::drawAwaitingMatch ()
     textured_renderer->fillRectangle (gl, 30, 30, label_texture, ortho_matrix);
 
     textured_renderer->fillRectangle (gl, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
+
+    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
 }
 void RoomWidget::drawMatchStarted ()
 {
@@ -867,6 +881,24 @@ void RoomWidget::drawMatchStarted ()
 
     hud_renderer->draw (gl, *colored_renderer, *colored_textured_renderer, *textured_renderer, *this,
                         hud, *match_state, team, ortho_matrix, coord_map);
+
+    QOpenGLTexture* cursor;
+    if (selection_start.has_value ()) {
+        cursor = &*textures.cursors.rectangle_selection;
+    } else if (match_state->buildOrderedSelection ().size ()) {
+        std::optional<std::pair<uint32_t, const Unit&>> unit_under_cursor = match_state->unitUnderCursor (coord_map.toMapCoords (cursor_position));
+        if (unit_under_cursor.has_value () && unit_under_cursor->second.team != team)
+            cursor = &*textures.cursors.attack_enemy;
+        else
+            cursor = &*textures.cursors.attack;
+    } else {
+        std::optional<std::pair<uint32_t, const Unit&>> unit_under_cursor = match_state->unitUnderCursor (coord_map.toMapCoords (cursor_position));
+        if (unit_under_cursor.has_value ())
+            cursor = (unit_under_cursor->second.team == team) ? &*textures.cursors.friend_selection : &*textures.cursors.enemy_selection;
+        else
+            cursor = &*textures.cursors.primary_selection;
+    }
+    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, &*cursor, ortho_matrix);
 }
 void RoomWidget::tick ()
 {
