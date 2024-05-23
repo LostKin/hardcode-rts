@@ -53,10 +53,14 @@ private:
     void drawSelectionBar (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
                            const QPoint& cursor_position, const std::optional<QPoint>& selection_start,
                            const QMatrix4x4& ortho_matrix);
+    void drawActionMarkers (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer,
+                            MatchState& match_state, Unit::Team team,
+                            const QMatrix4x4& ortho_matrix, const CoordMap& coord_map);
     const Position* getUnitTargetPosition (const Unit& unit, MatchState& match_state);
     const Position* getUnitTargetPosition (const UnitActionVariant& unit_action, MatchState& match_state);
     const Position* getUnitTargetPosition (const IntentiveActionVariant& unit_action, MatchState& match_state);
     QSharedPointer<QOpenGLTexture> loadTexture2D (const QString& path);
+    QSharedPointer<QOpenGLTexture> loadTexture2DRectangle (const QString& path);
 
 private:
     QColor red_player_color = QColor (0xf1, 0x4b, 0x2c);
@@ -65,5 +69,9 @@ private:
     QSharedPointer<EffectRenderer> effect_renderer;
     struct {
         QSharedPointer<QOpenGLTexture> ground;
+        struct {
+            QSharedPointer<QOpenGLTexture> attack;
+            QSharedPointer<QOpenGLTexture> movement;
+        } action_markers;
     } textures;
 };

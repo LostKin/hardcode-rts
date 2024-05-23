@@ -26,6 +26,9 @@
         <file>images/cursors/attack.png</file>
         <file>images/cursors/attack-enemy.png</file>
 
+        <file>images/action-markers/attack.png</file>
+        <file>images/action-markers/movement.png</file>
+
         <file>images/labels/join-team-requested.png</file>
         <file>images/labels/ready.png</file>
         <file>images/labels/starting-in-0.png</file>

@@ -16,6 +16,8 @@ SceneRenderer::SceneRenderer ()
     unit_set_renderer = QSharedPointer<UnitSetRenderer>::create (red_player_color, blue_player_color);
     effect_renderer = QSharedPointer<EffectRenderer>::create ();
     textures.ground = loadTexture2D (":/images/ground.png");
+    textures.action_markers.attack = loadTexture2DRectangle (":/images/action-markers/attack.png");
+    textures.action_markers.movement = loadTexture2DRectangle (":/images/action-markers/movement.png");
 }
 
 void SceneRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer, ColoredTexturedRenderer& colored_textured_renderer, TexturedRenderer& textured_renderer,
@@ -30,6 +32,7 @@ void SceneRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_rendere
     drawUnitPaths (gl, colored_renderer, match_state, team, ortho_matrix, coord_map);
     drawUnitStats (gl, colored_renderer, match_state, ortho_matrix, coord_map);
     drawSelectionBar (gl, colored_renderer, cursor_position, selection_start, ortho_matrix);
+    drawActionMarkers (gl, textured_renderer, match_state, team, ortho_matrix, coord_map);
 }
 void SceneRenderer::drawBackground (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer,
                                     MatchState& match_state,
@@ -169,17 +172,139 @@ void SceneRenderer::drawSelectionBar (QOpenGLFunctions& gl, ColoredRenderer& col
         );
     }
 }
+void SceneRenderer::drawActionMarkers (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer,
+                                       MatchState& match_state, Unit::Team team,
+                                       const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
+{
+    std::set<Position> move_points;
+    std::set<uint32_t> move_units;
+    std::set<Position> attack_points;
+    std::set<uint32_t> attack_units;
+    std::set<Position> cast_points;
+
+    const std::map<uint32_t, Unit>& units = match_state.unitsRef ();
+    for (std::map<uint32_t, Unit>::const_iterator it = units.begin (); it != units.end (); ++it) {
+        const Unit& unit = it->second;
+        if (unit.team == team && unit.selected) {
+            const UnitActionVariant& action = unit.action;
+            if (std::holds_alternative<MoveAction> (action)) {
+                const MoveAction& move_action = std::get<MoveAction> (action);
+                const std::variant<Position, uint32_t>& target = move_action.target;
+                if (std::holds_alternative<Position> (target)) {
+                    move_points.insert (std::get<Position> (target));
+                } else {
+                    move_units.insert (std::get<uint32_t> (target));
+                }
+            } else if (std::holds_alternative<AttackAction> (action)) {
+                const AttackAction& attack_action = std::get<AttackAction> (action);
+                const std::variant<Position, uint32_t>& target = attack_action.target;
+                if (std::holds_alternative<Position> (target)) {
+                    attack_points.insert (std::get<Position> (target));
+                } else {
+                    attack_units.insert (std::get<uint32_t> (target));
+                }
+            } else if (std::holds_alternative<CastAction> (action)) {
+                const CastAction& cast_action = std::get<CastAction> (action);
+                cast_points.insert (cast_action.target);
+            } else if (std::holds_alternative<PerformingAttackAction> (action)) {
+                const PerformingAttackAction& performing_attack_action = std::get<PerformingAttackAction> (action);
+                const IntentiveActionVariant& next_action = performing_attack_action.next_action;
+                if (std::holds_alternative<MoveAction> (next_action)) {
+                    const MoveAction& move_action = std::get<MoveAction> (next_action);
+                    const std::variant<Position, uint32_t>& target = move_action.target;
+                    if (std::holds_alternative<Position> (target)) {
+                        move_points.insert (std::get<Position> (target));
+                    } else {
+                        move_units.insert (std::get<uint32_t> (target));
+                    }
+                } else if (std::holds_alternative<AttackAction> (next_action)) {
+                    const AttackAction& attack_action = std::get<AttackAction> (next_action);
+                    const std::variant<Position, uint32_t>& target = attack_action.target;
+                    if (std::holds_alternative<Position> (target)) {
+                        attack_points.insert (std::get<Position> (target));
+                    } else {
+                        attack_units.insert (std::get<uint32_t> (target));
+                    }
+                } else if (std::holds_alternative<CastAction> (next_action)) {
+                    const CastAction& cast_action = std::get<CastAction> (next_action);
+                    cast_points.insert (cast_action.target);
+                }
+            } else if (std::holds_alternative<PerformingCastAction> (action)) {
+                const PerformingCastAction& performing_cast_action = std::get<PerformingCastAction> (action);
+                const IntentiveActionVariant& next_action = performing_cast_action.next_action;
+                if (std::holds_alternative<MoveAction> (next_action)) {
+                    const MoveAction& move_action = std::get<MoveAction> (next_action);
+                    const std::variant<Position, uint32_t>& target = move_action.target;
+                    if (std::holds_alternative<Position> (target)) {
+                        move_points.insert (std::get<Position> (target));
+                    } else {
+                        move_units.insert (std::get<uint32_t> (target));
+                    }
+                } else if (std::holds_alternative<AttackAction> (next_action)) {
+                    const AttackAction& attack_action = std::get<AttackAction> (next_action);
+                    const std::variant<Position, uint32_t>& target = attack_action.target;
+                    if (std::holds_alternative<Position> (target)) {
+                        attack_points.insert (std::get<Position> (target));
+                    } else {
+                        attack_units.insert (std::get<uint32_t> (target));
+                    }
+                } else if (std::holds_alternative<CastAction> (next_action)) {
+                    const CastAction& cast_action = std::get<CastAction> (next_action);
+                    cast_points.insert (cast_action.target);
+                }
+            }
+        }
+    }
+
+    // TODO: Group as single operation
+    for (const Position& position: move_points) {
+        QOpenGLTexture* texture = &*textures.action_markers.movement;
+        Position screen_position = coord_map.toScreenCoords (position);
+        textured_renderer.fillRectangle (gl, screen_position.x () - texture->width () / 2, screen_position.y () - texture->height () / 2, texture, ortho_matrix);
+    }
+    for (const uint32_t& unit_id: move_units) {
+        std::map<uint32_t, Unit>::const_iterator unit_it = units.find (unit_id);
+        if (unit_it != units.end ()) {
+            const Unit& unit = unit_it->second;
+            QOpenGLTexture* texture = &*textures.action_markers.movement;
+            Position screen_position = coord_map.toScreenCoords (unit.position);
+            textured_renderer.fillRectangle (gl, screen_position.x () - texture->width () / 2, screen_position.y () - texture->height () / 2, texture, ortho_matrix);
+        }
+    }
+
+    // TODO: Group as single operation
+    for (const Position& position: attack_points) {
+        QOpenGLTexture* texture = &*textures.action_markers.attack;
+        Position screen_position = coord_map.toScreenCoords (position);
+        textured_renderer.fillRectangle (gl, screen_position.x () - texture->width () / 2, screen_position.y () - texture->height () / 2, texture, ortho_matrix);
+    }
+    for (const uint32_t& unit_id: attack_units) {
+        std::map<uint32_t, Unit>::const_iterator unit_it = units.find (unit_id);
+        if (unit_it != units.end ()) {
+            const Unit& unit = unit_it->second;
+            QOpenGLTexture* texture = &*textures.action_markers.attack;
+            Position screen_position = coord_map.toScreenCoords (unit.position);
+            textured_renderer.fillRectangle (gl, screen_position.x () - texture->width () / 2, screen_position.y () - texture->height () / 2, texture, ortho_matrix);
+        }
+    }
+    for (const Position& position: cast_points) {
+        QOpenGLTexture* texture = &*textures.action_markers.attack;
+        Position screen_position = coord_map.toScreenCoords (position);
+        textured_renderer.fillRectangle (gl, screen_position.x () - texture->width () / 2, screen_position.y () - texture->height () / 2, texture, ortho_matrix);
+    }
+}
 const Position* SceneRenderer::getUnitTargetPosition (const Unit& unit, MatchState& match_state)
 {
-    if (std::holds_alternative<StopAction> (unit.action) ||
-        std::holds_alternative<MoveAction> (unit.action) ||
-        std::holds_alternative<AttackAction> (unit.action) ||
-        std::holds_alternative<CastAction> (unit.action)) {
-        return getUnitTargetPosition (unit.action, match_state);
-    } else if (std::holds_alternative<PerformingAttackAction> (unit.action)) {
-        return getUnitTargetPosition (std::get<PerformingAttackAction> (unit.action).next_action, match_state);
-    } else if (std::holds_alternative<PerformingCastAction> (unit.action)) {
-        return getUnitTargetPosition (std::get<PerformingCastAction> (unit.action).next_action, match_state);
+    const UnitActionVariant& action = unit.action;
+    if (std::holds_alternative<StopAction> (action) ||
+        std::holds_alternative<MoveAction> (action) ||
+        std::holds_alternative<AttackAction> (action) ||
+        std::holds_alternative<CastAction> (action)) {
+        return getUnitTargetPosition (action, match_state);
+    } else if (std::holds_alternative<PerformingAttackAction> (action)) {
+        return getUnitTargetPosition (std::get<PerformingAttackAction> (action).next_action, match_state);
+    } else if (std::holds_alternative<PerformingCastAction> (action)) {
+        return getUnitTargetPosition (std::get<PerformingCastAction> (action).next_action, match_state);
     }
     return nullptr;
 }
@@ -251,5 +376,18 @@ QSharedPointer<QOpenGLTexture> SceneRenderer::loadTexture2D (const QString& path
     QOpenGLTexture* texture = new QOpenGLTexture (QImage (path));
     texture->setMinificationFilter (QOpenGLTexture::LinearMipMapLinear);
     texture->setMagnificationFilter (QOpenGLTexture::LinearMipMapLinear);
+    return QSharedPointer<QOpenGLTexture> (texture);
+}
+QSharedPointer<QOpenGLTexture> SceneRenderer::loadTexture2DRectangle (const QString& path)
+{
+    QImage image = QImage (path).convertToFormat (QImage::Format_RGBA8888);
+    QOpenGLTexture* texture = new QOpenGLTexture (QOpenGLTexture::TargetRectangle);
+    texture->setFormat (QOpenGLTexture::QOpenGLTexture::RGBAFormat);
+    texture->setSize (image.width (), image.height ());
+    texture->allocateStorage ();
+    texture->setData (QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, image.bits ());
+    texture->setLevelOfDetailRange (0, 0);
+    texture->setMinificationFilter (QOpenGLTexture::Nearest);
+    texture->setMagnificationFilter (QOpenGLTexture::Nearest);
     return QSharedPointer<QOpenGLTexture> (texture);
 }

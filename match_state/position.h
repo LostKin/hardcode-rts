@@ -52,6 +52,10 @@ public:
         x_ -= offset.dX ();
         y_ -= offset.dY ();
     }
+    bool operator< (const Position& b) const
+    {
+        return y_ < b.y_ || (y_ == b.y_ && x_ < b.x_);
+    }
 
 private:
     double x_;
