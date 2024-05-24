@@ -71,9 +71,6 @@ private:
     Unit& addUnit (uint32_t id, Unit::Type type, Unit::Team team, const Position& position, double direction);
     Corpse& addCorpse (uint32_t id, Unit::Type type, Unit::Team team, const Position& position, double direction, int64_t decay_remaining_ticks);
     Missile& addMissile (uint32_t id, Missile::Type type, Unit::Team team, const Position& position, double direction);
-    void startAction (const MoveAction& action);
-    void startAction (const AttackAction& action);
-    void startAction (const CastAction& action);
 
 // Update on client: at player input
 public:
@@ -97,6 +94,9 @@ public:
     bool checkUnitInsideSelection (const Unit& unit, const Position& point) const;
     bool checkUnitInsideSelection (const Unit& unit, const Rectangle& rect) const;
     bool checkUnitInsideViewport (const Unit& unit, const Rectangle& viewport) const;
+    void startAction (const MoveAction& action);
+    void startAction (const AttackAction& action);
+    void startAction (const CastAction& action);
 
 private:
     void clearSelection ();

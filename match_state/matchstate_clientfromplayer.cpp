@@ -283,3 +283,80 @@ Unit* MatchState::findUnitAt (Unit::Team team, const Position& point)
     }
     return nullptr;
 }
+void MatchState::startAction (const MoveAction& action)
+{
+    // TODO: Check for team
+    for (std::map<uint32_t, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
+        if (unit.selected) {
+            if (std::holds_alternative<PerformingAttackAction> (unit.action))
+                std::get<PerformingAttackAction> (unit.action).next_action = action;
+            else if (std::holds_alternative<PerformingCastAction> (unit.action))
+                std::get<PerformingCastAction> (unit.action).next_action = action;
+            else
+                unit.action = action;
+            Position target;
+            if (std::holds_alternative<uint32_t> (action.target)) {
+                uint32_t target_unit_id = std::get<uint32_t> (action.target);
+                std::map<uint32_t, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                if (target_unit_it != units.end ()) {
+                    Unit& target_unit = target_unit_it->second;
+                    target = target_unit.position;
+                }
+            } else {
+                target = std::get<Position> (action.target);
+            }
+            emit unitActionRequested (it->first, action);
+        }
+    }
+}
+void MatchState::startAction (const AttackAction& action)
+{
+    // TODO: Check for team
+    for (std::map<uint32_t, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
+        if (unit.selected) {
+            if (std::holds_alternative<PerformingAttackAction> (unit.action))
+                std::get<PerformingAttackAction> (unit.action).next_action = action;
+            else if (std::holds_alternative<PerformingCastAction> (unit.action))
+                std::get<PerformingCastAction> (unit.action).next_action = action;
+            else
+                unit.action = action;
+            emit unitActionRequested (it->first, action);
+        }
+    }
+}
+void MatchState::startAction (const CastAction& action)
+{
+    // TODO: Check for team
+    for (std::map<uint32_t, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        Unit& unit = it->second;
+        if (unit.selected) {
+            if (unit.type == Unit::Type::Contaminator) {
+                switch (action.type) {
+                case CastAction::Type::Pestilence:
+                    if (std::holds_alternative<PerformingAttackAction> (unit.action))
+                        std::get<PerformingAttackAction> (unit.action).next_action = action;
+                    else if (std::holds_alternative<PerformingCastAction> (unit.action))
+                        std::get<PerformingCastAction> (unit.action).next_action = action;
+                    else
+                        unit.action = action;
+                    emit unitActionRequested (it->first, action);
+                    break;
+                case CastAction::Type::SpawnBeetle:
+                    if (std::holds_alternative<PerformingAttackAction> (unit.action))
+                        std::get<PerformingAttackAction> (unit.action).next_action = action;
+                    else if (std::holds_alternative<PerformingCastAction> (unit.action))
+                        std::get<PerformingCastAction> (unit.action).next_action = action;
+                    else
+                        unit.action = action;
+                    emit unitActionRequested (it->first, action);
+                    break;
+                default:
+                    break;
+                }
+                break;
+            }
+        }
+    }
+}
