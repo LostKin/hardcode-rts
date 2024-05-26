@@ -287,25 +287,16 @@ void MatchState::startAction (const MoveAction& action)
 {
     // TODO: Check for team
     for (std::map<uint32_t, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
+        uint32_t unit_id = it->first;
         Unit& unit = it->second;
-        if (unit.selected) {
+        if (unit.selected &&
+            (!std::holds_alternative<uint32_t> (action.target) || std::get<uint32_t> (action.target) != unit_id)) {
             if (std::holds_alternative<PerformingAttackAction> (unit.action))
                 std::get<PerformingAttackAction> (unit.action).next_action = action;
             else if (std::holds_alternative<PerformingCastAction> (unit.action))
                 std::get<PerformingCastAction> (unit.action).next_action = action;
             else
                 unit.action = action;
-            Position target;
-            if (std::holds_alternative<uint32_t> (action.target)) {
-                uint32_t target_unit_id = std::get<uint32_t> (action.target);
-                std::map<uint32_t, Unit>::iterator target_unit_it = units.find (target_unit_id);
-                if (target_unit_it != units.end ()) {
-                    Unit& target_unit = target_unit_it->second;
-                    target = target_unit.position;
-                }
-            } else {
-                target = std::get<Position> (action.target);
-            }
             emit unitActionRequested (it->first, action);
         }
     }
