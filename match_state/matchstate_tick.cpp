@@ -446,6 +446,14 @@ void MatchState::applyDeath ()
         if (unit.hp <= 0) {
             corpses.emplace (it->first, unit);
             it = units.erase (it);
+        } else if (unit.ttl_ticks.has_value ()) {
+            if (unit.ttl_ticks.value () <= 1) {
+                corpses.emplace (it->first, unit);
+                it = units.erase (it);
+            } else {
+                --unit.ttl_ticks.value ();
+                ++it;
+            }
         } else {
             ++it;
         }
@@ -458,7 +466,7 @@ void MatchState::applyDecay ()
         if (corpse.decay_remaining_ticks <= 1) {
             it = corpses.erase (it);
         } else {
-            --(corpse.decay_remaining_ticks);
+            --corpse.decay_remaining_ticks;
             ++it;
         }
     }

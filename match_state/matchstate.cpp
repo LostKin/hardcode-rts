@@ -160,6 +160,10 @@ int MatchState::unitMaxHP (Unit::Type type)
         return 0;
     }
 }
+int64_t MatchState::beetleTTLTicks ()
+{
+    return 700;
+}
 const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type type)
 {
     static const AttackDescription seal = ({

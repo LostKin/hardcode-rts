@@ -43,4 +43,5 @@ public:
     int64_t attack_cooldown_left_ticks = 0;
     int64_t cast_cooldown_left_ticks = 0;
     uint64_t groups = 0;
+    std::optional<int64_t> ttl_ticks = std::nullopt;
 };

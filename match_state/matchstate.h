@@ -50,6 +50,7 @@ public:
     static double unitMaxAngularVelocity (Unit::Type type);
     static int unitHitBarCount (Unit::Type type);
     static int unitMaxHP (Unit::Type type);
+    static int64_t beetleTTLTicks ();
     static const AttackDescription& unitPrimaryAttackDescription (Unit::Type type);
     static const AttackDescription& effectAttackDescription (AttackDescription::Type type);
 

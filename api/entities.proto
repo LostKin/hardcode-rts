@@ -115,6 +115,10 @@ message Vector2D {
     double y = 2;
 }
 
+message UnitTTL {
+    int64 ttl_ticks = 1;
+}
+
 message Unit {
     ClientId client_id = 1;
     uint32 id = 2;
@@ -127,6 +131,7 @@ message Unit {
     uint32 attack_remaining_ticks = 9;
     uint32 attack_cooldown_left_ticks = 10;
     uint32 cast_cooldown_left_ticks = 11;
+    UnitTTL ttl = 12;
 }
 
 message Corpse {

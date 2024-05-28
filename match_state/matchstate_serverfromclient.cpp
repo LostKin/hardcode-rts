@@ -10,6 +10,8 @@ std::map<uint32_t, Unit>::iterator MatchState::createUnit (Unit::Type type, Unit
     std::pair<std::map<uint32_t, Unit>::iterator, bool> it_status = units.insert ({next_id++, {type, id, team, position, direction}});
     Unit& unit = it_status.first->second;
     unit.hp = unitMaxHP (unit.type);
+    if (type == Unit::Type::Beetle)
+        unit.ttl_ticks = MatchState::beetleTTLTicks ();
     return it_status.first;
 }
 void MatchState::setUnitAction (uint32_t unit_id, const UnitActionVariant& action)

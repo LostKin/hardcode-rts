@@ -190,6 +190,9 @@ static std::optional<std::pair<uint32_t, Unit>> parseUnit (const RTS::Unit& m_un
         return std::nullopt;
     unit.attack_cooldown_left_ticks = m_unit.attack_cooldown_left_ticks ();
     unit.cast_cooldown_left_ticks = m_unit.cast_cooldown_left_ticks ();
+    if (m_unit.has_ttl ())
+        unit.ttl_ticks = m_unit.ttl ().ttl_ticks ();
+
     return std::pair<uint32_t, Unit> (id, unit);
 }
 static std::optional<std::pair<uint32_t, Corpse>> parseCorpse (const RTS::Corpse& m_corpse, std::string& error_message)

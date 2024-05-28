@@ -163,6 +163,8 @@ static bool fillUnit (uint32_t id, const Unit& unit, RTS::Unit& m_unit,
     m_unit.set_health (unit.hp);
     m_unit.set_orientation (unit.orientation);
     m_unit.set_id (id);
+    if (unit.ttl_ticks.has_value ())
+        m_unit.mutable_ttl ()->set_ttl_ticks (unit.ttl_ticks.value ());
 
     return true;
 }
