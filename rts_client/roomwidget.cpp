@@ -617,6 +617,18 @@ void RoomWidget::matchKeyPressEvent (QKeyEvent* event)
         if (ctrl_pressed)
             centerViewportAtSelected ();
         break;
+    case Qt::Key_X: {
+        int row, col;
+        if (getSelectionPanelUnitUnderCursor (cursor_position, row, col)) {
+            std::vector<std::pair<quint32, const Unit*>> selection = match_state->buildOrderedSelection ();
+            if (selection.size () > 1) {
+                size_t start = row * 10 + col;
+                for (size_t i = start; i < selection.size (); ++i) {
+                    match_state->deselect (selection[i].first);
+                }
+            }
+        }
+    } break;
     case Qt::Key_1:
     case Qt::Key_Exclam:
         groupEvent (1);
