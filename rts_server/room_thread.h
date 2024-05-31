@@ -3,8 +3,8 @@
 #include "room.h"
 #include "application.h"
 
-#include ".proto_stubs/requests.pb.h"
-#include ".proto_stubs/responses.pb.h"
+#include "requests.pb.h"
+#include "responses.pb.h"
 
 #include <QThread>
 #include <QUdpSocket>

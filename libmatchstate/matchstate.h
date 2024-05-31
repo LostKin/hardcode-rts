@@ -36,6 +36,16 @@ enum class ActionType {
 };
 
 
+struct DynamicallyTypedFunction {
+    std::string parameters;
+    std::string source;
+};
+class Node;
+struct Node {
+    std::optional<DynamicallyTypedFunction> function;
+    std::map<std::string, Node> children;
+};
+
 class MatchState: public QObject
 {
     Q_OBJECT
@@ -116,6 +126,9 @@ public:
     void tick ();
 
 private:
+    void initNodeTrees ();
+    Node& node (Node& node_tree, const std::string& name) const;
+    void call (Node& node_tree, const std::string& name, BlueTeamUserData& user_data);
     void applyActions (double dt);
     void applyEffects (double dt);
     void applyAreaBoundaryCollisions (double dt);
@@ -166,6 +179,7 @@ private:
     std::map<uint32_t, Explosion> explosions;
     RedTeamUserData red_team_user_data;
     BlueTeamUserData blue_team_user_data;
+    Node blue_team_node_tree;
     uint32_t next_id = 0;
     std::mt19937 random_generator;
 };

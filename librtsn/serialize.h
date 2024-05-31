@@ -1,6 +1,6 @@
 #pragma once
 
-#include ".proto_stubs/responses.pb.h"
+#include "responses.pb.h"
 #include "matchstate.h"
 
 #include <map>

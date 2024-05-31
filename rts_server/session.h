@@ -1,6 +1,6 @@
 #pragma once
 
-#include ".proto_stubs/entities.pb.h"
+#include "entities.pb.h"
 #include "matchstate.h"
 
 #include <QNetworkDatagram>

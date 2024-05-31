@@ -5,6 +5,7 @@
 
 MatchState::MatchState ()
 {
+    initNodeTrees ();
 }
 MatchState::~MatchState ()
 {

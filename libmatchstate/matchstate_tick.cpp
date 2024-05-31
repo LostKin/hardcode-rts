@@ -1,5 +1,7 @@
 #include "matchstate.h"
 
+#include "hc_parser.h"
+
 
 static bool pointInsideCircle (const Position& point, const Position& center, double radius)
 {
@@ -12,6 +14,20 @@ static inline double unitDistance (const Unit& a, const Unit& b)
 static bool orientationsFuzzyMatch (double a, double b)
 {
     return qAbs (remainder (a - b, M_PI * 2.0)) <= (M_PI / 180.0); // Within 1 degree
+}
+static std::vector<std::string> split (const std::string& s, char seperator)
+{
+    std::vector<std::string> output;
+    std::string::size_type prev_pos = 0, pos = 0;
+
+    while ((pos = s.find (seperator, pos)) != std::string::npos) {
+        output.push_back (s.substr (prev_pos, pos-prev_pos));
+        prev_pos = ++pos;
+    }
+
+    output.push_back (s.substr (prev_pos, pos-prev_pos));
+
+    return output;
 }
 
 void MatchState::tick ()
@@ -35,6 +51,37 @@ void MatchState::tick ()
     applyDecay ();
 }
 
+void MatchState::initNodeTrees ()
+{
+    node (blue_team_node_tree, "unit");
+    node (blue_team_node_tree, "unit.teams");
+    node (blue_team_node_tree, "unit.teams.red");
+    node (blue_team_node_tree, "unit.teams.blue");
+    node (blue_team_node_tree, "unit.is_friend");
+
+    node (blue_team_node_tree, "unit.is_friend").function = DynamicallyTypedFunction ({
+            .parameters = "team",
+            .source = "team == unit.teams.blue ()",
+        });
+}
+Node& MatchState::node (Node& node_tree, const std::string& name) const
+{
+    std::vector<std::string> subnames = split (name, '.');
+    Node& node = node_tree;
+    for (const std::string& subname: subnames)
+        node = node.children[subname];
+    return node;
+}
+void MatchState::call (Node& node_tree, const std::string& name, BlueTeamUserData& user_data)
+{
+    const std::optional<DynamicallyTypedFunction>& optional_function = node (node_tree, name).function;
+    if (!optional_function.has_value ())
+        return;
+    const DynamicallyTypedFunction& function = optional_function.value ();
+    const std::string& parameters = function.parameters;
+    const std::string& source = function.source;
+    // TODO
+}
 void MatchState::applyAreaBoundaryCollisions (double dt)
 {
     for (std::map<uint32_t, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
@@ -554,6 +601,8 @@ void MatchState::redTeamUserTick (RedTeamUserData& /* user_data */)
 }
 void MatchState::blueTeamUserTick (BlueTeamUserData& user_data)
 {
+    Node node_tree;
+
     // TODO: Define proper API
     std::vector<const Missile*> new_missiles;
     for (std::map<uint32_t, Missile>::iterator it = missiles.begin (); it != missiles.end (); ++it) {
