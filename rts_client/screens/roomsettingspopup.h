@@ -2,15 +2,17 @@
 
 #include <QDialog>
 
+
 class QLineEdit;
 
-class RoomSettingsWidget: public QDialog
+
+class RoomSettingsPopup: public QDialog
 {
     Q_OBJECT
 
 public:
-    RoomSettingsWidget (QWidget* parent = nullptr);
-    ~RoomSettingsWidget ();
+    RoomSettingsPopup (QWidget* parent = nullptr);
+    ~RoomSettingsPopup ();
 
 signals:
     void createRequested (const QString& name);

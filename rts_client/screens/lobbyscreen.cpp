@@ -1,16 +1,16 @@
-#include "lobbywidget.h"
+#include "lobbyscreen.h"
 
 #include "roomlisttable.h"
-#include "roomsettingswidget.h"
-#include "profilewidget.h"
+#include "roomsettingspopup.h"
+#include "profilepopup.h"
 
-#include <QGridLayout>
 #include <QLabel>
-#include <QLineEdit>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QPushButton>
-#include <QDebug>
 
-LobbyWidget::LobbyWidget (const QString& login, QWidget* parent)
+
+LobbyScreen::LobbyScreen (const QString& login, QWidget* parent)
     : QWidget (parent)
     , login (login)
 {
@@ -18,7 +18,7 @@ LobbyWidget::LobbyWidget (const QString& login, QWidget* parent)
     {
         QHBoxLayout* hbox = new QHBoxLayout;
         {
-            QPushButton* button = new QPushButton ("Create room...", this);
+            QPushButton* button = new QPushButton ("&Create room...", this);
             connect (button, SIGNAL (clicked ()), this, SLOT (createRoomButtonClicked ()));
             hbox->addWidget (button);
         }
@@ -42,7 +42,7 @@ LobbyWidget::LobbyWidget (const QString& login, QWidget* parent)
     }
     {
         room_list_table = new RoomListTable (this);
-        connect (room_list_table, &RoomListTable::joinRoomRequested, this, &LobbyWidget::joinRoomRequested);
+        connect (room_list_table, &RoomListTable::joinRoomRequested, this, &LobbyScreen::joinRoomRequested);
         layout->addWidget (room_list_table, 1);
     }
     {
@@ -57,35 +57,39 @@ LobbyWidget::LobbyWidget (const QString& login, QWidget* parent)
     }
     setLayout (layout);
 }
-LobbyWidget::~LobbyWidget ()
+LobbyScreen::~LobbyScreen ()
 {
 }
 
-void LobbyWidget::setRoomList (const QVector<RoomEntry>& room_list)
+void LobbyScreen::setRoomList (const QVector<RoomEntry>& room_list)
 {
     room_list_table->setRoomList (room_list);
     room_list_loaded = true;
 }
-void LobbyWidget::joinRoomClicked ()
+void LobbyScreen::joinRoomClicked ()
 {
     QVariant current_room = room_list_table->getCurrentRoom ();
     if (current_room.typeId () == QVariant::UInt)
         emit joinRoomRequested (current_room.toUInt ());
 }
-void LobbyWidget::createRoomButtonClicked ()
+void LobbyScreen::createRoomButtonClicked ()
 {
     QWidget* button = (QWidget*) sender ();
-    RoomSettingsWidget popup (button);
+    if (!button)
+        return;
+    RoomSettingsPopup popup (button);
     connect (&popup, SIGNAL (createRequested (const QString&)), this, SIGNAL (createRoomRequested (const QString&)));
     QPoint left_bottom = button->mapToGlobal (QPoint (0, 0)) + QPoint (0, button->height ());
     popup.show ();
     popup.move (left_bottom.x (), left_bottom.y () + 4);
     popup.exec ();
 }
-void LobbyWidget::profileButtonClicked ()
+void LobbyScreen::profileButtonClicked ()
 {
     QWidget* button = (QWidget*) sender ();
-    ProfileWidget popup (login, button);
+    if (!button)
+        return;
+    ProfilePopup popup (login, button);
     connect (&popup, SIGNAL (logoutRequested ()), this, SIGNAL (logoutRequested ()));
     QPoint right_bottom = button->mapToGlobal (QPoint (0, 0)) + QPoint (button->width (), button->height ());
     popup.show ();

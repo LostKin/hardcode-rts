@@ -4,19 +4,21 @@
 
 #include <QWidget>
 
+
 class QLineEdit;
 class QSpinBox;
 class QTableWidget;
 class QTableWidgetItem;
 class AuthorizationCredentials;
 
-class AuthorizationWidget: public QWidget
+
+class AuthorizationScreen: public QWidget
 {
     Q_OBJECT
 
 public:
-    AuthorizationWidget (const QVector<AuthorizationCredentials>& initial_credentials, QWidget* parent = nullptr);
-    ~AuthorizationWidget ();
+    AuthorizationScreen (const QVector<AuthorizationCredentials>& initial_credentials, QWidget* parent = nullptr);
+    ~AuthorizationScreen ();
     void start ();
 
 signals:

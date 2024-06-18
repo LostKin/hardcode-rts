@@ -1,9 +1,9 @@
 #include "application.h"
 
 #include "mainwindow.h"
-#include "screens/authorizationwidget.h"
-#include "screens/authorizationprogresswidget.h"
-#include "screens/lobbywidget.h"
+#include "screens/authorizationscreen.h"
+#include "screens/authorizationprogressscreen.h"
+#include "screens/lobbyscreen.h"
 #include "matchstate.h"
 #include "parse.h"
 #include "requests.pb.h"
@@ -96,13 +96,13 @@ void Application::quitCallback ()
 void Application::authorizationPromptCallback ()
 {
     // TODO: Implement DNS resolving
-    AuthorizationWidget* authorization_widget = new AuthorizationWidget (loadCredentials ());
-    connect (authorization_widget, SIGNAL (windowsCloseRequested ()), this, SLOT (quitCallback ()));
-    connect (authorization_widget, SIGNAL (loginRequested (const AuthorizationCredentials&)),
+    AuthorizationScreen* authorization_screen = new AuthorizationScreen (loadCredentials ());
+    connect (authorization_screen, SIGNAL (windowsCloseRequested ()), this, SLOT (quitCallback ()));
+    connect (authorization_screen, SIGNAL (loginRequested (const AuthorizationCredentials&)),
              this, SLOT (loginCallback (const AuthorizationCredentials&)));
-    connect (authorization_widget, &AuthorizationWidget::savedCredentialsUpdated, this, &Application::savedCredentials);
+    connect (authorization_screen, &AuthorizationScreen::savedCredentialsUpdated, this, &Application::savedCredentials);
 
-    setCurrentWindow (authorization_widget);
+    setCurrentWindow (authorization_screen);
 }
 void Application::loginCallback (const AuthorizationCredentials& credentials) // QString& host, quint16 port, const QString& login, const QString& password)
 {
@@ -110,9 +110,9 @@ void Application::loginCallback (const AuthorizationCredentials& credentials) //
     this->port = credentials.port;
     this->login = credentials.login;
 
-    AuthorizationProgressWidget* authorization_progress_widget = new AuthorizationProgressWidget (
+    AuthorizationProgressScreen* authorization_progress_screen = new AuthorizationProgressScreen (
         "Connecting to '" + credentials.host + ":" + QString::number (credentials.port) + "' as '" + credentials.login + "'");
-    connect (authorization_progress_widget, SIGNAL (cancelRequested ()), this, SLOT (authorizationPromptCallback ()));
+    connect (authorization_progress_screen, SIGNAL (cancelRequested ()), this, SLOT (authorizationPromptCallback ()));
     RTS::Request request_oneof;
     RTS::AuthorizationRequest* request = request_oneof.mutable_authorization ();
     request->set_login (credentials.login.toStdString ());
@@ -123,7 +123,7 @@ void Application::loginCallback (const AuthorizationCredentials& credentials) //
 
     network_thread->sendDatagram ({this->host_address, this->port, {}, request_id++, {message.data (), message.data () + message.size ()}});
 
-    setCurrentWindow (authorization_progress_widget);
+    setCurrentWindow (authorization_progress_screen);
 }
 void Application::createRoomCallback (const QString& name)
 {
@@ -370,11 +370,11 @@ void Application::sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToCl
 }
 void Application::showLobby (const QString& login)
 {
-    LobbyWidget* lobby_widget = new LobbyWidget (login);
-    connect (this, SIGNAL (roomListUpdated (const QVector<RoomEntry>&)), lobby_widget, SLOT (setRoomList (const QVector<RoomEntry>&)));
-    connect (lobby_widget, SIGNAL (createRoomRequested (const QString&)), this, SLOT (createRoomCallback (const QString&)));
-    connect (lobby_widget, SIGNAL (joinRoomRequested (quint32)), this, SLOT (joinRoomCallback (quint32)));
-    setCurrentWindow (lobby_widget);
+    LobbyScreen* lobby_screen = new LobbyScreen (login);
+    connect (this, SIGNAL (roomListUpdated (const QVector<RoomEntry>&)), lobby_screen, SLOT (setRoomList (const QVector<RoomEntry>&)));
+    connect (lobby_screen, SIGNAL (createRoomRequested (const QString&)), this, SLOT (createRoomCallback (const QString&)));
+    connect (lobby_screen, SIGNAL (joinRoomRequested (quint32)), this, SLOT (joinRoomCallback (quint32)));
+    setCurrentWindow (lobby_screen);
 }
 void Application::showRoom (bool single_mode)
 {

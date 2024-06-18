@@ -7,11 +7,11 @@ qt_standard_project_setup()
 qt_add_resources(RCC_SOURCES rts_client.qrc)
 
 qt_add_executable("${target}"
-    screens/authorizationprogresswidget.cpp
-    screens/lobbywidget.cpp
-    screens/profilewidget.cpp
-    screens/roomsettingswidget.cpp
-    screens/authorizationwidget.cpp
+    screens/authorizationprogressscreen.cpp
+    screens/lobbyscreen.cpp
+    screens/profilepopup.cpp
+    screens/roomsettingspopup.cpp
+    screens/authorizationscreen.cpp
 
     main.cpp
     network_thread.cpp

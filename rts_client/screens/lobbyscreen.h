@@ -4,15 +4,17 @@
 
 #include <QWidget>
 
+
 class RoomListTable;
 
-class LobbyWidget: public QWidget
+
+class LobbyScreen: public QWidget
 {
     Q_OBJECT
 
 public:
-    LobbyWidget (const QString& login, QWidget* parent = nullptr);
-    ~LobbyWidget ();
+    LobbyScreen (const QString& login, QWidget* parent = nullptr);
+    ~LobbyScreen ();
 
 public slots:
     void setRoomList (const QVector<RoomEntry>& room_list);

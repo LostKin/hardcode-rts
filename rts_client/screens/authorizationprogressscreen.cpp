@@ -1,11 +1,12 @@
-#include "authorizationprogresswidget.h"
+#include "authorizationprogressscreen.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 
-AuthorizationProgressWidget::AuthorizationProgressWidget (const QString& message, QWidget* parent)
+
+AuthorizationProgressScreen::AuthorizationProgressScreen (const QString& message, QWidget* parent)
     : QWidget (parent)
 {
     QVBoxLayout* layout = new QVBoxLayout;
@@ -17,7 +18,7 @@ AuthorizationProgressWidget::AuthorizationProgressWidget (const QString& message
         QHBoxLayout* hlayout = new QHBoxLayout;
         hlayout->addStretch (1);
         {
-            QPushButton* button = new QPushButton ("Cancel", this);
+            QPushButton* button = new QPushButton ("&Cancel", this);
             connect (button, SIGNAL (clicked ()), this, SIGNAL (cancelRequested ()));
             hlayout->addWidget (button);
         }
@@ -26,6 +27,6 @@ AuthorizationProgressWidget::AuthorizationProgressWidget (const QString& message
     }
     setLayout (layout);
 }
-AuthorizationProgressWidget::~AuthorizationProgressWidget ()
+AuthorizationProgressScreen::~AuthorizationProgressScreen ()
 {
 }
