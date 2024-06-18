@@ -10,6 +10,7 @@
 #include <QSharedPointer>
 
 class QNetworkDatagram;
+class MainWindow;
 
 class Application: public QApplication
 {
@@ -30,7 +31,7 @@ signals:
 private:
     void showLobby (const QString& login);
     void showRoom (bool single_mode = false);
-    void setCurrentWindow (QWidget* new_window);
+    void setCurrentWindow (QWidget* new_window, bool fullscreen = false);
     void startSingleMode (RoomWidget* room_widget);
     QVector<AuthorizationCredentials> loadCredentials ();
 
@@ -52,7 +53,7 @@ private slots:
 private:
     void selectRolePlayer ();
     bool single_mode = false;
-    QWidget* current_window = nullptr;
+    MainWindow* main_window = nullptr;
     QSharedPointer<NetworkThread> network_thread;
     QHostAddress host_address;
     quint16 port;

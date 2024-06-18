@@ -18,6 +18,7 @@ qt_add_executable("${target}"
     roomlisttable.cpp
     roomsettingswidget.cpp
     profilewidget.cpp
+    mainwindow.cpp
     roomwidget.cpp
     roomentry.cpp
     actionpanelrenderer.cpp

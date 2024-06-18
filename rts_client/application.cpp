@@ -1,4 +1,6 @@
 #include "application.h"
+
+#include "mainwindow.h"
 #include "authorizationwidget.h"
 #include "authorizationprogresswidget.h"
 #include "lobbywidget.h"
@@ -34,14 +36,13 @@ Application::Application (int& argc, char** argv)
     QFontDatabase::addApplicationFont (":/fonts/NotCourierSans-Bold.otf");
     QFontDatabase::addApplicationFont (":/fonts/NotCourierSans.otf");
 
-    // TODO: Implement proper dialog switches and uncomment: setQuitOnLastWindowClosed (false);
     network_thread.reset (new NetworkThread (this));
     connect (&*network_thread, &NetworkThread::datagramReceived, this, &Application::sessionDatagramHandler);
 }
 Application::~Application ()
 {
-    if (current_window)
-        current_window->deleteLater ();
+    if (main_window)
+        main_window->deleteLater ();
 
     network_thread->exit ();
     network_thread->wait ();
@@ -50,6 +51,11 @@ Application::~Application ()
 void Application::start ()
 {
     network_thread->start ();
+
+    main_window = new MainWindow;
+    main_window->setWindowIcon (QIcon (":/images/application-icon.png"));
+    main_window->showFullScreen ();
+
     if (single_mode)
         showRoom (true);
     else
@@ -382,10 +388,7 @@ void Application::showRoom (bool single_mode)
     connect (this, &Application::updateMatchState, room_widget, &RoomWidget::loadMatchState);
     connect (room_widget, &RoomWidget::createUnitRequested, this, &Application::createUnitCallback);
     connect (room_widget, &RoomWidget::unitActionRequested, this, &Application::unitActionCallback);
-    room_widget->grabMouse ();
-    room_widget->grabKeyboard ();
-    room_widget->showFullScreen ();
-    setCurrentWindow (room_widget);
+    setCurrentWindow (room_widget, true);
 
     if (single_mode)
         startSingleMode (room_widget);
@@ -504,11 +507,11 @@ QVector<AuthorizationCredentials> Application::loadCredentials ()
     }
     return credentials;
 }
-void Application::setCurrentWindow (QWidget* new_window)
+void Application::setCurrentWindow (QWidget* new_window, bool fullscreen)
 {
-    if (current_window)
-        current_window->deleteLater ();
-    new_window->setWindowIcon (QIcon (":/images/application-icon.png"));
-    new_window->show ();
-    current_window = new_window;
+    if (fullscreen) {
+        new_window->grabMouse ();
+        new_window->grabKeyboard ();
+    }
+    main_window->setWidget (new_window, fullscreen);
 }

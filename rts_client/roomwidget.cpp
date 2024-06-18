@@ -52,7 +52,6 @@ RoomWidget::RoomWidget (QWidget* parent)
 {
     setMinimumSize (512, 512);
     setUpdateBehavior (QOpenGLWidget::NoPartialUpdate);
-    setAttribute (Qt::WA_KeyCompression, false);
 
     last_frame.invalidate ();
     setMouseTracking (true);
