@@ -1,9 +1,9 @@
 #include "application.h"
 
 #include "mainwindow.h"
-#include "authorizationwidget.h"
-#include "authorizationprogresswidget.h"
-#include "lobbywidget.h"
+#include "screens/authorizationwidget.h"
+#include "screens/authorizationprogresswidget.h"
+#include "screens/lobbywidget.h"
 #include "matchstate.h"
 #include "parse.h"
 #include "requests.pb.h"

@@ -7,17 +7,18 @@ qt_standard_project_setup()
 qt_add_resources(RCC_SOURCES rts_client.qrc)
 
 qt_add_executable("${target}"
+    screens/authorizationprogresswidget.cpp
+    screens/lobbywidget.cpp
+    screens/profilewidget.cpp
+    screens/roomsettingswidget.cpp
+    screens/authorizationwidget.cpp
+
     main.cpp
     network_thread.cpp
     network_manager.cpp
     application.cpp
     authorizationcredentials.cpp
-    authorizationwidget.cpp
-    authorizationprogresswidget.cpp
-    lobbywidget.cpp
     roomlisttable.cpp
-    roomsettingswidget.cpp
-    profilewidget.cpp
     mainwindow.cpp
     roomwidget.cpp
     roomentry.cpp
@@ -38,8 +39,10 @@ qt_add_executable("${target}"
     hudrenderer.cpp
     scenerenderer.cpp
     coordmap.cpp
+
     "${RCC_SOURCES}"
 )
 
+target_include_directories("${target}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries("${target}" PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGLWidgets Qt6::Network Qt6::Multimedia Qt6::Svg)
 target_link_libraries("${target}" PRIVATE libhccn libmatchstate librtsn libapi)
