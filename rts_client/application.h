@@ -30,6 +30,9 @@ signals:
 
 private:
     void showLobby (const QString& login);
+    void showRoleSelectionScreen ();
+    void showRoleSelectionProgressScreen ();
+    void showReadinessScreen ();
     void showRoom (bool single_mode = false);
     void setCurrentWindow (QWidget* new_window, bool fullscreen = false);
     void startSingleMode (RoomWidget* room_widget);
@@ -41,6 +44,7 @@ private slots:
     void loginCallback (const AuthorizationCredentials& credentials);
     void createRoomCallback (const QString& name);
     void joinRoomCallback (quint32 name);
+    void roleSelectedCallback ();
     void sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToClient::Message>& message);
     void selectRolePlayerCallback ();
     void joinSpectatorCallback ();

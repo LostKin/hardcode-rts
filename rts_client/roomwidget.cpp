@@ -58,11 +58,7 @@ RoomWidget::RoomWidget (QWidget* parent)
     setCursor (QCursor (Qt::BlankCursor));
     connect (this, SIGNAL (frameSwapped ()), this, SLOT (update ()));
     connect (&match_timer, SIGNAL (timeout ()), this, SLOT (tick ()));
-    connect (this, &RoomWidget::selectRolePlayerRequested, this, &RoomWidget::selectRolePlayerRequestedHandler);
-    connect (this, &RoomWidget::spectateRequested, this, &RoomWidget::spectateRequestedHandler);
-    connect (this, &RoomWidget::cancelJoinTeamRequested, this, &RoomWidget::cancelJoinTeamRequestedHandler);
     connect (this, &RoomWidget::quitRequested, this, &RoomWidget::quitRequestedHandler);
-    connect (this, &RoomWidget::readinessRequested, this, &RoomWidget::readinessRequestedHandler);
 }
 RoomWidget::~RoomWidget ()
 {
@@ -96,71 +92,24 @@ QSize RoomWidget::pixelsSize ()
 {
     return QSize (pixels_w, pixels_h);
 }
-
 void RoomWidget::unitActionCallback (quint32 id, const UnitActionVariant& action)
 {
     emit unitActionRequested (id, action);
 }
-
 void RoomWidget::unitCreateCallback (Unit::Team team, Unit::Type type, const Position& position)
 {
     emit createUnitRequested (team, type, position);
 }
-
-void RoomWidget::selectRolePlayerRequestedHandler ()
-{
-    awaitRoleSelection (UnitRole::Player);
-}
-void RoomWidget::spectateRequestedHandler ()
-{
-    awaitRoleSelection (UnitRole::Spectator);
-}
-void RoomWidget::cancelJoinTeamRequestedHandler ()
-{
-    state = State::RoleSelection;
-}
-void RoomWidget::readinessRequestedHandler ()
-{
-    ready (this->team);
-}
-void RoomWidget::readinessHandler ()
-{
-    queryReadiness (this->team);
-}
 void RoomWidget::quitRequestedHandler ()
 {
 }
-
 void RoomWidget::startCountDownHandler (Unit::Team team)
 {
     awaitMatch (team);
 }
-
 void RoomWidget::startMatchHandler ()
 {
-    qDebug () << "Start match handler started";
     startMatch (this->team);
-    // emit createUnitRequested();
-}
-void RoomWidget::awaitRoleSelection (UnitRole role)
-{
-    pressed_button = ButtonId::None;
-    match_timer.stop ();
-    state = State::RoleSelectionRequested;
-}
-void RoomWidget::queryReadiness (Unit::Team team)
-{
-    this->team = team;
-    pressed_button = ButtonId::None;
-    match_timer.stop ();
-    state = State::ConfirmingReadiness;
-}
-void RoomWidget::ready (Unit::Team team)
-{
-    this->team = team;
-    pressed_button = ButtonId::None;
-    match_timer.stop ();
-    state = State::Ready;
 }
 void RoomWidget::awaitMatch (Unit::Team team)
 {
@@ -301,15 +250,7 @@ void RoomWidget::loadTextures ()
     textures.labels.starting_in_4 = loadTexture2DRectangle (":/images/labels/starting-in-4.png");
     textures.labels.starting_in_5 = loadTexture2DRectangle (":/images/labels/starting-in-5.png");
 
-    textures.buttons.join_as_player = loadTexture2DRectangle (":/images/buttons/join-as-player.png");
-    textures.buttons.spectate = loadTexture2DRectangle (":/images/buttons/spectate.png");
-    textures.buttons.ready = loadTexture2DRectangle (":/images/buttons/ready.png");
-    textures.buttons.cancel = loadTexture2DRectangle (":/images/buttons/cancel.png");
     textures.buttons.quit = loadTexture2DRectangle (":/images/buttons/quit.png");
-    textures.buttons.join_as_player_pressed = loadTexture2DRectangle (":/images/buttons/join-as-player-pressed.png");
-    textures.buttons.spectate_pressed = loadTexture2DRectangle (":/images/buttons/spectate-pressed.png");
-    textures.buttons.ready_pressed = loadTexture2DRectangle (":/images/buttons/ready-pressed.png");
-    textures.buttons.cancel_pressed = loadTexture2DRectangle (":/images/buttons/cancel-pressed.png");
     textures.buttons.quit_pressed = loadTexture2DRectangle (":/images/buttons/quit-pressed.png");
 }
 void RoomWidget::initResources ()
@@ -324,8 +265,12 @@ void RoomWidget::initResources ()
         qDebug () << "TODO: Handle error";
     }
 
-    scene_renderer = QSharedPointer<SceneRenderer>::create ();
-    hud_renderer = QSharedPointer<HUDRenderer>::create ();
+    if (!(scene_renderer = QSharedPointer<SceneRenderer>::create ())) {
+        qDebug () << "TODO: Handle error";
+    }
+    if (!(hud_renderer = QSharedPointer<HUDRenderer>::create ())) {
+        qDebug () << "TODO: Handle error";
+    }
 
     loadTextures ();
 
@@ -395,18 +340,6 @@ void RoomWidget::draw ()
         cursor_position = QWidget::mapFromGlobal (QCursor::pos ());
 
     switch (state) {
-    case State::RoleSelection:
-        drawRoleSelection ();
-        break;
-    case State::RoleSelectionRequested:
-        drawRoleSelectionRequested ();
-        break;
-    case State::ConfirmingReadiness:
-        drawConfirmingReadiness ();
-        break;
-    case State::Ready:
-        drawReady ();
-        break;
     case State::AwaitingMatch:
         drawAwaitingMatch ();
         break;
@@ -468,38 +401,6 @@ void RoomWidget::mousePressEvent (QMouseEvent* event)
     shift_pressed = modifiers & Qt::ShiftModifier;
     alt_pressed = modifiers & Qt::AltModifier;
     switch (state) {
-    case State::RoleSelection: {
-        if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 30), textures.buttons.join_as_player))
-                pressed_button = ButtonId::JoinBlueTeam;
-            else if (pointInsideButton (cursor_position, QPoint (30, 230), textures.buttons.spectate))
-                pressed_button = ButtonId::Spectate;
-            else if (pointInsideButton (cursor_position, QPoint (30, 400), textures.buttons.quit))
-                pressed_button = ButtonId::Quit;
-        }
-    } break;
-    case State::RoleSelectionRequested: {
-        if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 230), textures.buttons.cancel))
-                pressed_button = ButtonId::Cancel;
-            else if (pointInsideButton (cursor_position, QPoint (30, 400), textures.buttons.quit))
-                pressed_button = ButtonId::Quit;
-        }
-    } break;
-    case State::ConfirmingReadiness: {
-        if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 30), textures.buttons.ready))
-                pressed_button = ButtonId::Ready;
-            else if (pointInsideButton (cursor_position, QPoint (30, 200), textures.buttons.quit))
-                pressed_button = ButtonId::Quit;
-        }
-    } break;
-    case State::Ready: {
-        if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 200), textures.buttons.quit))
-                pressed_button = ButtonId::Quit;
-        }
-    } break;
     case State::AwaitingMatch: {
         if (event->button () == Qt::LeftButton) {
             if (pointInsideButton (cursor_position, QPoint (30, 200), textures.buttons.quit))
@@ -520,50 +421,6 @@ void RoomWidget::mouseReleaseEvent (QMouseEvent* event)
     shift_pressed = modifiers & Qt::ShiftModifier;
     alt_pressed = modifiers & Qt::AltModifier;
     switch (state) {
-    case State::RoleSelection: {
-        if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 30), textures.buttons.join_as_player)) {
-                if (pressed_button == ButtonId::JoinBlueTeam)
-                    emit selectRolePlayerRequested ();
-            } else if (pointInsideButton (cursor_position, QPoint (30, 230), textures.buttons.spectate)) {
-                if (pressed_button == ButtonId::Spectate)
-                    emit spectateRequested ();
-            } else if (pointInsideButton (cursor_position, QPoint (30, 400), textures.buttons.quit)) {
-                if (pressed_button == ButtonId::Quit)
-                    emit quitRequested ();
-            }
-        }
-    } break;
-    case State::RoleSelectionRequested: {
-        if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 230), textures.buttons.cancel)) {
-                if (pressed_button == ButtonId::Cancel)
-                    emit cancelJoinTeamRequested ();
-            } else if (pointInsideButton (cursor_position, QPoint (30, 400), textures.buttons.quit)) {
-                if (pressed_button == ButtonId::Quit)
-                    emit quitRequested ();
-            }
-        }
-    } break;
-    case State::ConfirmingReadiness: {
-        if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 30), textures.buttons.ready)) {
-                if (pressed_button == ButtonId::Ready)
-                    emit readinessRequested ();
-            } else if (pointInsideButton (cursor_position, QPoint (30, 200), textures.buttons.quit)) {
-                if (pressed_button == ButtonId::Quit)
-                    emit quitRequested ();
-            }
-        }
-    } break;
-    case State::Ready: {
-        if (event->button () == Qt::LeftButton) {
-            if (pointInsideButton (cursor_position, QPoint (30, 200), textures.buttons.quit)) {
-                if (pressed_button == ButtonId::Quit)
-                    emit quitRequested ();
-            }
-        }
-    } break;
     case State::AwaitingMatch: {
         if (event->button () == Qt::LeftButton) {
             if (pointInsideButton (cursor_position, QPoint (30, 200), textures.buttons.quit)) {
@@ -814,46 +671,6 @@ void RoomWidget::matchMouseReleaseEvent (QMouseEvent* event)
 void RoomWidget::matchWheelEvent (QWheelEvent* event)
 {
     zoom ((event->angleDelta ().y () > 0) ? 1 : -1);
-}
-void RoomWidget::drawRoleSelection ()
-{
-    textured_renderer->fillRectangle (gl, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, 30, 30, (pressed_button == ButtonId::JoinBlueTeam) ? textures.buttons.join_as_player_pressed.get () : textures.buttons.join_as_player.get (), ortho_matrix);
-    textured_renderer->fillRectangle (gl, 30, 230, (pressed_button == ButtonId::Spectate) ? textures.buttons.spectate_pressed.get () : textures.buttons.spectate.get (), ortho_matrix);
-    textured_renderer->fillRectangle (gl, 30, 400, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
-}
-void RoomWidget::drawRoleSelectionRequested ()
-{
-    textured_renderer->fillRectangle (gl, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, 30, 30, textures.labels.join_team_requested.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, 30, 230, (pressed_button == ButtonId::Cancel) ? textures.buttons.cancel_pressed.get () : textures.buttons.cancel.get (), ortho_matrix);
-    textured_renderer->fillRectangle (gl, 30, 400, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
-}
-void RoomWidget::drawConfirmingReadiness ()
-{
-    textured_renderer->fillRectangle (gl, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, 30, 30, (pressed_button == ButtonId::Ready) ? textures.buttons.ready_pressed.get () : textures.buttons.ready.get (), ortho_matrix);
-    textured_renderer->fillRectangle (gl, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
-}
-void RoomWidget::drawReady ()
-{
-    textured_renderer->fillRectangle (gl, 0, 0, coord_map.viewport_size.width (), coord_map.viewport_size.height (), textures.grass.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, 30, 30, textures.labels.ready.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, 30, 200, (pressed_button == ButtonId::Quit) ? textures.buttons.quit_pressed.get () : textures.buttons.quit.get (), ortho_matrix);
-
-    textured_renderer->fillRectangle (gl, cursor_position.x () - cursor->width () / 2, cursor_position.y () - cursor->height () / 2, cursor.get (), ortho_matrix);
 }
 void RoomWidget::drawAwaitingMatch ()
 {

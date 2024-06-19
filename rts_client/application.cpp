@@ -4,6 +4,9 @@
 #include "screens/authorizationscreen.h"
 #include "screens/authorizationprogressscreen.h"
 #include "screens/lobbyscreen.h"
+#include "screens/roleselectionscreen.h"
+#include "screens/roleselectionprogressscreen.h"
+#include "screens/readinessscreen.h"
 #include "matchstate.h"
 #include "parse.h"
 #include "requests.pb.h"
@@ -83,6 +86,7 @@ void Application::matchStartCallback ()
 }
 void Application::selectRolePlayerCallback ()
 {
+    showRoleSelectionProgressScreen ();
     selectRolePlayer ();
 }
 void Application::joinSpectatorCallback ()
@@ -91,7 +95,7 @@ void Application::joinSpectatorCallback ()
 }
 void Application::quitCallback ()
 {
-    exit (0);
+    QMessageBox::critical (nullptr, "Quit callback not implemented", "Quit callback not implemented");
 }
 void Application::authorizationPromptCallback ()
 {
@@ -152,6 +156,10 @@ void Application::joinRoomCallback (quint32 room_id)
     request_oneof.SerializeToString (&message);
 
     network_thread->sendDatagram ({this->host_address, this->port, session_id.value (), request_id++, {message.data (), message.data () + message.size ()}});
+}
+void Application::roleSelectedCallback ()
+{
+    showReadinessScreen ();
 }
 void Application::createUnitCallback (Unit::Team team, Unit::Type type, const Position& position)
 {
@@ -292,15 +300,16 @@ void Application::sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToCl
             network_thread->sendDatagram ({this->host_address, this->port, *this->session_id, request_id++, {message.data (), message.data () + message.size ()}});
         } break;
         default: {
-            qDebug () << "Response -> AuthorizationResponse -> UNKNOWN:" << response.response_case ();
+            QString message = "Response -> AuthorizationResponse -> UNKNOWN #" + QString::number (response.response_case ());
+            QMessageBox::critical (nullptr, message, message);
         }
         }
     } break;
     case RTS::Response::MessageCase::kSessionClosed: {
-        qDebug () << "Response -> SessionClosedResponse -> NOT IMPLEMENTED";
+        QMessageBox::critical (nullptr, "Response -> SessionClosedResponse -> NOT IMPLEMENTED", "Response -> SessionClosedResponse -> NOT IMPLEMENTED");
     } break;
     case RTS::Response::MessageCase::kJoinRoom: {
-        showRoom ();
+        showRoleSelectionScreen ();
     } break;
     case RTS::Response::MessageCase::kCreateRoom: {
     } break;
@@ -321,7 +330,7 @@ void Application::sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToCl
         // lets manage some shit
         const RTS::SelectRoleResponse& response = response_oneof.select_role ();
         if (response.has_success ()) {
-            emit queryReadiness ();
+            roleSelectedCallback ();
         } else if (response.has_error ()) {
             QMessageBox::critical (nullptr, "Failed to select role at room", QString::fromStdString (response.error ().message ())); // TODO: Apply code
         } else {
@@ -331,6 +340,7 @@ void Application::sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToCl
     case RTS::Response::MessageCase::kReady: {
     } break;
     case RTS::Response::MessageCase::kMatchPrepared: {
+        showRoom ();
         const RTS::MatchPreparedResponse& response = response_oneof.match_prepared ();
         switch (response.team ()) {
         case RTS::Team::TEAM_RED:
@@ -364,7 +374,8 @@ void Application::sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToCl
         QMessageBox::critical (nullptr, "Malformed message from server", QString::fromStdString (response.error ().message ()));
     } break;
     default: {
-        qDebug () << "Response -> UNKNOWN:" << response_oneof.message_case ();
+        QString message = "Response -> UNKNOWN #" + QString::number (response_oneof.message_case ());
+        QMessageBox::critical (nullptr, message, message);
     }
     }
 }
@@ -376,13 +387,30 @@ void Application::showLobby (const QString& login)
     connect (lobby_screen, SIGNAL (joinRoomRequested (quint32)), this, SLOT (joinRoomCallback (quint32)));
     setCurrentWindow (lobby_screen);
 }
+void Application::showRoleSelectionScreen ()
+{
+    RoleSelectionScreen* next_screen = new RoleSelectionScreen;
+    connect (next_screen, &RoleSelectionScreen::selectRolePlayerRequested, this, &Application::selectRolePlayerCallback);
+    connect (next_screen, &RoleSelectionScreen::spectateRequested, this, &Application::joinSpectatorCallback);
+    // TODO: Connect cancel
+    setCurrentWindow (next_screen);
+}
+void Application::showRoleSelectionProgressScreen ()
+{
+    RoleSelectionProgressScreen* next_screen = new RoleSelectionProgressScreen;
+    // TODO: Connect signals
+    setCurrentWindow (next_screen);
+}
+void Application::showReadinessScreen ()
+{
+    ReadinessScreen* next_screen = new ReadinessScreen;
+    connect (next_screen, &ReadinessScreen::readinessRequested, this, &Application::readinessCallback);
+    // TODO: Connect signals
+    setCurrentWindow (next_screen);
+}
 void Application::showRoom (bool single_mode)
 {
     RoomWidget* room_widget = new RoomWidget; // connect roomwidget signals ...
-    connect (room_widget, &RoomWidget::selectRolePlayerRequested, this, &Application::selectRolePlayerCallback);
-    connect (room_widget, &RoomWidget::spectateRequested, this, &Application::joinSpectatorCallback);
-    connect (this, &Application::queryReadiness, room_widget, &RoomWidget::readinessHandler);
-    connect (room_widget, &RoomWidget::readinessRequested, this, &Application::readinessCallback);
     connect (this, &Application::startMatch, room_widget, &RoomWidget::startMatchHandler);
     connect (this, &Application::startCountdown, room_widget, &RoomWidget::startCountDownHandler);
     connect (this, &Application::updateMatchState, room_widget, &RoomWidget::loadMatchState);

@@ -31,10 +31,6 @@ private:
     };
 
     enum class State {
-        RoleSelection,
-        RoleSelectionRequested,
-        ConfirmingReadiness,
-        Ready,
         AwaitingMatch,
         MatchStarted,
     };
@@ -52,9 +48,6 @@ private:
 public:
     RoomWidget (QWidget* parent = nullptr);
     virtual ~RoomWidget ();
-    void awaitRoleSelection (UnitRole role);
-    void queryReadiness (Unit::Team team);
-    void ready (Unit::Team team);
     void awaitMatch (Unit::Team team);
     void startMatch (Unit::Team team);
 
@@ -68,14 +61,9 @@ signals:
     void unitActionRequested (quint32 id, const UnitActionVariant& action);
 
 private slots:
-    void selectRolePlayerRequestedHandler ();
-    void spectateRequestedHandler ();
-    void readinessRequestedHandler ();
-    void cancelJoinTeamRequestedHandler ();
     void quitRequestedHandler ();
 
 public slots:
-    void readinessHandler ();
     void startMatchHandler ();
     void startCountDownHandler (Unit::Team team);
     void loadMatchState (const std::vector<std::pair<quint32, Unit>>& units, const std::vector<std::pair<quint32, Corpse>>& corpses, const std::vector<std::pair<quint32, Missile>>& missiles);
@@ -111,10 +99,6 @@ private:
     void matchMouseReleaseEvent (QMouseEvent* event);
     void matchWheelEvent (QWheelEvent* event);
     void loadTextures ();
-    void drawRoleSelection ();
-    void drawRoleSelectionRequested ();
-    void drawConfirmingReadiness ();
-    void drawReady ();
     void drawAwaitingMatch ();
     void drawMatchStarted ();
     void frameUpdate (qreal dt);
@@ -162,15 +146,7 @@ private:
             QSharedPointer<QOpenGLTexture> starting_in_5;
         } labels;
         struct {
-            QSharedPointer<QOpenGLTexture> join_as_player;
-            QSharedPointer<QOpenGLTexture> spectate;
-            QSharedPointer<QOpenGLTexture> ready;
-            QSharedPointer<QOpenGLTexture> cancel;
             QSharedPointer<QOpenGLTexture> quit;
-            QSharedPointer<QOpenGLTexture> join_as_player_pressed;
-            QSharedPointer<QOpenGLTexture> spectate_pressed;
-            QSharedPointer<QOpenGLTexture> ready_pressed;
-            QSharedPointer<QOpenGLTexture> cancel_pressed;
             QSharedPointer<QOpenGLTexture> quit_pressed;
         } buttons;
     } textures;
@@ -180,7 +156,7 @@ private:
     QOpenGLFunctions gl;
     QMatrix4x4 ortho_matrix; // TODO: Fix this
     HUD hud;
-    State state = State::RoleSelection;
+    State state = State::AwaitingMatch;
     ButtonId pressed_button = ButtonId::None;
     QPoint cursor_position = {-1, -1};
     bool minimap_viewport_selection_pressed = false;

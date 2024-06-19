@@ -12,6 +12,9 @@ qt_add_executable("${target}"
     screens/profilepopup.cpp
     screens/roomsettingspopup.cpp
     screens/authorizationscreen.cpp
+    screens/roleselectionscreen.cpp
+    screens/roleselectionprogressscreen.cpp
+    screens/readinessscreen.cpp
 
     main.cpp
     network_thread.cpp
