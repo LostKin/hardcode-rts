@@ -541,5 +541,5 @@ void Application::setCurrentWindow (QWidget* new_window, bool fullscreen)
         new_window->grabMouse ();
         new_window->grabKeyboard ();
     }
-    main_window->setWidget (new_window, fullscreen);
+    main_window->setWidget (new_window);
 }

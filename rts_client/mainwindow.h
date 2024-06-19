@@ -13,7 +13,7 @@ class MainWindow: public QWidget
 public:
     MainWindow (QWidget* parent = nullptr);
 
-    void setWidget (QWidget* widget, bool fullscreen = false);
+    void setWidget (QWidget* widget);
 
 private:
     QGridLayout* layout;

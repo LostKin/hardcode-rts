@@ -9,10 +9,14 @@
 AuthorizationProgressScreen::AuthorizationProgressScreen (const QString& message, QWidget* parent)
     : QWidget (parent)
 {
-    QVBoxLayout* layout = new QVBoxLayout;
+    QGridLayout* layout = new QGridLayout;
+    layout->setRowStretch (0, 1);
+    layout->setRowStretch (3, 1);
+    layout->setColumnStretch (0, 1);
+    layout->setColumnStretch (2, 1);
     {
         QLabel* label = new QLabel (message, this);
-        layout->addWidget (label);
+        layout->addWidget (label, 1, 1);
     }
     {
         QHBoxLayout* hlayout = new QHBoxLayout;
@@ -23,7 +27,7 @@ AuthorizationProgressScreen::AuthorizationProgressScreen (const QString& message
             hlayout->addWidget (button);
         }
         hlayout->addStretch (1);
-        layout->addLayout (hlayout);
+        layout->addLayout (hlayout, 2, 1);
     }
     setLayout (layout);
 }

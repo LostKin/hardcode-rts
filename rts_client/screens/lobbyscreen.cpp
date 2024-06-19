@@ -14,48 +14,62 @@ LobbyScreen::LobbyScreen (const QString& login, QWidget* parent)
     : QWidget (parent)
     , login (login)
 {
-    QVBoxLayout* layout = new QVBoxLayout;
+    QGridLayout* decoration_grid = new QGridLayout;
+    decoration_grid->setRowStretch (0, 1);
+    decoration_grid->setRowStretch (2, 4);
+    decoration_grid->setRowStretch (3, 1);
+    decoration_grid->setColumnStretch (0, 1);
+    decoration_grid->setColumnStretch (1, 4);
+    decoration_grid->setColumnStretch (2, 1);
     {
-        QHBoxLayout* hbox = new QHBoxLayout;
-        {
-            QPushButton* button = new QPushButton ("&Create room...", this);
-            connect (button, SIGNAL (clicked ()), this, SLOT (createRoomButtonClicked ()));
-            hbox->addWidget (button);
-        }
-        hbox->addStretch (1);
-        {
-            QIcon icon (":/images/icons/user.png");
-            QPushButton* button = new QPushButton (icon, "", this);
-            connect (button, SIGNAL (clicked ()), this, SLOT (profileButtonClicked ()));
-            hbox->addWidget (button);
-        }
-        layout->addLayout (hbox);
+        QLabel* label = new QLabel ("<b>Room list</b>", this);
+        decoration_grid->addWidget (label, 1, 1, Qt::AlignHCenter);
     }
     {
-        QHBoxLayout* hbox = new QHBoxLayout;
+        QVBoxLayout* layout = new QVBoxLayout;
         {
-            QLabel* label = new QLabel ("Current rooms:", this);
-            hbox->addWidget (label);
+            QHBoxLayout* hbox = new QHBoxLayout;
+            {
+                QPushButton* button = new QPushButton ("&Create room...", this);
+                connect (button, SIGNAL (clicked ()), this, SLOT (createRoomButtonClicked ()));
+                hbox->addWidget (button);
+            }
+            hbox->addStretch (1);
+            {
+                QIcon icon (":/images/icons/user.png");
+                QPushButton* button = new QPushButton (icon, "", this);
+                connect (button, SIGNAL (clicked ()), this, SLOT (profileButtonClicked ()));
+                hbox->addWidget (button);
+            }
+            layout->addLayout (hbox);
         }
-        hbox->addStretch (1);
-        layout->addLayout (hbox);
-    }
-    {
-        room_list_table = new RoomListTable (this);
-        connect (room_list_table, &RoomListTable::joinRoomRequested, this, &LobbyScreen::joinRoomRequested);
-        layout->addWidget (room_list_table, 1);
-    }
-    {
-        QHBoxLayout* hbox = new QHBoxLayout;
-        hbox->addStretch (1);
         {
-            QPushButton* button = new QPushButton ("&Join", this);
-            connect (button, SIGNAL (clicked ()), this, SLOT (joinRoomClicked ()));
-            hbox->addWidget (button);
+            QHBoxLayout* hbox = new QHBoxLayout;
+            {
+                QLabel* label = new QLabel ("Current rooms:", this);
+                hbox->addWidget (label);
+            }
+            hbox->addStretch (1);
+            layout->addLayout (hbox);
         }
-        layout->addLayout (hbox);
+        {
+            room_list_table = new RoomListTable (this);
+            connect (room_list_table, &RoomListTable::joinRoomRequested, this, &LobbyScreen::joinRoomRequested);
+            layout->addWidget (room_list_table, 1);
+        }
+        {
+            QHBoxLayout* hbox = new QHBoxLayout;
+            hbox->addStretch (1);
+            {
+                QPushButton* button = new QPushButton ("&Join", this);
+                connect (button, SIGNAL (clicked ()), this, SLOT (joinRoomClicked ()));
+                hbox->addWidget (button);
+            }
+            layout->addLayout (hbox);
+        }
+        decoration_grid->addLayout (layout, 2, 1);
     }
-    setLayout (layout);
+    setLayout (decoration_grid);
 }
 LobbyScreen::~LobbyScreen ()
 {

@@ -9,24 +9,32 @@
 ReadinessScreen::ReadinessScreen (QWidget* parent)
     : QWidget (parent)
 {
-    QVBoxLayout* layout = new QVBoxLayout;
+    QGridLayout* decoration_grid = new QGridLayout;
+    decoration_grid->setRowStretch (0, 1);
+    decoration_grid->setRowStretch (2, 1);
+    decoration_grid->setColumnStretch (0, 1);
+    decoration_grid->setColumnStretch (2, 1);
     {
-        ready_button = new QPushButton ("&Ready", this);
-        connect (ready_button, &QPushButton::clicked, this, &ReadinessScreen::readynessClickCallback);
-        layout->addWidget (ready_button);
+        QVBoxLayout* layout = new QVBoxLayout;
+        {
+            ready_button = new QPushButton ("&Ready", this);
+            connect (ready_button, &QPushButton::clicked, this, &ReadinessScreen::readynessClickCallback);
+            layout->addWidget (ready_button);
+        }
+        {
+            ready_label = new QLabel ("Ready", this);
+            ready_label->hide ();
+            layout->addWidget (ready_label);
+        }
+        layout->addSpacing (10);
+        {
+            QPushButton* button = new QPushButton ("&Quit", this);
+            connect (button, &QPushButton::clicked, this, &ReadinessScreen::quitRequested);
+            layout->addWidget (button);
+        }
+        decoration_grid->addLayout (layout, 1, 1);
     }
-    {
-        ready_label = new QLabel ("Ready", this);
-        ready_label->hide ();
-        layout->addWidget (ready_label);
-    }
-    layout->addSpacing (10);
-    {
-        QPushButton* button = new QPushButton ("&Quit", this);
-        connect (button, &QPushButton::clicked, this, &ReadinessScreen::quitRequested);
-        layout->addWidget (button);
-    }
-    setLayout (layout);
+    setLayout (decoration_grid);
 }
 ReadinessScreen::~ReadinessScreen ()
 {

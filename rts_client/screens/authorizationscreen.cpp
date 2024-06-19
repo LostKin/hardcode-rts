@@ -20,103 +20,117 @@ enum class CredsRole {
 AuthorizationScreen::AuthorizationScreen (const QVector<AuthorizationCredentials>& initial_credentials, QWidget* parent)
     : QWidget (parent)
 {
-    QGridLayout* grid = new QGridLayout;
+    QGridLayout* decoration_grid = new QGridLayout;
+    decoration_grid->setRowStretch (0, 1);
+    decoration_grid->setRowStretch (2, 4);
+    decoration_grid->setRowStretch (3, 1);
+    decoration_grid->setColumnStretch (0, 1);
+    decoration_grid->setColumnStretch (1, 4);
+    decoration_grid->setColumnStretch (2, 1);
     {
-        QHBoxLayout* layout = new QHBoxLayout;
+        QLabel* label = new QLabel ("<b>Authorization</b>", this);
+        decoration_grid->addWidget (label, 1, 1, Qt::AlignHCenter);
+    }
+    {
+        QGridLayout* grid = new QGridLayout;
         {
-            table = new QTableWidget (0, 1, this);
-            table->setSelectionMode (QAbstractItemView::SingleSelection);
-            table->horizontalHeader ()->setStretchLastSection (true);
-            table->setHorizontalHeaderLabels ({"Endpoint"});
-            int new_idx = 0;
-            for (const AuthorizationCredentials& entry: initial_credentials) {
-                table->insertRow (new_idx);
+            QHBoxLayout* layout = new QHBoxLayout;
+            {
+                table = new QTableWidget (0, 1, this);
+                table->setSelectionMode (QAbstractItemView::SingleSelection);
+                table->horizontalHeader ()->setStretchLastSection (true);
+                table->setHorizontalHeaderLabels ({"Endpoint"});
+                int new_idx = 0;
+                for (const AuthorizationCredentials& entry: initial_credentials) {
+                    table->insertRow (new_idx);
 
-                QTableWidgetItem* item = new QTableWidgetItem (entry.login + "@" + entry.host + ":" + QString::number (entry.port));
-                item->setFlags (item->flags () & ~Qt::ItemIsEditable);
-                item->setData (int (CredsRole::Host), entry.host);
-                item->setData (int (CredsRole::Port), entry.port);
-                item->setData (int (CredsRole::Login), entry.login);
-                item->setData (int (CredsRole::Password), entry.password);
-                table->setItem (new_idx, 0, item);
+                    QTableWidgetItem* item = new QTableWidgetItem (entry.login + "@" + entry.host + ":" + QString::number (entry.port));
+                    item->setFlags (item->flags () & ~Qt::ItemIsEditable);
+                    item->setData (int (CredsRole::Host), entry.host);
+                    item->setData (int (CredsRole::Port), entry.port);
+                    item->setData (int (CredsRole::Login), entry.login);
+                    item->setData (int (CredsRole::Password), entry.password);
+                    table->setItem (new_idx, 0, item);
 
-                ++new_idx;
+                    ++new_idx;
+                }
+                connect (table, SIGNAL (currentItemChanged (QTableWidgetItem*, QTableWidgetItem*)), this, SLOT (authorizationCredentialsItemSelected (QTableWidgetItem*)));
+                connect (table, &QTableWidget::cellDoubleClicked, this, &AuthorizationScreen::handleCellDoubleClick);
+                layout->addWidget (table, 1);
             }
-            connect (table, SIGNAL (currentItemChanged (QTableWidgetItem*, QTableWidgetItem*)), this, SLOT (authorizationCredentialsItemSelected (QTableWidgetItem*)));
-            connect (table, &QTableWidget::cellDoubleClicked, this, &AuthorizationScreen::handleCellDoubleClick);
-            layout->addWidget (table, 1);
+            {
+                QPushButton* button = new QPushButton (QPixmap (":/images/icons/delete.png"), "", this);
+                connect (button, &QPushButton::clicked, this, &AuthorizationScreen::removeCredentialsClicked);
+                layout->addWidget (button);
+            }
+            grid->addLayout (layout, 0, 0, 1, 2);
         }
         {
-            QPushButton* button = new QPushButton (QPixmap (":/images/icons/delete.png"), "", this);
-            connect (button, &QPushButton::clicked, this, &AuthorizationScreen::removeCredentialsClicked);
-            layout->addWidget (button);
+            QLabel* label = new QLabel ("&Endpoint (host:port):", this);
+            grid->addWidget (label, 1, 0);
+
+            QHBoxLayout* endpoint_layout = new QHBoxLayout;
+            {
+                host_line_edit = new QLineEdit ("127.0.0.1", this);
+                host_line_edit->setPlaceholderText ("Host");
+                connect (host_line_edit, &QLineEdit::returnPressed, this, &AuthorizationScreen::loginClicked);
+                endpoint_layout->addWidget (host_line_edit, 1);
+            }
+            {
+                QLabel* label = new QLabel (":", this);
+                endpoint_layout->addWidget (label);
+            }
+            {
+                port_spin_box = new QSpinBox (this);
+                port_spin_box->setRange (1, 65535);
+                port_spin_box->setValue (1331);
+                endpoint_layout->addWidget (port_spin_box);
+            }
+            grid->addLayout (endpoint_layout, 1, 1);
+
+            label->setBuddy (host_line_edit);
         }
-        grid->addLayout (layout, 0, 0, 1, 2);
+        {
+            QLabel* label = new QLabel ("&Login:", this);
+            grid->addWidget (label, 2, 0);
+
+            login_line_edit = new QLineEdit ("john", this);
+            connect (login_line_edit, &QLineEdit::returnPressed, this, &AuthorizationScreen::loginClicked);
+            grid->addWidget (login_line_edit, 2, 1);
+
+            label->setBuddy (login_line_edit);
+        }
+        {
+            QLabel* label = new QLabel ("&Password:", this);
+            grid->addWidget (label, 3, 0);
+
+            password_line_edit = new QLineEdit ("secret", this);
+            connect (password_line_edit, &QLineEdit::returnPressed, this, &AuthorizationScreen::loginClicked);
+            password_line_edit->setEchoMode (QLineEdit::Password);
+            grid->addWidget (password_line_edit, 3, 1);
+
+            label->setBuddy (password_line_edit);
+        }
+        {
+            QHBoxLayout* hlayout = new QHBoxLayout;
+            {
+                QPushButton* button = new QPushButton ("&Add credentials", this);
+                connect (button, &QPushButton::clicked, this, &AuthorizationScreen::addCredentialsClicked);
+                hlayout->addWidget (button);
+            }
+            hlayout->addStretch (1);
+            {
+                QPushButton* button = new QPushButton ("&Connect", this);
+                connect (button, &QPushButton::clicked, this, &AuthorizationScreen::loginClicked);
+                hlayout->addWidget (button);
+            }
+            grid->addLayout (hlayout, 4, 0, 1, 2);
+        }
+        grid->setRowStretch (0, 1);
+        grid->setColumnStretch (1, 1);
+        decoration_grid->addLayout (grid, 2, 1);
     }
-    {
-        QLabel* label = new QLabel ("&Endpoint (host:port):", this);
-        grid->addWidget (label, 1, 0);
-
-        QHBoxLayout* endpoint_layout = new QHBoxLayout;
-        {
-            host_line_edit = new QLineEdit ("127.0.0.1", this);
-            host_line_edit->setPlaceholderText ("Host");
-            connect (host_line_edit, &QLineEdit::returnPressed, this, &AuthorizationScreen::loginClicked);
-            endpoint_layout->addWidget (host_line_edit, 1);
-        }
-        {
-            QLabel* label = new QLabel (":", this);
-            endpoint_layout->addWidget (label);
-        }
-        {
-            port_spin_box = new QSpinBox (this);
-            port_spin_box->setRange (1, 65535);
-            port_spin_box->setValue (1331);
-            endpoint_layout->addWidget (port_spin_box);
-        }
-        grid->addLayout (endpoint_layout, 1, 1);
-
-        label->setBuddy (host_line_edit);
-    }
-    {
-        QLabel* label = new QLabel ("&Login:", this);
-        grid->addWidget (label, 2, 0);
-
-        login_line_edit = new QLineEdit ("john", this);
-        connect (login_line_edit, &QLineEdit::returnPressed, this, &AuthorizationScreen::loginClicked);
-        grid->addWidget (login_line_edit, 2, 1);
-
-        label->setBuddy (login_line_edit);
-    }
-    {
-        QLabel* label = new QLabel ("&Password:", this);
-        grid->addWidget (label, 3, 0);
-
-        password_line_edit = new QLineEdit ("secret", this);
-        connect (password_line_edit, &QLineEdit::returnPressed, this, &AuthorizationScreen::loginClicked);
-        password_line_edit->setEchoMode (QLineEdit::Password);
-        grid->addWidget (password_line_edit, 3, 1);
-
-        label->setBuddy (password_line_edit);
-    }
-    {
-        QHBoxLayout* hlayout = new QHBoxLayout;
-        {
-            QPushButton* button = new QPushButton ("&Add credentials", this);
-            connect (button, &QPushButton::clicked, this, &AuthorizationScreen::addCredentialsClicked);
-            hlayout->addWidget (button);
-        }
-        hlayout->addStretch (1);
-        {
-            QPushButton* button = new QPushButton ("&Connect", this);
-            connect (button, &QPushButton::clicked, this, &AuthorizationScreen::loginClicked);
-            hlayout->addWidget (button);
-        }
-        grid->addLayout (hlayout, 4, 0, 1, 2);
-    }
-    grid->setRowStretch (0, 1);
-    grid->setColumnStretch (1, 1);
-    setLayout (grid);
+    setLayout (decoration_grid);
 }
 AuthorizationScreen::~AuthorizationScreen ()
 {
