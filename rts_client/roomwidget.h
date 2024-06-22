@@ -99,8 +99,9 @@ private:
     void matchMouseReleaseEvent (QMouseEvent* event);
     void matchWheelEvent (QWheelEvent* event);
     void loadTextures ();
-    void drawAwaitingMatch ();
-    void drawMatchStarted ();
+    void drawMatch ();
+    void drawMatchCursor ();
+    void drawCountdownOverlay ();
     void frameUpdate (qreal dt);
     void matchFrameUpdate (qreal dt);
     bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const;
@@ -125,7 +126,6 @@ private:
 
 private:
     struct {
-        QSharedPointer<QOpenGLTexture> grass;
         struct {
             QSharedPointer<QOpenGLTexture> crosshair;
             QSharedPointer<QOpenGLTexture> friend_selection;
@@ -135,20 +135,6 @@ private:
             QSharedPointer<QOpenGLTexture> attack;
             QSharedPointer<QOpenGLTexture> attack_enemy;
         } cursors;
-        struct {
-            QSharedPointer<QOpenGLTexture> join_team_requested;
-            QSharedPointer<QOpenGLTexture> ready;
-            QSharedPointer<QOpenGLTexture> starting_in_0;
-            QSharedPointer<QOpenGLTexture> starting_in_1;
-            QSharedPointer<QOpenGLTexture> starting_in_2;
-            QSharedPointer<QOpenGLTexture> starting_in_3;
-            QSharedPointer<QOpenGLTexture> starting_in_4;
-            QSharedPointer<QOpenGLTexture> starting_in_5;
-        } labels;
-        struct {
-            QSharedPointer<QOpenGLTexture> quit;
-            QSharedPointer<QOpenGLTexture> quit_pressed;
-        } buttons;
     } textures;
 
     int pixels_w = 1;
@@ -156,14 +142,14 @@ private:
     QOpenGLFunctions gl;
     QMatrix4x4 ortho_matrix; // TODO: Fix this
     HUD hud;
-    State state = State::AwaitingMatch;
+    bool starting_countdown = true;
     ButtonId pressed_button = ButtonId::None;
     QPoint cursor_position = {-1, -1};
     bool minimap_viewport_selection_pressed = false;
     Unit::Team team;
     QElapsedTimer match_countdown_start;
     QSharedPointer<QOpenGLTexture> cursor;
-    QSharedPointer<MatchState> match_state;
+    MatchState match_state;
     int mouse_scroll_border = 10;
     QTimer match_timer;
     QElapsedTimer last_frame;
@@ -181,4 +167,5 @@ private:
     QSharedPointer<TexturedRenderer> textured_renderer;
     QSharedPointer<SceneRenderer> scene_renderer;
     QSharedPointer<HUDRenderer> hud_renderer;
+    QFont countdown_font;
 };
