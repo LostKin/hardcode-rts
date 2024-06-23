@@ -1,5 +1,7 @@
 #include "matchstate.h"
 
+#include <float.h>
+
 
 static bool intersectRectangleCircle (const Rectangle& rect, const Position& center, double radius)
 {
@@ -319,35 +321,53 @@ void MatchState::startAction (const AttackAction& action)
 }
 void MatchState::startAction (const CastAction& action)
 {
-    // TODO: Check for team
+    const Position& target = action.target;
+    Unit* closest_unit = nullptr;
+    uint32_t closest_unit_id = 0;
+    double closest_distance = DBL_MAX;
+    bool closest_busy = true;
     for (std::map<uint32_t, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it->second;
-        if (unit.selected) {
-            if (unit.type == Unit::Type::Contaminator) {
-                switch (action.type) {
-                case CastAction::Type::Pestilence:
-                    if (std::holds_alternative<PerformingAttackAction> (unit.action))
-                        std::get<PerformingAttackAction> (unit.action).next_action = action;
-                    else if (std::holds_alternative<PerformingCastAction> (unit.action))
-                        std::get<PerformingCastAction> (unit.action).next_action = action;
-                    else
-                        unit.action = action;
-                    emit unitActionRequested (it->first, action);
-                    break;
-                case CastAction::Type::SpawnBeetle:
-                    if (std::holds_alternative<PerformingAttackAction> (unit.action))
-                        std::get<PerformingAttackAction> (unit.action).next_action = action;
-                    else if (std::holds_alternative<PerformingCastAction> (unit.action))
-                        std::get<PerformingCastAction> (unit.action).next_action = action;
-                    else
-                        unit.action = action;
-                    emit unitActionRequested (it->first, action);
-                    break;
-                default:
-                    break;
-                }
-                break;
+        if (unit.selected && unit.type == Unit::Type::Contaminator) {
+            bool busy =
+                std::holds_alternative<CastAction> (unit.action) ||
+                std::holds_alternative<PerformingCastAction> (unit.action) ||
+                unit.cast_cooldown_left_ticks > 0;
+            // TODO: Calculate distance according to map structure (??)
+            double distance = (target - unit.position).length ();
+            if (closest_busy ? (!busy || distance < closest_distance) : (!busy && distance < closest_distance)) {
+                closest_unit = &unit;
+                closest_unit_id = it->first;
+                closest_distance = distance;
+                closest_busy = busy;
             }
         }
+    }
+
+    if (!closest_unit)
+        return;
+
+    Unit& unit = *closest_unit;
+    switch (action.type) {
+    case CastAction::Type::Pestilence:
+        if (std::holds_alternative<PerformingAttackAction> (unit.action))
+            std::get<PerformingAttackAction> (unit.action).next_action = action;
+        else if (std::holds_alternative<PerformingCastAction> (unit.action))
+            std::get<PerformingCastAction> (unit.action).next_action = action;
+        else
+            unit.action = action;
+        emit unitActionRequested (closest_unit_id, action);
+        break;
+    case CastAction::Type::SpawnBeetle:
+        if (std::holds_alternative<PerformingAttackAction> (unit.action))
+            std::get<PerformingAttackAction> (unit.action).next_action = action;
+        else if (std::holds_alternative<PerformingCastAction> (unit.action))
+            std::get<PerformingCastAction> (unit.action).next_action = action;
+        else
+            unit.action = action;
+        emit unitActionRequested (closest_unit_id, action);
+        break;
+    default:
+        break;
     }
 }
