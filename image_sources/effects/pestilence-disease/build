@@ -1,0 +1,2 @@
+convert -background none -rotate 90 pestilence-disease1.svg pestilence-disease1.png
+convert -background none -rotate 90 pestilence-disease2.svg pestilence-disease2.png

@@ -93,10 +93,14 @@ void MatchState::applyActions (double dt)
 {
     for (std::map<uint32_t, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& unit = it->second;
+        if (unit.pestilence_disease_left_ticks > 0 && !(unit.pestilence_disease_left_ticks % pestilenceDamagePeriodTicks ()))
+            dealDamage (unit, pestilenceDamagePerPeriod ());
         if (unit.attack_cooldown_left_ticks > 0)
             --unit.attack_cooldown_left_ticks;
         if (unit.cast_cooldown_left_ticks > 0)
             --unit.cast_cooldown_left_ticks;
+        if (unit.pestilence_disease_left_ticks > 0)
+            --unit.pestilence_disease_left_ticks;
         if (std::holds_alternative<StopAction> (unit.action)) {
             StopAction& stop_action = std::get<StopAction> (unit.action);
             std::optional<uint32_t> closest_target = stop_action.current_target;
@@ -309,10 +313,10 @@ void MatchState::applyExplosionEffects (double /* dt */)
 }
 void MatchState::applyMovement (Unit& unit, const Position& target_position, double dt, bool clear_action_on_completion)
 {
-    double max_velocity = unitMaxVelocity (unit.type);
+    double velocity = unitVelocity (unit);
     Offset displacement = target_position - unit.position;
     rotateUnit (unit, dt, displacement.orientation ());
-    double path_length = max_velocity * dt;
+    double path_length = velocity * dt;
     double displacement_length = displacement.length ();
     if (displacement_length <= path_length) {
         unit.position = target_position;
@@ -332,7 +336,7 @@ bool MatchState::applyAttack (Unit& unit, uint32_t target_unit_id, Unit& target_
     double full_attack_range = attack_description.range + unitRadius (unit.type) + unitRadius (target_unit.type);
     bool in_range = false;
     if (displacement_length > full_attack_range) {
-        double path_length = unitMaxVelocity (unit.type) * dt;
+        double path_length = unitVelocity (unit) * dt;
         if (path_length >= displacement_length - full_attack_range) {
             path_length = displacement_length - full_attack_range;
             in_range = true;
@@ -388,7 +392,7 @@ bool MatchState::applyCast (Unit& unit, CastAction::Type cast_type, const Positi
     double full_attack_range = attack_description.range + unitRadius (unit.type);
     bool in_range = false;
     if (displacement_length > full_attack_range) {
-        double path_length = unitMaxVelocity (unit.type) * dt;
+        double path_length = unitVelocity (unit) * dt;
         if (path_length >= displacement_length - full_attack_range) {
             path_length = displacement_length - full_attack_range;
             in_range = true;
@@ -422,7 +426,7 @@ void MatchState::applyAreaBoundaryCollision (Unit& unit, double dt)
 {
     Position& position = unit.position;
     double unit_radius = unitRadius (unit.type);
-    double max_velocity = unitMaxVelocity (unit.type) * 2.0;
+    double velocity = unitVelocity (unit) * 2.0;
     Offset off;
     if (position.x () < (area.left () + unit_radius)) {
         off.setDX ((area.left () + unit_radius) - position.x ());
@@ -434,7 +438,7 @@ void MatchState::applyAreaBoundaryCollision (Unit& unit, double dt)
     } else if (position.y () > (area.bottom () - unit_radius)) {
         off.setDY ((area.bottom () - unit_radius) - position.y ());
     }
-    double path_length = max_velocity * dt;
+    double path_length = velocity * dt;
     double square_length = Offset::dotProduct (off, off);
     if (square_length <= path_length * path_length) {
         position += off;
@@ -479,8 +483,8 @@ void MatchState::applyUnitCollisions (double dt)
             Unit& unit = it->second;
             Position& position = unit.position;
             Offset off = offsets[i++];
-            double max_velocity = unitMaxVelocity (unit.type) * 0.9; // TODO: Make force depend on distance
-            double path_length = max_velocity * dt;
+            double velocity = unitVelocity (unit) * 0.9; // TODO: Make force depend on distance
+            double path_length = velocity * dt;
             double length = off.length ();
             position += (length <= path_length) ? off : off * (path_length / length);
         }
@@ -561,8 +565,16 @@ void MatchState::emitExplosion (Explosion::Type explosion_type, Unit::Team sende
     for (std::map<uint32_t, Unit>::iterator it = units.begin (); it != units.end (); ++it) {
         Unit& target_unit = it->second;
         if (attack_description.friendly_fire || target_unit.team != sender_team) {
-            if ((target_unit.position - position).length () <= attack_description.range + unitRadius (target_unit.type))
-                dealDamage (target_unit, attack_description.damage);
+            if ((target_unit.position - position).length () <= attack_description.range + unitRadius (target_unit.type)) {
+                switch (explosion_type) {
+                case Explosion::Type::Fire:
+                    dealDamage (target_unit, attack_description.damage);
+                    break;
+                case Explosion::Type::Pestilence:
+                    target_unit.pestilence_disease_left_ticks = pestilenceDiseaseDurationTicks ();
+                    break;
+                }
+            }
         }
     }
     switch (explosion_type) {
@@ -595,6 +607,13 @@ std::optional<uint32_t> MatchState::findClosestTarget (const Unit& unit)
         }
     }
     return closest_target;
+}
+double MatchState::unitVelocity (const Unit& unit) const
+{
+    double velocity = unitMaxVelocity (unit.type);
+    if (unit.pestilence_disease_left_ticks > 0)
+        velocity *= pestilenceDiseaseSlowdownFactor ();
+    return velocity;
 }
 void MatchState::redTeamUserTick (RedTeamUserData& /* user_data */)
 {

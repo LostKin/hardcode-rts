@@ -125,14 +125,18 @@ void EffectRenderer::drawMissile (QOpenGLFunctions& gl, TexturedRenderer& textur
 {
     qreal sprite_scale = 0.5;
 
-    quint64 period = missileAnimationPeriodNS (Missile::Type::Rocket);
-    quint64 phase = clock_ns % period;
+    quint64 period;
+    quint64 phase;
     QOpenGLTexture* texture;
     switch (missile.type) {
     case Missile::Type::Rocket:
+        period = missileAnimationPeriodNS (Missile::Type::Rocket);
+        phase = clock_ns % period;
         texture = (phase < period / 2) ? textures.goon_rocket.rocket1.get () : textures.goon_rocket.rocket2.get ();
         break;
     case Missile::Type::Pestilence:
+        period = missileAnimationPeriodNS (Missile::Type::Pestilence);
+        phase = clock_ns % period;
         texture = (phase < period / 2) ? textures.pestilence_missile.missile1.get () : textures.pestilence_missile.missile2.get ();
         break;
     default:
@@ -201,7 +205,7 @@ quint64 EffectRenderer::missileAnimationPeriodNS (Missile::Type type)
     case Missile::Type::Rocket:
         return 200'000'000;
     case Missile::Type::Pestilence:
-        return 500'000'000;
+        return 100'000'000;
     default:
         return 0;
     }

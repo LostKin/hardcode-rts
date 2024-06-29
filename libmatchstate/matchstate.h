@@ -61,6 +61,10 @@ public:
     static int unitHitBarCount (Unit::Type type);
     static int unitMaxHP (Unit::Type type);
     static int64_t beetleTTLTicks ();
+    static int64_t pestilenceDiseaseDurationTicks ();
+    static int64_t pestilenceDamagePeriodTicks ();
+    static int64_t pestilenceDamagePerPeriod ();
+    static double pestilenceDiseaseSlowdownFactor ();
     static const AttackDescription& unitPrimaryAttackDescription (Unit::Type type);
     static const AttackDescription& effectAttackDescription (AttackDescription::Type type);
 
@@ -149,6 +153,7 @@ private:
     std::optional<uint32_t> findClosestTarget (const Unit& unit);
     void redTeamUserTick (RedTeamUserData& user_data);
     void blueTeamUserTick (BlueTeamUserData& user_data);
+    double unitVelocity (const Unit& unit) const;
 
 public:
     MatchState ();

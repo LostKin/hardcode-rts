@@ -165,6 +165,22 @@ int64_t MatchState::beetleTTLTicks ()
 {
     return 700;
 }
+int64_t MatchState::pestilenceDiseaseDurationTicks ()
+{
+    return 250;
+}
+int64_t MatchState::pestilenceDamagePeriodTicks ()
+{
+    return 20;
+}
+int64_t MatchState::pestilenceDamagePerPeriod ()
+{
+    return 1;
+}
+double MatchState::pestilenceDiseaseSlowdownFactor ()
+{
+    return 0.3;
+}
 const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type type)
 {
     static const AttackDescription seal = ({

@@ -26,7 +26,7 @@ void SceneRenderer::draw (QOpenGLFunctions& gl, ColoredRenderer& colored_rendere
 {
     drawBackground (gl, textured_renderer, match_state, ortho_matrix, coord_map);
     drawCorpses (gl, textured_renderer, match_state, ortho_matrix, coord_map);
-    drawUnits (gl, textured_renderer, match_state, ortho_matrix, coord_map);
+    drawUnits (gl, textured_renderer, colored_textured_renderer, match_state, ortho_matrix, coord_map);
     drawUnitSelection (gl, colored_renderer, match_state, ortho_matrix, coord_map);
     drawEffects (gl, colored_textured_renderer, textured_renderer, match_state, ortho_matrix, coord_map);
     drawUnitPaths (gl, colored_renderer, match_state, team, ortho_matrix, coord_map);
@@ -83,13 +83,13 @@ void SceneRenderer::drawCorpses (QOpenGLFunctions& gl, TexturedRenderer& texture
     for (std::map<quint32, Corpse>::const_iterator it = corpses.cbegin (); it != corpses.cend (); ++it)
         unit_set_renderer->drawCorpse (gl, textured_renderer, it->second, ortho_matrix, coord_map);
 }
-void SceneRenderer::drawUnits (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer,
+void SceneRenderer::drawUnits (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, ColoredTexturedRenderer& colored_textured_renderer,
                                MatchState& match_state,
                                const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
     const std::map<quint32, Unit>& units = match_state.unitsRef ();
     for (std::map<quint32, Unit>::const_iterator it = units.cbegin (); it != units.cend (); ++it)
-        unit_set_renderer->draw (gl, textured_renderer, it->second, match_state.clockNS (), ortho_matrix, coord_map);
+        unit_set_renderer->draw (gl, textured_renderer, colored_textured_renderer, it->second, match_state.clockNS (), ortho_matrix, coord_map);
 }
 void SceneRenderer::drawUnitSelection (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
                                        MatchState& match_state,

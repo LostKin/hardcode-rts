@@ -1,0 +1,52 @@
+<?xml version="1.0" standalone="no"?>
+<svg width="256" height="256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style rel="stylesheet" type="text/css">
+.pestilence-disease {
+    fill: #00cc00;
+    stroke: #000000;
+    stroke-width: 5;
+}
+    </style>
+
+    <defs>
+    	<path id="pestilence-disease1" class="pestilence-disease" d="M 48,93
+C 28,98 8,103 8,128
+C 8,153 28,158 48,163
+C 68,168 48,188 58,198
+C 68,208 88,188 93,208
+C 98,228 103,248 128,248
+C 153,248 158,228 163,208
+C 168,188 188,208 198,198
+C 208,188 188,168 208,163
+C 228,158 248,153 248,128
+C 248,103 228,98 208,93
+C 188,88 208,68 198,58
+C 188,48 168,68 163,48
+C 158,28 153,8 128,8
+C 103,8 98,28 93,48
+C 88,68 68,48 58,58
+C 48,68 68,88 48,93
+Z" />
+    	<path id="pestilence-disease2" class="pestilence-disease" d="M 38,88
+C 18,93 8,103 8,128
+C 8,153 18,163 38,168
+C 58,173 38,198 48,208
+C 58,218 83,198 88,218
+C 93,238 103,248 128,248
+C 153,248 163,238 168,218
+C 173,198 198,218 208,208
+C 218,198 198,173 218,168
+C 238,163 248,153 248,128
+C 248,103 238,93 218,88
+C 198,83 218,58 208,48
+C 198,38 173,58 168,38
+C 163,18 153,8 128,8
+C 103,8 93,18 88,38
+C 83,58 58,38 48,48
+C 38,58 58,83 38,88
+Z" />
+    </defs>
+
+    <!-- <use xlink:href="#pestilence-disease1" /> -->
+    <use xlink:href="#pestilence-disease2" />
+</svg>

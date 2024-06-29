@@ -3,6 +3,7 @@
 #include "coordmap.h"
 #include "coloredrenderer.h"
 #include "texturedrenderer.h"
+#include "coloredtexturedrenderer.h"
 #include "unitgenerator.h"
 
 #include <QFile>
@@ -58,13 +59,17 @@ UnitRenderer::UnitRenderer (Unit::Type type, const QColor& team_color)
     shooting1 = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/" + name + "/unit_tmpl.svg", "attacking1", team_color));
     shooting2 = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/" + name + "/unit_tmpl.svg", "attacking2", team_color));
     corpse = loadTexture2D (UnitGenerator::loadUnitFromSVGTemplate (":/images/units/" + name + "/unit_tmpl.svg", "standing", makeDimColor (team_color)));
+    // TODO: Deduplicate somehow
     contaminator_cooldown_shade = loadTexture2D (":/images/units/contaminator/cooldown-shade.png");
+    pestilence_disease1 = loadTexture2D (":/images/effects/pestilence-disease/disease1.png");
+    pestilence_disease2 = loadTexture2D (":/images/effects/pestilence-disease/disease2.png");
 }
 
-void UnitRenderer::draw (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, const Unit& unit, quint64 clock_ns,
+void UnitRenderer::draw (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, ColoredTexturedRenderer& colored_textured_renderer, const Unit& unit, quint64 clock_ns,
                          const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
     drawBody (gl, textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
+    drawPestilenceDisease (gl, colored_textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
     drawCooldownShade (gl, textured_renderer, unit, ortho_matrix, coord_map);
 }
 void UnitRenderer::drawCorpse (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, const Corpse& corpse,
@@ -327,6 +332,90 @@ void UnitRenderer::drawBody (QOpenGLFunctions& gl, TexturedRenderer& textured_re
     };
 
     textured_renderer.draw (gl, GL_TRIANGLES, vertices, texture_coords, 6, indices, texture, ortho_matrix);
+}
+void UnitRenderer::drawPestilenceDisease (QOpenGLFunctions& gl, ColoredTexturedRenderer& colored_textured_renderer, const Unit& unit, quint64 clock_ns,
+                                          const QMatrix4x4& ortho_matrix, const CoordMap& coord_map, bool alive)
+{
+    if (unit.pestilence_disease_left_ticks <= 0)
+        return;
+    qreal sprite_scale;
+    switch (unit.type) {
+    case Unit::Type::Seal:
+        sprite_scale = 0.48;
+        break;
+    case Unit::Type::Crusader:
+        sprite_scale = 0.6;
+        break;
+    case Unit::Type::Goon:
+        sprite_scale = 0.48;
+        break;
+    case Unit::Type::Beetle:
+        sprite_scale = 0.48;
+        break;
+    case Unit::Type::Contaminator:
+        sprite_scale = 0.48;
+        break;
+    default:
+        return;
+    }
+
+    quint64 period = attackAnimationPeriodNS (unit.type);
+    period = 375'000'000;
+    quint64 phase = (clock_ns + unit.phase_offset) % period;
+    QOpenGLTexture* texture = (phase < period / 2) ? pestilence_disease1.get () : pestilence_disease2.get ();
+
+    Position center = coord_map.toScreenCoords (unit.position);
+
+    qreal a1_sin, a1_cos;
+    qreal a2_sin, a2_cos;
+    qreal a3_sin, a3_cos;
+    qreal a4_sin, a4_cos;
+    sincos (+ PI_X_3_4, &a1_sin, &a1_cos);
+    sincos (+ PI_X_1_4, &a2_sin, &a2_cos);
+    sincos (- PI_X_1_4, &a3_sin, &a3_cos);
+    sincos (- PI_X_3_4, &a4_sin, &a4_cos);
+    qreal map_to_screen_factor = coord_map.arena_viewport.height () / coord_map.POINTS_PER_VIEWPORT_VERTICALLY;
+    qreal scale = coord_map.viewport_scale * sprite_scale * MatchState::unitDiameter (unit.type) * SQRT_2 * map_to_screen_factor;
+
+    const GLfloat vertices[] = {
+        GLfloat (center.x () + scale * a1_cos),
+        GLfloat (center.y () + scale * a1_sin),
+        GLfloat (center.x () + scale * a2_cos),
+        GLfloat (center.y () + scale * a2_sin),
+        GLfloat (center.x () + scale * a3_cos),
+        GLfloat (center.y () + scale * a3_sin),
+        GLfloat (center.x () + scale * a4_cos),
+        GLfloat (center.y () + scale * a4_sin),
+    };
+
+    static const GLfloat colors[] = {
+        1, 1, 1, 0.5,
+        1, 1, 1, 0.5,
+        1, 1, 1, 0.5,
+        1, 1, 1, 0.5,
+    };
+
+    static const GLfloat texture_coords[] = {
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+    };
+
+    static const GLuint indices[] = {
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
+    };
+
+    colored_textured_renderer.draw (gl, GL_TRIANGLES, vertices, colors, texture_coords, 6, indices, texture, ortho_matrix);
 }
 void UnitRenderer::drawCooldownShade (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, const Unit& unit,
                                       const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)

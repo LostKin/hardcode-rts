@@ -43,6 +43,8 @@
         <file>images/effects/pestilence-splash/splash.png</file>
         <file>images/effects/pestilence-missile/missile1.png</file>
         <file>images/effects/pestilence-missile/missile2.png</file>
+        <file>images/effects/pestilence-disease/disease1.png</file>
+        <file>images/effects/pestilence-disease/disease2.png</file>
 
         <file>images/actions/move.png</file>
         <file>images/actions/stop.png</file>

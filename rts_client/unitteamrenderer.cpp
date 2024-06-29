@@ -12,11 +12,11 @@ UnitTeamRenderer::UnitTeamRenderer (const QColor& team_color)
     contaminator = QSharedPointer<UnitRenderer> (new UnitRenderer (Unit::Type::Contaminator, team_color));
 }
 
-void UnitTeamRenderer::draw (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, const Unit& unit, quint64 clock_ns,
+void UnitTeamRenderer::draw (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, ColoredTexturedRenderer& colored_textured_renderer, const Unit& unit, quint64 clock_ns,
                              const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
     if (UnitRenderer* unit_renderer = selectUnitRenderer (unit))
-        unit_renderer->draw (gl, textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
+        unit_renderer->draw (gl, textured_renderer, colored_textured_renderer, unit, clock_ns, ortho_matrix, coord_map);
 }
 void UnitTeamRenderer::drawCorpse (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, const Corpse& corpse,
                                    const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)

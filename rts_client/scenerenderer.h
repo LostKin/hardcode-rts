@@ -35,7 +35,7 @@ private:
     void drawCorpses (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer,
                       MatchState& match_state,
                       const QMatrix4x4& ortho_matrix, const CoordMap& coord_map);
-    void drawUnits (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer,
+    void drawUnits (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, ColoredTexturedRenderer& colored_textured_renderer,
                     MatchState& match_state,
                     const QMatrix4x4& ortho_matrix, const CoordMap& coord_map);
     void drawUnitSelection (QOpenGLFunctions& gl, ColoredRenderer& colored_renderer,
