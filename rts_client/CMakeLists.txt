@@ -42,6 +42,7 @@ qt_add_executable("${target}"
     hudrenderer.cpp
     scenerenderer.cpp
     coordmap.cpp
+    singlemodeloader.cpp
 
     "${RCC_SOURCES}"
 )

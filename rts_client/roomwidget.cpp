@@ -139,7 +139,6 @@ void RoomWidget::startMatch (Unit::Team team)
 void RoomWidget::loadMatchState (const std::vector<std::pair<quint32, Unit>>& units, const std::vector<std::pair<quint32, Corpse>>& corpses, const std::vector<std::pair<quint32, Missile>>& missiles)
 {
     match_state.loadState (units, corpses, missiles);
-    return;
 }
 QSharedPointer<QOpenGLTexture> RoomWidget::loadTexture2DRectangle (const QString& path)
 {
