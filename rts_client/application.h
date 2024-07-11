@@ -27,6 +27,7 @@ signals:
     void startCountdown (Unit::Team team);
     void startMatch ();
     void updateMatchState (const std::vector<std::pair<quint32, Unit>>& units, const std::vector<std::pair<quint32, Corpse>>& corpses, const std::vector<std::pair<quint32, Missile>>& missiles);
+    void log (const QString& message);
 
 private:
     void showLobby (const QString& login);

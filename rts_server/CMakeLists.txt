@@ -15,3 +15,5 @@ qt_add_executable("${target}"
 
 target_link_libraries("${target}" PRIVATE Qt6::Core Qt6::Network)
 target_link_libraries("${target}" PRIVATE libhccn libmatchstate librtsn libapi)
+
+target_compile_options(${target} PRIVATE -Wall -Wextra)

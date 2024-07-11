@@ -43,6 +43,7 @@ qt_add_executable("${target}"
     scenerenderer.cpp
     coordmap.cpp
     singlemodeloader.cpp
+    logoverlay.cpp
 
     "${RCC_SOURCES}"
 )
@@ -50,3 +51,6 @@ qt_add_executable("${target}"
 target_include_directories("${target}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries("${target}" PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGLWidgets Qt6::Network Qt6::Multimedia Qt6::Svg)
 target_link_libraries("${target}" PRIVATE libhccn libmatchstate librtsn libapi)
+
+target_compile_options(${target} PRIVATE -Wall -Wextra)
+#target_compile_definitions("${target}" PRIVATE LOG_OVERLAY=1)

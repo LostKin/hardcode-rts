@@ -12,7 +12,6 @@
 #include "singlemodeloader.h"
 #include "requests.pb.h"
 
-#include <QDebug>
 #include <QDateTime>
 #include <QFontDatabase>
 #include <QMessageBox>
@@ -162,7 +161,7 @@ void Application::roleSelectedCallback ()
 {
     showReadinessScreen ();
 }
-void Application::createUnitCallback (Unit::Team team, Unit::Type type, const Position& position)
+void Application::createUnitCallback (Unit::Team /* team */, Unit::Type type, const Position& position)
 {
     if (!session_id.has_value ())
         return;
@@ -275,7 +274,7 @@ void Application::sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToCl
 {
     RTS::Response response_oneof;
     if (!response_oneof.ParseFromArray (message->message.data (), message->message.size ())) {
-        qDebug () << "Invalid response from server: failed to parse protobuf message";
+        log ("Invalid response from server: failed to parse protobuf message");
         return;
     }
 
@@ -285,7 +284,7 @@ void Application::sessionDatagramHandler (const std::shared_ptr<HCCN::ServerToCl
         switch (response.response_case ()) {
         case RTS::AuthorizationResponse::kError: {
             const RTS::Error& error = response.error ();
-            qDebug () << "Response -> AuthorizationResponse -> ERROR:" << QString::fromStdString (error.message ());
+            log ("Response -> AuthorizationResponse -> ERROR: " + QString::fromStdString (error.message ()));
         } break;
         case RTS::AuthorizationResponse::kSessionToken: {
             const RTS::SessionToken& session_token = response.session_token ();
@@ -417,6 +416,7 @@ void Application::showRoom (bool single_mode)
     connect (this, &Application::updateMatchState, room_widget, &RoomWidget::loadMatchState);
     connect (room_widget, &RoomWidget::createUnitRequested, this, &Application::createUnitCallback);
     connect (room_widget, &RoomWidget::unitActionRequested, this, &Application::unitActionCallback);
+    connect (this, &Application::log, room_widget, &RoomWidget::log);
     setCurrentWindow (room_widget, true);
 
     if (single_mode)

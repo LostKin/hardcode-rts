@@ -13,7 +13,6 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QMouseEvent>
-#include <QDebug>
 #include <QPainter>
 #include <QFile>
 #if QT_VERSION >= 0x060000
@@ -243,20 +242,20 @@ void RoomWidget::loadTextures ()
 void RoomWidget::initResources ()
 {
     if (!(colored_renderer = ColoredRenderer::Create ())) {
-        qDebug () << "TODO: Handle error";
+        log ("TODO: Handle error");
     }
     if (!(colored_textured_renderer = ColoredTexturedRenderer::Create ())) {
-        qDebug () << "TODO: Handle error";
+        log ("TODO: Handle error");
     }
     if (!(textured_renderer = TexturedRenderer::Create ())) {
-        qDebug () << "TODO: Handle error";
+        log ("TODO: Handle error");
     }
 
     if (!(scene_renderer = QSharedPointer<SceneRenderer>::create ())) {
-        qDebug () << "TODO: Handle error";
+        log ("TODO: Handle error");
     }
     if (!(hud_renderer = QSharedPointer<HUDRenderer>::create ())) {
-        qDebug () << "TODO: Handle error";
+        log ("TODO: Handle error");
     }
 
     loadTextures ();
@@ -318,6 +317,10 @@ void RoomWidget::updateSize (int w, int h)
             size.setWidth (size.width () * aspect);
         hud.minimap_screen_area = Rectangle (center.x () - size.width () * 0.5, center.x () + size.width () * 0.5, center.y () - size.height () * 0.5, center.y () + size.height () * 0.5);
     }
+
+#ifdef LOG_OVERLAY
+    log_overlay.resize ({w, h});
+#endif
 }
 void RoomWidget::draw ()
 {
@@ -329,6 +332,10 @@ void RoomWidget::draw ()
         drawCountdownOverlay ();
     else
         drawMatchCursor ();
+
+#ifdef LOG_OVERLAY
+    log_overlay.draw (this);
+#endif
 }
 void RoomWidget::keyPressEvent (QKeyEvent* event)
 {
@@ -336,6 +343,30 @@ void RoomWidget::keyPressEvent (QKeyEvent* event)
     ctrl_pressed = modifiers & Qt::ControlModifier;
     shift_pressed = modifiers & Qt::ShiftModifier;
     alt_pressed = modifiers & Qt::AltModifier;
+
+#ifdef LOG_OVERLAY
+    if (ctrl_pressed) {
+        if (event->key () == Qt::Key_L) {
+            log_overlay.toggleShow ();
+            return;
+        }
+    } else if (shift_pressed) {
+        switch (event->key ()) {
+        case Qt::Key_PageUp:
+            log_overlay.pageUp ();
+            return;
+        case Qt::Key_PageDown:
+            log_overlay.pageDown ();
+            return;
+        case Qt::Key_Up:
+            log_overlay.lineUp ();
+            return;
+        case Qt::Key_Down:
+            log_overlay.lineDown ();
+            return;
+        }
+    }
+#endif
 
     if (starting_countdown)
         return;
@@ -661,7 +692,6 @@ void RoomWidget::drawMatchCursor ()
 void RoomWidget::drawCountdownOverlay ()
 {
     qint64 nsecs_elapsed = match_countdown_start.nsecsElapsed ();
-    QOpenGLTexture* label_texture;
     int nseconds = 0;
     if (nsecs_elapsed < 1000000000LL)
         nseconds = 5;

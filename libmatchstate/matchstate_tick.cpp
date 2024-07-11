@@ -72,14 +72,14 @@ Node& MatchState::node (Node& node_tree, const std::string& name) const
         node = node.children[subname];
     return node;
 }
-void MatchState::call (Node& node_tree, const std::string& name, BlueTeamUserData& user_data)
+void MatchState::call (Node& node_tree, const std::string& name, BlueTeamUserData& /* user_data */)
 {
     const std::optional<DynamicallyTypedFunction>& optional_function = node (node_tree, name).function;
     if (!optional_function.has_value ())
         return;
-    const DynamicallyTypedFunction& function = optional_function.value ();
-    const std::string& parameters = function.parameters;
-    const std::string& source = function.source;
+    // const DynamicallyTypedFunction& function = optional_function.value ();
+    // const std::string& parameters = function.parameters;
+    // const std::string& source = function.source;
     // TODO
 }
 void MatchState::applyAreaBoundaryCollisions (double dt)

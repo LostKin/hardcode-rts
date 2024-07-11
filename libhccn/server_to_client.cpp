@@ -179,10 +179,10 @@ std::shared_ptr<MessageFragment> MessageFragment::parse (const QNetworkDatagram&
     uint64_t fragment_number;
     if (data.size () < 1) {
         qDebug () << "Empty message";
-        return {nullptr};
+        return nullptr;
     }
     if (!parse_meta (data, off, is_tail, session_id_present, request_id_present, fragment_number)) {
-        return {nullptr};
+        return nullptr;
     }
     std::shared_ptr<MessageFragment> transport_message (new MessageFragment);
     transport_message->host = datagram.senderAddress ();
@@ -191,7 +191,7 @@ std::shared_ptr<MessageFragment> MessageFragment::parse (const QNetworkDatagram&
         uint64_t session_id;
         if (!HCCN::Internal::ParseUint64Id (data, off, session_id)) {
             qDebug () << "Failed to parse session id";
-            return {nullptr};
+            return nullptr;
         }
         transport_message->session_id = session_id;
     }
@@ -199,7 +199,7 @@ std::shared_ptr<MessageFragment> MessageFragment::parse (const QNetworkDatagram&
         uint64_t request_id;
         if (!HCCN::Internal::ParseUint64Id (data, off, request_id)) {
             qDebug () << "Failed to parse request id";
-            return {nullptr};
+            return nullptr;
         }
         transport_message->request_id = request_id;
     }
@@ -207,7 +207,7 @@ std::shared_ptr<MessageFragment> MessageFragment::parse (const QNetworkDatagram&
         uint64_t response_id;
         if (!HCCN::Internal::ParseUint64Id (data, off, response_id)) {
             qDebug () << "Failed to parse response id";
-            return {nullptr};
+            return nullptr;
         }
         transport_message->response_id = response_id;
     }
@@ -238,7 +238,7 @@ bool MessageFragmentCollector::valid ()
 std::shared_ptr<Message> MessageFragmentCollector::build ()
 {
     if (!complete ())
-        return {nullptr};
+        return nullptr;
 
     std::vector<char> data = head->fragment;
     for (std::map<uint64_t, std::shared_ptr<MessageFragment>>::const_iterator it = tail.begin (); it != tail.end (); ++it) {

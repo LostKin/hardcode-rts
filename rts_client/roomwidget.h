@@ -3,6 +3,7 @@
 #include "matchstate.h"
 #include "coordmap.h"
 #include "hud.h"
+#include "logoverlay.h"
 
 #include <QElapsedTimer>
 #include <QTimer>
@@ -50,6 +51,16 @@ public:
     virtual ~RoomWidget ();
     void awaitMatch (Unit::Team team);
     void startMatch (Unit::Team team);
+#ifdef LOG_OVERLAY
+    inline void log (const QString& message)
+    {
+        log_overlay.log (message);
+    }
+#else
+    inline void log (const QString& /* message */)
+    {
+    }
+#endif
 
 signals:
     void selectRolePlayerRequested ();
@@ -102,6 +113,7 @@ private:
     void drawMatch ();
     void drawMatchCursor ();
     void drawCountdownOverlay ();
+    void drawLog ();
     void frameUpdate (qreal dt);
     void matchFrameUpdate (qreal dt);
     bool pointInsideButton (const QPoint& point, const QPoint& button_pos, QSharedPointer<QOpenGLTexture>& texture) const;
@@ -168,4 +180,7 @@ private:
     QSharedPointer<SceneRenderer> scene_renderer;
     QSharedPointer<HUDRenderer> hud_renderer;
     QFont countdown_font;
+#ifdef LOG_OVERLAY
+    LogOverlay log_overlay;
+#endif
 };

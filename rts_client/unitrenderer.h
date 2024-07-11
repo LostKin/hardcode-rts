@@ -36,7 +36,7 @@ private:
     void drawBody (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, const Unit& unit, quint64 clock_ns,
                    const QMatrix4x4& ortho_matrix, const CoordMap& coord_map, bool alive = true);
     void drawPestilenceDisease (QOpenGLFunctions& gl, ColoredTexturedRenderer& colored_textured_renderer, const Unit& unit, quint64 clock_ns,
-                                const QMatrix4x4& ortho_matrix, const CoordMap& coord_map, bool alive = true);
+                                const QMatrix4x4& ortho_matrix, const CoordMap& coord_map);
     void drawCooldownShade (QOpenGLFunctions& gl, TexturedRenderer& textured_renderer, const Unit& unit,
                             const QMatrix4x4& ortho_matrix, const CoordMap& coord_map);
 

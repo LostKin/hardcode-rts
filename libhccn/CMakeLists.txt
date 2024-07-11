@@ -12,3 +12,5 @@ qt_add_library("${target}" STATIC
 
 target_link_libraries("${target}" PRIVATE Qt6::Core Qt6::Network)
 target_include_directories("${target}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+
+target_compile_options(${target} PRIVATE -Wall -Wextra)

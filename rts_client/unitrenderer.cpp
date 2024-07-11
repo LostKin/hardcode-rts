@@ -334,7 +334,7 @@ void UnitRenderer::drawBody (QOpenGLFunctions& gl, TexturedRenderer& textured_re
     textured_renderer.draw (gl, GL_TRIANGLES, vertices, texture_coords, 6, indices, texture, ortho_matrix);
 }
 void UnitRenderer::drawPestilenceDisease (QOpenGLFunctions& gl, ColoredTexturedRenderer& colored_textured_renderer, const Unit& unit, quint64 clock_ns,
-                                          const QMatrix4x4& ortho_matrix, const CoordMap& coord_map, bool alive)
+                                          const QMatrix4x4& ortho_matrix, const CoordMap& coord_map)
 {
     if (unit.pestilence_disease_left_ticks <= 0)
         return;

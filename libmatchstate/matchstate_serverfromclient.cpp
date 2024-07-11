@@ -1,7 +1,5 @@
 #include "matchstate.h"
 
-#include <QDebug>
-
 
 std::map<uint32_t, Unit>::iterator MatchState::createUnit (Unit::Type type, Unit::Team team, const Position& position, double direction)
 {

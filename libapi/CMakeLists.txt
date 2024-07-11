@@ -22,3 +22,5 @@ add_library("${target}" STATIC "${proto_sources}")
 
 target_include_directories("${target}" PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries("${target}" PRIVATE "-lprotobuf")
+
+target_compile_options(${target} PRIVATE -Wall -Wextra)

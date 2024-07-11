@@ -4,9 +4,9 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QDebug>
 #include <QMessageBox>
 #include <QHeaderView>
+
 
 RoomListTable::RoomListTable (QWidget* parent)
     : QTableWidget (0, 7, parent)

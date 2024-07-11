@@ -118,7 +118,7 @@ Corpse& MatchState::addCorpse (uint32_t id, Unit::Type type, Unit::Team team, co
     corpse.unit.hp = unitMaxHP (corpse.unit.type);
     return corpse;
 }
-Missile& MatchState::addMissile (uint32_t id, Missile::Type type, Unit::Team team, const Position& position, double direction)
+Missile& MatchState::addMissile (uint32_t id, Missile::Type type, Unit::Team team, const Position& position, double /* direction */)
 {
     std::pair<std::map<uint32_t, Missile>::iterator, bool> it_status = missiles.insert ({id, {type, team, position, 0, Position (0, 0)}});
     Missile& missile = it_status.first->second;

@@ -71,76 +71,77 @@ bool ParseUint64Id (const std::vector<char>& data, size_t& off, uint64_t& value)
 }
 size_t EncodeUint64Id (char* encoded, uint64_t id)
 {
+    uint8_t* uencoded = (uint8_t*) encoded;
     if (id < 0x80ULL) {
-        encoded[0] = char (id);
+        uencoded[0] = char (id);
         return 1;
     } else if (id < 0x4080ULL) {
         id -= 0x80ULL;
-        encoded[0] = (id >> 8) | 0x80;
-        encoded[1] = id & 0xff;
+        uencoded[0] = (id >> 8) | 0x80;
+        uencoded[1] = id & 0xff;
         return 2;
     } else if (id < 0x204080ULL) {
         id -= 0x4080ULL;
-        encoded[0] = (id >> 16) | 0xc0;
-        encoded[1] = (id >> 8) & 0xff;
-        encoded[2] = id & 0xff;
+        uencoded[0] = (id >> 16) | 0xc0;
+        uencoded[1] = (id >> 8) & 0xff;
+        uencoded[2] = id & 0xff;
         return 3;
     } else if (id < 0x10204080ULL) {
         id -= 0x204080ULL;
-        encoded[0] = (id >> 24) | 0xe0;
-        encoded[1] = (id >> 16) & 0xff;
-        encoded[2] = (id >> 8) & 0xff;
-        encoded[3] = id & 0xff;
+        uencoded[0] = (id >> 24) | 0xe0;
+        uencoded[1] = (id >> 16) & 0xff;
+        uencoded[2] = (id >> 8) & 0xff;
+        uencoded[3] = id & 0xff;
         return 4;
     } else if (id < 0x0810204080ULL) {
         id -= 0x10204080ULL;
-        encoded[0] = (id >> 32) | 0xf0;
-        encoded[1] = (id >> 24) & 0xff;
-        encoded[2] = (id >> 16) & 0xff;
-        encoded[3] = (id >> 8) & 0xff;
-        encoded[4] = id & 0xff;
+        uencoded[0] = (id >> 32) | 0xf0;
+        uencoded[1] = (id >> 24) & 0xff;
+        uencoded[2] = (id >> 16) & 0xff;
+        uencoded[3] = (id >> 8) & 0xff;
+        uencoded[4] = id & 0xff;
         return 5;
     } else if (id < 0x040810204080ULL) {
         id -= 0x0810204080ULL;
-        encoded[0] = (id >> 40) | 0xf8;
-        encoded[1] = (id >> 32) & 0xff;
-        encoded[2] = (id >> 24) & 0xff;
-        encoded[3] = (id >> 16) & 0xff;
-        encoded[4] = (id >> 8) & 0xff;
-        encoded[5] = id & 0xff;
+        uencoded[0] = (id >> 40) | 0xf8;
+        uencoded[1] = (id >> 32) & 0xff;
+        uencoded[2] = (id >> 24) & 0xff;
+        uencoded[3] = (id >> 16) & 0xff;
+        uencoded[4] = (id >> 8) & 0xff;
+        uencoded[5] = id & 0xff;
         return 6;
     } else if (id < 0x02040810204080ULL) {
         id -= 0x040810204080ULL;
-        encoded[0] = (id >> 48) | 0xfc;
-        encoded[1] = (id >> 40) & 0xff;
-        encoded[2] = (id >> 32) & 0xff;
-        encoded[3] = (id >> 24) & 0xff;
-        encoded[4] = (id >> 16) & 0xff;
-        encoded[5] = (id >> 8) & 0xff;
-        encoded[6] = id & 0xff;
+        uencoded[0] = (id >> 48) | 0xfc;
+        uencoded[1] = (id >> 40) & 0xff;
+        uencoded[2] = (id >> 32) & 0xff;
+        uencoded[3] = (id >> 24) & 0xff;
+        uencoded[4] = (id >> 16) & 0xff;
+        uencoded[5] = (id >> 8) & 0xff;
+        uencoded[6] = id & 0xff;
         return 7;
     } else if (id < 0x0102040810204080ULL) {
         id -= 0x02040810204080ULL;
-        encoded[0] = (id >> 56) | 0xfe;
-        encoded[1] = (id >> 48) & 0xff;
-        encoded[2] = (id >> 40) & 0xff;
-        encoded[3] = (id >> 32) & 0xff;
-        encoded[4] = (id >> 24) & 0xff;
-        encoded[5] = (id >> 16) & 0xff;
-        encoded[6] = (id >> 8) & 0xff;
-        encoded[7] = id & 0xff;
+        uencoded[0] = (id >> 56) | 0xfe;
+        uencoded[1] = (id >> 48) & 0xff;
+        uencoded[2] = (id >> 40) & 0xff;
+        uencoded[3] = (id >> 32) & 0xff;
+        uencoded[4] = (id >> 24) & 0xff;
+        uencoded[5] = (id >> 16) & 0xff;
+        uencoded[6] = (id >> 8) & 0xff;
+        uencoded[7] = id & 0xff;
         return 8;
     } else {
         id -= 0x0102040810204080ULL;
-        encoded[0] = 0xff;
-        encoded[1] = (id >> 56) & 0xff;
-        encoded[2] = (id >> 48) & 0xff;
-        encoded[3] = (id >> 40) & 0xff;
-        encoded[4] = (id >> 32) & 0xff;
-        encoded[5] = (id >> 24) & 0xff;
-        encoded[6] = (id >> 16) & 0xff;
-        encoded[7] = (id >> 8) & 0xff;
-        encoded[8] = id & 0xff;
+        uencoded[0] = 0xff;
+        uencoded[1] = (id >> 56) & 0xff;
+        uencoded[2] = (id >> 48) & 0xff;
+        uencoded[3] = (id >> 40) & 0xff;
+        uencoded[4] = (id >> 32) & 0xff;
+        uencoded[5] = (id >> 24) & 0xff;
+        uencoded[6] = (id >> 16) & 0xff;
+        uencoded[7] = (id >> 8) & 0xff;
+        uencoded[8] = id & 0xff;
         return 9;
     }
 }

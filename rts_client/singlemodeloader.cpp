@@ -1,7 +1,7 @@
 #include "singlemodeloader.h"
 
 
-void SingleModeLoader::load (std::vector<std::pair<quint32, Unit>>& units, std::vector<std::pair<quint32, Corpse>>& corpses, std::vector<std::pair<quint32, Missile>>& missiles)
+void SingleModeLoader::load (std::vector<std::pair<quint32, Unit>>& units, std::vector<std::pair<quint32, Corpse>>& /* corpses */, std::vector<std::pair<quint32, Missile>>& /* missiles */)
 {
     quint32 unit_id = 0;
     std::mt19937 random_generator;
