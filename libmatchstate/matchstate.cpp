@@ -189,8 +189,8 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         ret.range = 5.0;
         ret.trigger_range = 7.0;
         ret.damage = 10;
-        ret.duration_ticks = 20;
-        ret.cooldown_ticks = 30;
+        ret.duration_ticks = 10;
+        ret.cooldown_ticks = 40;
         ret;
     });
     static const AttackDescription crusader = ({
@@ -199,8 +199,8 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         ret.range = 0.1;
         ret.trigger_range = 4.0;
         ret.damage = 16;
-        ret.duration_ticks = 40;
-        ret.cooldown_ticks = 30;
+        ret.duration_ticks = 10;
+        ret.cooldown_ticks = 70;
         ret;
     });
     static const AttackDescription goon = ({
@@ -210,8 +210,8 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         ret.trigger_range = 9.0;
         ret.damage = 12;
         ret.missile_velocity = 16.0;
-        ret.duration_ticks = 60;
-        ret.cooldown_ticks = 30;
+        ret.duration_ticks = 10;
+        ret.cooldown_ticks = 80;
         ret;
     });
     static const AttackDescription beetle = ({
@@ -220,8 +220,8 @@ const AttackDescription& MatchState::unitPrimaryAttackDescription (Unit::Type ty
         ret.range = 0.1;
         ret.trigger_range = 3.0;
         ret.damage = 8;
-        ret.duration_ticks = 40;
-        ret.cooldown_ticks = 30;
+        ret.duration_ticks = 10;
+        ret.cooldown_ticks = 60;
         ret;
     });
     static const AttackDescription unkown = {};

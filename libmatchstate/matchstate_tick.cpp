@@ -108,16 +108,14 @@ void MatchState::applyActions (double dt)
                 closest_target = findClosestTarget (unit);
             if (closest_target.has_value ()) {
                 stop_action.current_target = closest_target;
-                if (!unit.attack_cooldown_left_ticks) {
-                    uint32_t target_unit_id = stop_action.current_target.value ();
-                    std::map<uint32_t, Unit>::iterator target_unit_it = units.find (target_unit_id);
-                    if (target_unit_it != units.end ()) {
-                        Unit& target_unit = target_unit_it->second;
-                        if (applyAttack (unit, target_unit_id, target_unit, dt))
-                            unit.action = PerformingAttackAction (StopAction (std::get<StopAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
-                    } else {
-                        stop_action.current_target.reset ();
-                    }
+                uint32_t target_unit_id = stop_action.current_target.value ();
+                std::map<uint32_t, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                if (target_unit_it != units.end ()) {
+                    Unit& target_unit = target_unit_it->second;
+                    if (applyAttack (unit, target_unit_id, target_unit, dt))
+                        unit.action = PerformingAttackAction (StopAction (std::get<StopAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
+                } else {
+                    stop_action.current_target.reset ();
                 }
             }
         } else if (std::holds_alternative<MoveAction> (unit.action)) {
@@ -144,31 +142,27 @@ void MatchState::applyActions (double dt)
                     closest_target = findClosestTarget (unit);
                 if (closest_target.has_value ()) {
                     attack_action.current_target = closest_target;
-                    if (!unit.attack_cooldown_left_ticks) {
-                        uint32_t target_unit_id = attack_action.current_target.value ();
-                        std::map<uint32_t, Unit>::iterator target_unit_it = units.find (target_unit_id);
-                        if (target_unit_it != units.end ()) {
-                            Unit& target_unit = target_unit_it->second;
-                            if (applyAttack (unit, target_unit_id, target_unit, dt))
-                                unit.action = PerformingAttackAction (AttackAction (std::get<AttackAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
-                        } else {
-                            attack_action.current_target.reset ();
-                        }
-                    }
-                } else {
-                    applyMovement (unit, std::get<Position> (target), dt, true);
-                }
-            } else if (std::holds_alternative<uint32_t> (target)) {
-                if (!unit.attack_cooldown_left_ticks) {
-                    uint32_t target_unit_id = std::get<uint32_t> (target);
+                    uint32_t target_unit_id = attack_action.current_target.value ();
                     std::map<uint32_t, Unit>::iterator target_unit_it = units.find (target_unit_id);
                     if (target_unit_it != units.end ()) {
                         Unit& target_unit = target_unit_it->second;
                         if (applyAttack (unit, target_unit_id, target_unit, dt))
                             unit.action = PerformingAttackAction (AttackAction (std::get<AttackAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
                     } else {
-                        unit.action = StopAction ();
+                        attack_action.current_target.reset ();
                     }
+                } else {
+                    applyMovement (unit, std::get<Position> (target), dt, true);
+                }
+            } else if (std::holds_alternative<uint32_t> (target)) {
+                uint32_t target_unit_id = std::get<uint32_t> (target);
+                std::map<uint32_t, Unit>::iterator target_unit_it = units.find (target_unit_id);
+                if (target_unit_it != units.end ()) {
+                    Unit& target_unit = target_unit_it->second;
+                    if (applyAttack (unit, target_unit_id, target_unit, dt))
+                        unit.action = PerformingAttackAction (AttackAction (std::get<AttackAction> (unit.action)), unitPrimaryAttackDescription (unit.type).duration_ticks);
+                } else {
+                    unit.action = StopAction ();
                 }
             }
         } else if (std::holds_alternative<CastAction> (unit.action)) {
@@ -345,7 +339,11 @@ bool MatchState::applyAttack (Unit& unit, uint32_t target_unit_id, Unit& target_
     } else {
         in_range = true;
     }
-    if (in_range && orientationsFuzzyMatch (unit.orientation, target_orientation)) {
+    if (!unit.attack_cooldown_left_ticks &&
+        !std::holds_alternative<PerformingAttackAction> (unit.action) &&
+        !std::holds_alternative<PerformingCastAction> (unit.action) &&
+        in_range &&
+        orientationsFuzzyMatch (unit.orientation, target_orientation)) {
         switch (attack_description.type) {
         case AttackDescription::Type::SealShot: {
             dealDamage (target_unit, attack_description.damage);
